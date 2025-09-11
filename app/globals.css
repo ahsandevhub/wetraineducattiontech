@@ -1,0 +1,75 @@
+@import url("https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@400..800&display=swap");
+@import "tailwindcss";
+
+:root {
+  --primary-yellow: #facc15;
+  --secondary-yellow: #eccf4f;
+  --tertiary-yellow: #fbf8f0;
+}
+
+* {
+  font-family: "Baloo Da 2", sans-serif;
+}
+
+body {
+  font-family: "CurrentFont", sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #fff;
+  color: #333;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  /* Color Utilities */
+  .text-primary-yellow {
+    color: var(--primary-yellow);
+  }
+  .bg-primary-yellow {
+    background-color: var(--primary-yellow);
+  }
+  .border-primary-yellow {
+    border-color: var(--primary-yellow);
+  }
+  .hover\:bg-primary-yellow:hover {
+    background-color: var(--primary-yellow);
+  }
+
+  .text-secondary-yellow {
+    color: var(--secondary-yellow);
+  }
+  .bg-secondary-yellow {
+    background-color: var(--secondary-yellow);
+  }
+  .border-secondary-yellow {
+    border-color: var(--secondary-yellow);
+  }
+  .hover\:bg-secondary-yellow:hover {
+    background-color: var(--secondary-yellow);
+  }
+
+  .text-tertiary-yellow {
+    color: var(--tertiary-yellow);
+  }
+  .bg-tertiary-yellow {
+    background-color: var(--tertiary-yellow);
+  }
+  .bg-opacity-80 {
+    --tw-bg-opacity: 0.8;
+  }
+
+  /* Additional Utilities */
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+  }
+  .transition-colors {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+}
