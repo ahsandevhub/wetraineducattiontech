@@ -2,74 +2,71 @@
 import { motion } from "framer-motion";
 import { CheckCircle, Star } from "lucide-react";
 
-interface Package {
-  name: string;
-  price: string;
-  description: string;
-  features: string[];
-  popular: boolean;
-  duration: string;
-  support: string;
-}
-
-const packages: Package[] = [
-  {
-    name: "Starter Package",
-    price: "$999",
-    description:
-      "Perfect for small businesses looking to establish their digital presence",
-    features: [
-      "Social Media Management",
-      "Basic SEO Setup",
-      "Content Creation (10 posts/month)",
-      "Monthly Analytics Report",
-      "Email Support",
-    ],
-    popular: false,
-    duration: "3 Months",
-    support: "Email",
-  },
-  {
-    name: "Professional Package",
-    price: "$2,499",
-    description:
-      "Comprehensive marketing solution for growing businesses ready to scale",
-    features: [
-      "Multi-Channel Campaigns",
-      "Advanced SEO & SEM",
-      "Content Marketing Strategy",
-      "Social Media Advertising",
-      "Weekly Strategy Calls",
-      "Conversion Optimization",
-    ],
-    popular: true,
-    duration: "6 Months",
-    support: "Priority",
-  },
-  {
-    name: "Enterprise Package",
-    price: "$4,999",
-    description:
-      "Full-service marketing solution for established businesses seeking market dominance",
-    features: [
-      "Custom Marketing Strategy",
-      "Dedicated Account Manager",
-      "Advanced Analytics Dashboard",
-      "Brand Development",
-      "24/7 Support",
-      "Performance Guarantee",
-    ],
-    popular: false,
-    duration: "12 Months",
-    support: "24/7",
-  },
-];
-
 export default function ChallengePackages() {
+  const packages = [
+    {
+      title: "Digital Starter",
+      price: "Starting at $2,999/month",
+      duration: "3-month minimum",
+      description:
+        "Perfect for small businesses looking to establish their digital presence and grow their online audience.",
+      features: [
+        "Social Media Management",
+        "Content Creation & Strategy",
+        "Basic SEO Optimization",
+        "Monthly Performance Reports",
+        "Email Marketing Setup",
+        "Google Ads Management (up to $5k spend)",
+      ],
+      popular: false,
+      gradient: "from-blue-500 to-cyan-600",
+      support: "Business Hours",
+    },
+    {
+      title: "Growth Accelerator",
+      price: "Starting at $5,999/month",
+      duration: "6-month minimum",
+      description:
+        "Comprehensive marketing solution for businesses ready to scale and dominate their market.",
+      features: [
+        "Everything in Digital Starter",
+        "Advanced SEO & Content Marketing",
+        "Conversion Rate Optimization",
+        "Marketing Automation",
+        "Influencer Partnership Management",
+        "Video Content Production",
+        "Advanced Analytics & Insights",
+      ],
+      popular: true,
+      gradient: "from-purple-500 to-pink-600",
+      support: "Priority Support",
+    },
+    {
+      title: "Enterprise Elite",
+      price: "Custom Pricing",
+      duration: "12-month partnership",
+      description:
+        "Full-service marketing partnership for established companies seeking market leadership.",
+      features: [
+        "Everything in Growth Accelerator",
+        "Dedicated Account Team",
+        "Custom Marketing Technology Stack",
+        "Brand Strategy & Positioning",
+        "Public Relations & Media Outreach",
+        "Trade Show & Event Marketing",
+        "Executive Thought Leadership",
+        "24/7 Priority Support",
+      ],
+      popular: false,
+      gradient: "from-indigo-500 to-purple-600",
+      support: "24/7 Dedicated Support",
+    },
+  ];
+
   return (
     <section
-      id="services"
-      className="relative py-24 bg-[var(--tertiary-yellow)] overflow-hidden border-b-2 border-yellow-200/50 font-[Baloo Da 2]"
+      id="packages"
+      className="relative py-20 bg-white overflow-hidden border-b-2 border-yellow-200/50 font-[Baloo Da 2]"
     >
       <div className="absolute inset-0 overflow-hidden -z-10">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/wireframe.png')] opacity-10"></div>
@@ -127,7 +124,7 @@ export default function ChallengePackages() {
               <div className="p-8 h-full flex flex-col">
                 <div className="mb-6">
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {pkg.name}
+                    {pkg.title}
                   </h3>
                   <p className="text-gray-600">{pkg.description}</p>
                 </div>

@@ -1,39 +1,45 @@
-"use cl    {
-      name: "Sarah Johnson",
-      role: "CEO, Tech Startup",
-      text: "Their marketing strategies transformed our business completely. We saw a 300% increase in leads within the first quarter of working with them.",
-      avatar: "/avatars/rajesh.avif",
-      profit: "300% Lead Growth",
-      rating: 5,
-    },import { motion } from "framer-motion";
+"use client";
+import { motion } from "framer-motion";
 import { Clock, Star, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
 
 export default function Testimonials() {
   const testimonials = [
     {
-      name: "মো. নাহিয়ান ইসলাম",
-      role: "শিক্ষার্থী, খুলনা",
-      text: "WeTrain Education-এর কোর্সগুলো খুবই সহজবোধ্য এবং কার্যকর। আমি এক মাসে প্রফেশনাল ট্রেডিং সম্পর্কে স্পষ্ট ধারণা পেয়েছি।",
-      avatar: "/avatars/rajesh.avif",
-      profit: "ফান্ডেড প্রস্তুত",
+      name: "Sarah Johnson",
+      role: "CEO, TechStart Solutions",
+      text: "Their strategic approach to digital marketing transformed our business. We saw a 300% increase in qualified leads within the first quarter of working together.",
+      avatar: "/api/placeholder/80/80",
+      profit: "300% Lead Growth",
       rating: 5,
+      company: "TechStart Solutions",
     },
     {
-      name: "জাহানারা সুলতানা",
-      role: "গৃহিণী ও শিক্ষার্থী, বরিশাল",
-      text: "আমি আগে ট্রেডিং নিয়ে দ্বিধায় ছিলাম, কিন্তু এখানকার সাপোর্ট টিম এবং লাইভ ক্লাস আমাকে আত্মবিশ্বাস দিয়েছে।",
-      avatar: "/avatars/ayesha.jpg",
-      profit: "৩টি মডিউল সম্পন্ন",
+      name: "Michael Chen",
+      role: "Marketing Director, GrowthCorp",
+      text: "The creative campaigns they developed for us were game-changing. Our brand engagement increased by 250% and conversion rates doubled across all channels.",
+      avatar: "/api/placeholder/80/80",
+      profit: "250% Engagement Boost",
       rating: 5,
+      company: "GrowthCorp",
     },
     {
-      name: "তানভীর হাসান",
-      role: "ফ্রিল্যান্সার ও শিক্ষার্থী, রংপুর",
-      text: "এই প্ল্যাটফর্মে শেখা শুরু করার পর আমি আমার প্রথম চ্যালেঞ্জ ফান্ডিংয়ের জন্য আবেদন করেছি। কোর্সগুলো খুব স্ট্রাকচার্ড।",
-      avatar: "/avatars/vikram.jpg",
-      profit: "প্রশংসাপত্র অর্জন",
-      rating: 4,
+      name: "Emily Rodriguez",
+      role: "Founder, EcoLiving Brands",
+      text: "Working with this agency was the best investment we made. Their data-driven approach helped us scale from startup to market leader in just 18 months.",
+      avatar: "/api/placeholder/80/80",
+      profit: "Market Leader in 18 Months",
+      rating: 5,
+      company: "EcoLiving Brands",
+    },
+    {
+      name: "David Thompson",
+      role: "VP of Sales, InnovateTech",
+      text: "The ROI on our marketing spend improved by 400% after partnering with them. Their team truly understands how to drive business growth through strategic marketing.",
+      avatar: "/api/placeholder/80/80",
+      profit: "400% ROI Improvement",
+      rating: 5,
+      company: "InnovateTech",
     },
   ];
 
@@ -45,10 +51,7 @@ export default function Testimonials() {
   ];
 
   return (
-    <section
-      id="testimonials"
-      className="relative py-24 bg-[var(--tertiary-yellow)] overflow-hidden border-y-2 border-yellow-200/50 font-[Baloo Da 2]"
-    >
+    <section className="py-20 bg-gradient-to-br from-yellow-50 to-orange-50">
       <div className="absolute inset-0 overflow-hidden -z-10">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('/wireframe.png')] opacity-10"></div>
         <div className="absolute top-1/4 left-1/4 w-60 h-60 rounded-full bg-[var(--primary-yellow)] blur-[100px] opacity-10"></div>
@@ -65,20 +68,20 @@ export default function Testimonials() {
           className="text-center mb-16"
         >
           <span className="inline-block bg-[var(--primary-yellow)]/10 text-[var(--primary-yellow)] px-4 py-2 rounded-full text-sm font-medium mb-4">
-            শিক্ষার্থীদের অভিজ্ঞতা
+            ক্লায়েন্টের সাফল্যের গল্প
           </span>
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             <span className="text-[var(--primary-yellow)]">১,০০০+</span>{" "}
-            সন্তুষ্ট শিক্ষার্থী
+            সন্তুষ্ট ক্লায়েন্ট
           </h2>
           <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-            বাস্তব শিক্ষার্থীদের অভিজ্ঞতা যারা WeTrain Education-এর মাধ্যমে
-            ট্রেডিং শিখেছেন।
+            কিভাবে আমরা ব্যবসাগুলোকে কৌশলগত মার্কেটিংয়ের মাধ্যমে অসাধারণ
+            বৃদ্ধিতে সহায়তা করেছি তা দেখুন
           </p>
         </motion.div>
 
         {/* Testimonials */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
           {testimonials.map((t, idx) => (
             <motion.div
               key={idx}

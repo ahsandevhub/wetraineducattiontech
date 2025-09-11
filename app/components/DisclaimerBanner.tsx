@@ -25,21 +25,36 @@ export default function DisclaimerBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -50, opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full bg-gray-900 text-gray-100 text-xs px-4 py-3 text-center flex justify-between items-center z-50"
+          className="w-full bg-gradient-to-r from-[var(--primary-yellow)] to-[var(--secondary-yellow)] text-gray-900 py-2"
         >
-          <p className="text-center flex-1">
-            <strong>Disclaimer:</strong> WeTrain Education OPC কোনো ট্রেডিং
-            প্ল্যাটফর্ম পরিচালনা করে না এবং বাংলাদেশে আর্থিক সেবা প্রদান করে না।
-            আমাদের সকল সেবা শুধুমাত্র শিক্ষামূলক উদ্দেশ্যে প্রদান করা হয়।
-            যেকোনো ট্রেডিং সিদ্ধান্ত গ্রাহকের নিজ দায়িত্বে।
-          </p>
-          <button
-            onClick={handleClose}
-            className="ml-4 text-gray-400 hover:text-white transition-colors"
-            aria-label="Close disclaimer"
-          >
-            ✕
-          </button>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+            <p className="text-sm">
+              <span className="font-semibold">Limited Time:</span> Get a free
+              marketing audit worth $500 with any new campaign.
+              <span className="font-semibold ml-2">
+                Results may vary based on industry and market conditions.
+              </span>
+            </p>
+            <button
+              onClick={handleClose}
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 text-gray-900 hover:text-gray-700 transition-colors"
+              aria-label="Close banner"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

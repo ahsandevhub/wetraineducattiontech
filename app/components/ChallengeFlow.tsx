@@ -1,69 +1,64 @@
 "use client";
 import { motion } from "framer-motion";
-import {
-  BarChart3,
-  CheckCircle,
-  ChevronsRight,
-  PlayCircle,
-} from "lucide-react";
+import { ChevronsRight } from "lucide-react";
 
 export default function ChallengeFlow() {
   const steps = [
     {
-      icon: <PlayCircle className="w-8 h-8" />,
-      title: "Strategic Consultation",
+      step: "01",
+      title: "Discovery & Analysis",
       description:
-        "We analyze your business goals and create a customized marketing strategy tailored to your brand.",
-      duration: "1-2 Days",
+        "We analyze your business, competitors, and target audience to identify growth opportunities and create a custom strategy.",
+      icon: "🔍",
+      duration: "1-2 weeks",
     },
     {
-      icon: <BarChart3 className="w-8 h-8" />,
-      title: "Campaign Execution",
+      step: "02",
+      title: "Strategy Development",
       description:
-        "Implementation of multi-channel campaigns with continuous monitoring and optimization for maximum ROI.",
-      duration: "2-4 Weeks",
+        "Our team crafts a comprehensive marketing plan tailored to your goals, budget, and timeline for maximum impact.",
+      icon: "📋",
+      duration: "1-2 weeks",
     },
     {
-      icon: <CheckCircle className="w-8 h-8" />,
-      title: "Growth & Scale",
+      step: "03",
+      title: "Creative Execution",
       description:
-        "Analyze results, scale successful campaigns, and expand your market presence for sustainable growth.",
+        "We bring your strategy to life with compelling content, engaging campaigns, and optimized marketing assets.",
+      icon: "🎨",
+      duration: "2-3 weeks",
+    },
+    {
+      step: "04",
+      title: "Launch & Optimize",
+      description:
+        "We deploy campaigns across channels, monitor performance, and continuously optimize for better results.",
+      icon: "🚀",
+      duration: "1 week",
+    },
+    {
+      step: "05",
+      title: "Scale & Grow",
+      description:
+        "Based on data insights, we scale successful campaigns and explore new opportunities to accelerate your growth.",
+      icon: "📈",
       duration: "Ongoing",
     },
   ];
 
   return (
-    <section
-      id="process"
-      className="relative py-24 bg-[var(--tertiary-yellow)] overflow-hidden border-y-2 border-yellow-200/50 font-[Baloo Da 2]"
-    >
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/wireframe.png')] opacity-10"></div>
-        <div className="absolute top-20 left-1/4 w-60 h-60 rounded-full bg-[var(--primary-yellow)] blur-[100px] opacity-10"></div>
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-[var(--secondary-yellow)] blur-[100px] opacity-10"></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <section className="py-20 bg-gradient-to-br from-gray-50 to-yellow-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <span className="inline-block bg-[var(--primary-yellow)]/10 text-[var(--primary-yellow)] px-4 py-2 rounded-full text-sm font-medium mb-4">
-            Our Process
-          </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            <span className="text-[var(--primary-yellow)]">3 Steps</span> to
-            Marketing Success
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            Our Proven Marketing Process
           </h2>
-          <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-            Our proven methodology ensures your brand gets the attention it
-            deserves and delivers measurable results.
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            From strategy to execution, we follow a systematic approach to
+            ensure your marketing success
           </p>
-        </motion.div>
+        </div>
 
         {/* Steps */}
         <div className="relative">
@@ -79,7 +74,7 @@ export default function ChallengeFlow() {
               >
                 {/* Step number */}
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-10 h-10 rounded-full bg-[var(--primary-yellow)] flex items-center justify-center text-white font-bold border-4 border-white shadow-md">
-                  {index + 1}
+                  {step.step}
                 </div>
 
                 <div className="bg-white rounded-xl p-8 border border-gray-100 hover:border-[var(--primary-yellow)]/30 hover:shadow-lg transition-all h-full">

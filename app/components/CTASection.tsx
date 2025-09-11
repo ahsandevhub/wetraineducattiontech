@@ -4,10 +4,7 @@ import { ArrowRight, Check, Clock, Rocket, Zap } from "lucide-react";
 
 function CTASection() {
   return (
-    <section
-      id="contact"
-      className="relative overflow-hidden bg-gradient-to-br from-[var(--primary-yellow)] to-[var(--secondary-yellow)]"
-    >
+    <section className="relative py-20 bg-gradient-to-r from-gray-900 via-gray-800 to-black text-white overflow-hidden">
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid-pattern.png')] opacity-10 bg-cover"></div>
@@ -54,18 +51,18 @@ function CTASection() {
             href="#services"
             whileHover={{ scale: 1.05, y: -3 }}
             whileTap={{ scale: 0.98 }}
-            className="bg-gray-900 hover:bg-gray-800 text-white font-bold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+            className="bg-[var(--primary-yellow)] hover:bg-[var(--secondary-yellow)] text-gray-900 font-bold py-4 px-8 rounded-full text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
-            Get Started Now <Zap className="w-5 h-5" />
+            Get Free Strategy Session <Zap className="w-5 h-5" />
           </motion.a>
 
           <motion.a
             href="#about"
             whileHover={{ scale: 1.05, y: -3 }}
             whileTap={{ scale: 0.98 }}
-            className="bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold px-8 py-4 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
+            className="border-2 border-[var(--primary-yellow)] text-[var(--primary-yellow)] hover:bg-[var(--primary-yellow)] hover:text-gray-900 font-bold py-4 px-8 rounded-full text-lg transition-all duration-300"
           >
-            Learn More <ArrowRight className="w-5 h-5" />
+            View Case Studies <ArrowRight className="w-5 h-5" />
           </motion.a>
         </div>
 
