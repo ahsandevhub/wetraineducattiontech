@@ -1,130 +1,143 @@
+// components/Packages.tsx
 "use client";
+
 import { motion } from "framer-motion";
 import { CheckCircle, Star } from "lucide-react";
+import Link from "next/link";
 
-export default function ChallengePackages() {
-  const packages = [
-    {
-      title: "Digital Starter",
-      price: "Starting at $2,999/month",
-      duration: "3-month minimum",
-      description:
-        "Perfect for small businesses looking to establish their digital presence and grow their online audience.",
-      features: [
-        "Social Media Management",
-        "Content Creation & Strategy",
-        "Basic SEO Optimization",
-        "Monthly Performance Reports",
-        "Email Marketing Setup",
-        "Google Ads Management (up to $5k spend)",
-      ],
-      popular: false,
-      gradient: "from-blue-500 to-cyan-600",
-      support: "Business Hours",
-    },
-    {
-      title: "Growth Accelerator",
-      price: "Starting at $5,999/month",
-      duration: "6-month minimum",
-      description:
-        "Comprehensive marketing solution for businesses ready to scale and dominate their market.",
-      features: [
-        "Everything in Digital Starter",
-        "Advanced SEO & Content Marketing",
-        "Conversion Rate Optimization",
-        "Marketing Automation",
-        "Influencer Partnership Management",
-        "Video Content Production",
-        "Advanced Analytics & Insights",
-      ],
-      popular: true,
-      gradient: "from-purple-500 to-pink-600",
-      support: "Priority Support",
-    },
-    {
-      title: "Enterprise Elite",
-      price: "Custom Pricing",
-      duration: "12-month partnership",
-      description:
-        "Full-service marketing partnership for established companies seeking market leadership.",
-      features: [
-        "Everything in Growth Accelerator",
-        "Dedicated Account Team",
-        "Custom Marketing Technology Stack",
-        "Brand Strategy & Positioning",
-        "Public Relations & Media Outreach",
-        "Trade Show & Event Marketing",
-        "Executive Thought Leadership",
-        "24/7 Priority Support",
-      ],
-      popular: false,
-      gradient: "from-indigo-500 to-purple-600",
-      support: "24/7 Dedicated Support",
-    },
-  ];
+interface Package {
+  name: string;
+  price: string;
+  priceNote?: string;
+  description: string;
+  features: string[];
+  popular: boolean;
+  ctaHref: string;
+  ctaLabel: string;
+}
 
+const packages: Package[] = [
+  {
+    name: "Starter",
+    price: "$999",
+    priceNote: "one-time setup",
+    description:
+      "Perfect for new brands: positioning, essential creatives, and a launch-ready playbook.",
+    features: [
+      "Brand audit & positioning workshop",
+      "Creative starter kit (ads + social)",
+      "1 channel launch plan (e.g., Meta)",
+      "Tracking & pixel setup",
+      "Monthly report & roadmap",
+    ],
+    popular: false,
+    ctaHref: "#contact",
+    ctaLabel: "Choose Starter",
+  },
+  {
+    name: "Growth",
+    price: "$1,999",
+    priceNote: "per month",
+    description:
+      "Scale with performance: full-funnel campaigns, weekly experiments, and clear KPIs.",
+    features: [
+      "Cross-channel strategy (Meta/Google/TikTok)",
+      "Creative testing framework (UGC & statics)",
+      "Landing page recommendations",
+      "Weekly sprints & reporting dashboard",
+      "Quarterly growth review",
+    ],
+    popular: true,
+    ctaHref: "#contact",
+    ctaLabel: "Start Growth Plan",
+  },
+  {
+    name: "Scale",
+    price: "Custom",
+    priceNote: "talk to sales",
+    description:
+      "For high-velocity teams: multi-market orchestration, advanced analytics, and SLAs.",
+    features: [
+      "Multi-market & localization playbooks",
+      "Dedicated strategist + creative pod",
+      "Marketing mix modeling (MMM-light)",
+      "Advanced GA4/Server-side tracking",
+      "Prioritized roadmap & SLAs",
+    ],
+    popular: false,
+    ctaHref: "#contact",
+    ctaLabel: "Get a Proposal",
+  },
+];
+
+export default function Packages() {
   return (
     <section
-      id="packages"
-      className="relative py-20 bg-white overflow-hidden border-b-2 border-yellow-200/50 font-[Baloo Da 2]"
+      id="pricing"
+      className="relative overflow-hidden border-b-2 border-yellow-200/50 bg-[var(--tertiary-yellow)] py-24"
+      aria-labelledby="pricing-heading"
     >
-      <div className="absolute inset-0 overflow-hidden -z-10">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/wireframe.png')] opacity-10"></div>
-        <div className="absolute top-1/4 -left-20 w-80 h-80 rounded-full bg-[var(--primary-yellow)] blur-[100px] opacity-10"></div>
-        <div className="absolute bottom-1/3 -right-20 w-80 h-80 rounded-full bg-[var(--secondary-yellow)] blur-[100px] opacity-10"></div>
+      {/* Background accents */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-0 top-0 h-full w-full bg-[url('/wireframe.png')] opacity-10" />
+        <div className="absolute -left-20 top-1/4 h-80 w-80 rounded-full bg-[var(--primary-yellow)] opacity-10 blur-[100px]" />
+        <div className="absolute -right-20 bottom-1/3 h-80 w-80 rounded-full bg-[var(--secondary-yellow)] opacity-10 blur-[100px]" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="mb-16 text-center"
         >
-          <span className="inline-block bg-[var(--primary-yellow)]/10 text-[var(--primary-yellow)] px-4 py-2 rounded-full text-sm font-medium mb-4">
-            Service Packages
+          <span className="mb-4 inline-block rounded-full bg-[var(--primary-yellow)]/10 px-4 py-2 text-sm font-medium text-[var(--primary-yellow)]">
+            Pricing & Plans
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Choose Your{" "}
-            <span className="text-[var(--primary-yellow)]">
-              Marketing Journey
-            </span>
+          <h2
+            id="pricing-heading"
+            className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl"
+          >
+            Choose your{" "}
+            <span className="text-[var(--primary-yellow)]">growth path</span>
           </h2>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Transparent pricing and comprehensive solutions tailored to your
-            business needs
+          <p className="mx-auto max-w-2xl text-lg text-gray-600">
+            Transparent plans designed for outcomes—not vanity metrics. Upgrade
+            or customize anytime.
           </p>
         </motion.div>
 
         {/* Package Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
+        <div className="mb-20 grid grid-cols-1 gap-8 lg:grid-cols-3">
           {packages.map((pkg, index) => (
             <motion.div
-              key={index}
+              key={pkg.name}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true, margin: "-50px" }}
               whileHover={{ y: -10 }}
-              className={`relative rounded-xl border ${
+              className={`relative rounded-xl border bg-white transition-all ${
                 pkg.popular
                   ? "border-[var(--primary-yellow)] shadow-lg"
                   : "border-gray-200 shadow-md"
-              } bg-white transition-all`}
+              }`}
             >
               {pkg.popular && (
-                <div className="absolute top-0 left-1/2 bg-[var(--primary-yellow)] text-white px-4 py-1 font-bold text-sm transform -translate-x-1/2 -translate-y-3 rounded-full flex items-center">
-                  <Star className="w-4 h-4 mr-1 fill-white" />
-                  Most Popular
+                <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-3 transform rounded-full bg-[var(--primary-yellow)] px-4 py-1 text-sm font-bold text-white">
+                  <span className="inline-flex items-center">
+                    <Star className="mr-1 h-4 w-4 fill-white" />
+                    Most Popular
+                  </span>
                 </div>
               )}
 
-              <div className="p-8 h-full flex flex-col">
+              <div className="flex h-full flex-col p-8">
                 <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {pkg.title}
+                  <h3 className="mb-2 text-2xl font-bold text-gray-900">
+                    {pkg.name}
                   </h3>
                   <p className="text-gray-600">{pkg.description}</p>
                 </div>
@@ -132,38 +145,35 @@ export default function ChallengePackages() {
                 <div className="mb-6">
                   <span className="text-4xl font-bold text-[var(--primary-yellow)]">
                     {pkg.price}
-                  </span>
-                  <span className="text-gray-500">/{pkg.duration}</span>
+                  </span>{" "}
+                  {pkg.priceNote && (
+                    <span className="text-gray-500">/ {pkg.priceNote}</span>
+                  )}
                 </div>
 
-                <ul className="space-y-3 mb-8 flex-grow">
-                  {pkg.features.map((feature, i) => (
-                    <li key={i} className="flex items-start">
-                      <CheckCircle className="w-5 h-5 text-[var(--primary-yellow)] mt-0.5 mr-2 flex-shrink-0" />
+                <ul className="mb-8 flex-grow space-y-3">
+                  {pkg.features.map((feature) => (
+                    <li key={feature} className="flex items-start">
+                      <CheckCircle className="mr-2 mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--primary-yellow)]" />
                       <span className="text-gray-700">{feature}</span>
                     </li>
                   ))}
                 </ul>
 
-                <div className="mb-6">
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>Support Level:</span>
-                    <span className="font-semibold">{pkg.support}</span>
-                  </div>
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`w-full cursor-pointer py-3 rounded-lg font-bold mt-auto ${
-                    pkg.popular
-                      ? "bg-[var(--primary-yellow)] hover:bg-[var(--secondary-yellow)] text-white"
-                      : "bg-gray-900 hover:bg-gray-800 text-white"
-                  } transition-colors`}
-                  onClick={() => (window.location.href = "#contact")}
-                >
-                  Get Started
-                </motion.button>
+                <Link href={pkg.ctaHref}>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`w-full cursor-pointer rounded-lg py-3 font-bold transition-colors ${
+                      pkg.popular
+                        ? "bg-[var(--primary-yellow)] text-white hover:bg-[var(--secondary-yellow)]"
+                        : "bg-gray-900 text-white hover:bg-gray-800"
+                    }`}
+                    aria-label={pkg.ctaLabel}
+                  >
+                    {pkg.ctaLabel}
+                  </motion.button>
+                </Link>
               </div>
             </motion.div>
           ))}
