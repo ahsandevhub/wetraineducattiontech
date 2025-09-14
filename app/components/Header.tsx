@@ -13,13 +13,11 @@ export default function Header() {
 
   // SPA-friendly section anchors
   const navItems = [
-    { id: 1, name: "Home", href: "#home" },
+    { id: 1, name: "Home", href: "/" },
     { id: 2, name: "Services", href: "#services" },
-    { id: 3, name: "Work", href: "#work" },
     { id: 4, name: "Pricing", href: "#pricing" },
-    { id: 5, name: "About", href: "#about" },
-    { id: 6, name: "FAQ", href: "#faq" },
-    { id: 7, name: "Contact", href: "#contact" },
+    { id: 6, name: "Terms and Conditions", href: "/terms" },
+    { id: 7, name: "Refund Policy", href: "/refund" },
   ];
 
   return (

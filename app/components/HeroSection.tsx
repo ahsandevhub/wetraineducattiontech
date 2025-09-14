@@ -40,9 +40,7 @@ export default function HeroSection() {
             >
               Global Marketing,
               <br />
-              <span className="bg-white/70 px-2 py-1 rounded-md">
-                Real Business Growth
-              </span>
+              Real Business <br /> Growth
             </motion.h1>
 
             <motion.p

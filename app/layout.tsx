@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import DisclaimerBanner from "./components/DisclaimerBanner";
 import Footer from "./components/Footer";
 import Header from "./components/Header";
+import TranslateButton from "./components/TranslateButton";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -68,6 +69,7 @@ export default function RootLayout({
 
         {/* Footer */}
         <Footer />
+        <TranslateButton />
       </body>
     </html>
   );

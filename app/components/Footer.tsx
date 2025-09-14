@@ -13,9 +13,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useContactInfo } from "../utils/contactInfo";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { contactPhone, supportEmail } = useContactInfo();
 
   const quickLinks = [
     { name: "About", href: "#about" },
@@ -28,8 +30,8 @@ export default function Footer() {
   ];
 
   const contactInfo = [
-    { icon: Mail, text: "support@wetraineducation.com" }, // update if you have a marketing domain
-    { icon: Phone, text: "+880 1887-864760" }, // optional: replace with global number
+    { icon: Mail, text: supportEmail },
+    { icon: Phone, text: contactPhone },
     { icon: MapPin, text: "Global presence — serving clients worldwide" },
   ];
 
