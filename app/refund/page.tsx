@@ -1,12 +1,17 @@
 "use client";
 import { motion } from "framer-motion";
 
-import ShowBengaliButton from "../components/ShowBengaliButton";
+// Removed ShowBengaliButton import
 import { useContactInfo } from "../utils/contactInfo";
 
 export default function RefundPage() {
   const { contactPhone, supportEmail } = useContactInfo();
 
+  // Determine if domain matches for Bengali content
+  const isBengaliDomain =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "www.wetraineducation.com" ||
+      window.location.hostname === "localhost");
   return (
     <>
       {/* Hero-style Header */}
@@ -20,7 +25,6 @@ export default function RefundPage() {
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Refund Policy
           </h1>
-          <ShowBengaliButton />
           <p className="text-lg text-gray-700">
             Generic refund policy for our marketing services and digital
             deliverables.
@@ -36,12 +40,56 @@ export default function RefundPage() {
           transition={{ duration: 0.6 }}
           className="text-gray-700 leading-7 space-y-6"
         >
+          {isBengaliDomain && (
+            <div className="text-gray-700 leading-7 mb-10 border border-yellow-300 rounded-lg p-6 bg-yellow-50">
+              <h2 className="text-2xl font-bold mb-4">রিফান্ড নীতিমালা</h2>
+              <p className="mb-4">
+                আমরা উচ্চ-মানের মার্কেটিং সেবা ও কনটেন্ট প্রদানে
+                প্রতিশ্রুতিবদ্ধ। আপনি যদি সন্তুষ্ট না হন, তাহলে নিচের রিফান্ড
+                নীতিমালা দেখুন।
+              </p>
+              <div className="mb-3 font-bold">১. রিফান্ডের সুযোগ</div>
+              <p className="mb-4">
+                পরিষেবা, ওয়ার্কশপ, রিটেইনার ও ডিজিটাল ডেলিভারেবলের ফি সাধারণত
+                ফেরতযোগ্য নয় যদি কাজ শুরু হয়ে যায় বা অ্যাক্সেস/অ্যাসেট
+                ডেলিভারি হয়ে যায়। কোনো ডেলিভারেবল ব্যবহারের মাধ্যমে আপনি
+                স্বীকার করছেন যে রিফান্ড সীমিত।
+              </p>
+              <div className="mb-3 font-bold">২. ব্যতিক্রম ও বিবেচনা</div>
+              <p className="mb-4">
+                ডুপ্লিকেট চার্জ, পেমেন্ট ত্রুটি বা স্পষ্টতই ত্রুটিপূর্ণ ডিজিটাল
+                ফাইলের জন্য রিফান্ড বিবেচনা করা হতে পারে। অনুরোধের সাথে
+                পেমেন্টের প্রমাণ দিতে হবে এবং লেনদেনের ৭ কর্মদিবসের মধ্যে জমা
+                দিতে হবে।
+              </p>
+              <div className="mb-3 font-bold">
+                ৩. রিফান্ডের অনুরোধ কিভাবে করবেন
+              </div>
+              <p className="mb-4">
+                রসিদ, নাম, ইমেইল, ফোন নম্বর, লেনদেন আইডি ও সংক্ষিপ্ত কারণসহ{" "}
+                {supportEmail} এ ইমেইল করুন। আমরা ১০ কর্মদিবসের মধ্যে পর্যালোচনা
+                ও উত্তর দেব।
+              </p>
+              <div className="mb-3 font-bold">৪. অনুমোদনের পর</div>
+              <p className="mb-4">
+                অনুমোদিত রিফান্ড কেবলমাত্র মূল পেমেন্ট পদ্ধতিতে প্রদান করা হবে।
+                আপনার ব্যাংক বা প্রদানকারীর উপর নির্ভর করে প্রসেসিং টাইম ৫-১০
+                কর্মদিবস লাগতে পারে।
+              </p>
+              <div className="mb-3 font-bold">৫. যোগাযোগ ও সহায়তা</div>
+              <p>
+                এই নীতিমালা সম্পর্কে প্রশ্ন থাকলে যোগাযোগ করুন: <br />
+                {supportEmail} <br />
+                {contactPhone}
+              </p>
+            </div>
+          )}
+          {/* English version always shown */}
           <p>
             We aim to deliver high-quality marketing services and content. The
             following refund terms apply to payments made for our services and
             digital products.
           </p>
-
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               1. Scope of Refunds
@@ -53,7 +101,6 @@ export default function RefundPage() {
               acknowledge that refunds are limited.
             </p>
           </div>
-
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               2. Exceptions and Considerations
@@ -65,18 +112,16 @@ export default function RefundPage() {
               transaction.
             </p>
           </div>
-
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               3. How to Request a Refund
             </h2>
             <p>
-              Email support@example.com with your receipt, name, email, phone
-              number, transaction ID, and a brief reason. We will review and
-              respond within 10 business days.
+              Email {supportEmail} with your receipt, name, email, phone number,
+              transaction ID, and a brief reason. We will review and respond
+              within 10 business days.
             </p>
           </div>
-
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               4. After Approval
@@ -87,7 +132,6 @@ export default function RefundPage() {
               business days after we initiate the refund.
             </p>
           </div>
-
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               5. Contact and Support
