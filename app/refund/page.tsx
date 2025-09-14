@@ -1,8 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
 
-
-
 import ShowBengaliButton from "../components/ShowBengaliButton";
 import { useContactInfo } from "../utils/contactInfo";
 
