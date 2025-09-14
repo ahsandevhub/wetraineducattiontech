@@ -1,6 +1,8 @@
 // app/components/ShowBengaliButton.tsx
 "use client";
+
 import { useEffect, useState } from "react";
+import translate from "translate";
 
 export default function ShowBengaliButton() {
   const [show, setShow] = useState(false);
@@ -16,9 +18,30 @@ export default function ShowBengaliButton() {
     }
   }, []);
 
-  const handleTranslate = () => {
+  // Helper to recursively translate all text nodes in the DOM
+  const translateAllTextNodes = async (root: Node) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let node: Text | null;
+    const promises = [];
+    while ((node = walker.nextNode() as Text | null)) {
+      const text = node.nodeValue?.trim();
+      if (text && text.length > 1 && /[a-zA-Z]/.test(text)) {
+        // Only translate if not already Bengali and not whitespace
+        promises.push(
+          translate(text, { to: "bn" })
+            .then((bn) => {
+              if (node) node.nodeValue = bn;
+            })
+            .catch(() => {})
+        );
+      }
+    }
+    await Promise.all(promises);
+  };
+
+  const handleTranslate = async () => {
     document.documentElement.setAttribute("lang", "bn");
-    window.location.reload();
+    await translateAllTextNodes(document.body);
   };
 
   if (!show) return null;
