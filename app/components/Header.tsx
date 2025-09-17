@@ -15,8 +15,8 @@ export default function Header() {
   const navItems = [
     { id: 1, name: "Home", href: "/" },
     { id: 2, name: "About", href: "/about" },
-    { id: 3, name: "Services", href: "#services" },
-    { id: 4, name: "Pricing", href: "#pricing" },
+    { id: 3, name: "Services", href: "/#services" },
+    { id: 4, name: "Pricing", href: "/#pricing" },
     { id: 5, name: "Terms and Conditions", href: "/terms" },
     { id: 6, name: "Refund Policy", href: "/refund" },
   ];

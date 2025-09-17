@@ -6,7 +6,7 @@ import { useState } from "react";
 const packages = [
   {
     name: "Starter",
-    price: "$999",
+    price: "৳4,999",
     priceNote: "one-time setup",
     description:
       "Perfect for new brands: positioning, essential creatives, and a launch-ready playbook.",
@@ -20,7 +20,7 @@ const packages = [
   },
   {
     name: "Growth",
-    price: "$1,999",
+    price: "৳12,999",
     priceNote: "per month",
     description:
       "Scale with performance: full-funnel campaigns, weekly experiments, and clear KPIs.",

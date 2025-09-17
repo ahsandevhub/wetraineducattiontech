@@ -2,7 +2,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Mail, MapPin, Phone } from "lucide-react";
+import {
+  Facebook,
+  Instagram,
+  Linkedin,
+  Mail,
+  MapPin,
+  Phone,
+  Youtube,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -24,13 +32,18 @@ export default function Footer() {
   const contactInfo = [
     { icon: Mail, text: supportEmail },
     { icon: Phone, text: contactPhone },
-    { icon: MapPin, text: "30 N GOULD ST STE 43673 SHERIDAN, WY, 82801, USA" },
+    {
+      icon: MapPin,
+      text: "Usha-Tara Kunju, 1 no. C&B Pole, C&B Road, Barishal Sadar, Barishal",
+    },
   ];
 
-  // const socialLinks = [
-  //   { icon: Facebook, href: "#" },
-  //   { icon: Instagram, href: "#" },
-  // ];
+  const socialLinks = [
+    { icon: Facebook, href: "#" },
+    { icon: Instagram, href: "#" },
+    { icon: Linkedin, href: "#" },
+    { icon: Youtube, href: "#" },
+  ];
 
   const [newsletterStatus, setNewsletterStatus] = useState<string>("");
   const [newsletterLoading, setNewsletterLoading] = useState<boolean>(false);
@@ -90,7 +103,7 @@ export default function Footer() {
             strategy, creative campaigns, and growth solutions for businesses
             worldwide.
           </p>
-          {/* <div className="flex gap-4">
+          <div className="flex gap-4">
             {socialLinks.map((s, i) => (
               <motion.a
                 key={i}
@@ -102,7 +115,7 @@ export default function Footer() {
                 <s.icon className="h-5 w-5" />
               </motion.a>
             ))}
-          </div> */}
+          </div>
         </div>
 
         {/* Links */}
@@ -148,17 +161,16 @@ export default function Footer() {
             <h3 className="mb-4 text-lg font-bold text-white">
               Payment Partners
             </h3>
-            <div className="flex gap-4 items-center">
-              <Image
-                src="/stripe.png"
-                alt="Stripe"
-                width={80}
-                height={32}
-                className="h-8 w-auto"
-              />
-              {/* Add more payment logos as needed */}
-              {/* <Image src="/paypal.svg" alt="PayPal" width={80} height={32} className="h-8 w-auto" /> */}
-              {/* <Image src="/visa.svg" alt="Visa" width={60} height={32} className="h-8 w-auto" /> */}
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="bg-pink-600 text-white px-3 py-1 rounded text-sm font-bold">
+                bKash
+              </div>
+              <div className="bg-orange-500 text-white px-3 py-1 rounded text-sm font-bold">
+                Nagad
+              </div>
+              <div className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-bold">
+                Bank Transfer
+              </div>
             </div>
           </div>
         </div>
@@ -176,7 +188,7 @@ export default function Footer() {
               name="newsletterEmail"
               required
               placeholder="Your email"
-              className="w-full rounded-l-lg bg-slate-50 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-700"
+              className="w-full rounded-l-lg bg-slate-50 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               aria-label="Email address"
             />
             <motion.button
@@ -184,7 +196,7 @@ export default function Footer() {
               whileTap={{ scale: 0.97 }}
               type="submit"
               disabled={newsletterLoading}
-              className="rounded-r-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100"
+              className="rounded-r-lg bg-yellow-400 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-yellow-500"
               aria-label="Subscribe to newsletter"
             >
               {newsletterLoading ? "Subscribing..." : "Subscribe"}
