@@ -48,7 +48,10 @@ const packages = [
   },
 ];
 
-export default function CheckoutPage() {
+
+import { Suspense } from "react";
+
+function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -241,5 +244,13 @@ export default function CheckoutPage() {
         </motion.div>
       </section>
     </>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CheckoutPageContent />
+    </Suspense>
   );
 }
