@@ -71,7 +71,7 @@ export default function HeroSection() {
               </motion.a>
 
               <motion.a
-                href="#about"
+                href="#how-we-work"
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.98 }}
                 className="flex items-center justify-center gap-2 rounded-xl border border-yellow-400 bg-white px-8 py-4 font-bold text-gray-800 transition-all hover:bg-gray-50 hover:shadow-lg"

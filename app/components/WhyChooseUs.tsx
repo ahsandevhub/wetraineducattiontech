@@ -154,7 +154,7 @@ export default function WhyChooseUs() {
           className="mt-20 text-center"
         >
           <a
-            href="#contact"
+            href="#proposal"
             className="rounded-xl bg-[var(--primary-yellow)] px-8 py-4 text-lg font-bold text-gray-900 shadow-lg transition-all hover:bg-[var(--secondary-yellow)] hover:shadow-xl"
             aria-label="Get a proposal"
           >

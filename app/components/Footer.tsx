@@ -2,17 +2,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  Facebook,
-  Instagram,
-  Linkedin,
-  Mail,
-  MapPin,
-  Phone,
-  Twitter,
-} from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { useContactInfo } from "../utils/contactInfo";
 
 export default function Footer() {
@@ -20,31 +13,58 @@ export default function Footer() {
   const { contactPhone, supportEmail } = useContactInfo();
 
   const quickLinks = [
-    { name: "About", href: "#about" },
+    { name: "About", href: "/about" },
     { name: "Services", href: "#services" },
-    { name: "Work", href: "#work" },
     { name: "Pricing", href: "#pricing" },
-    { name: "FAQ", href: "#faq" },
     { name: "Terms of Use", href: "/terms" },
-    { name: "Affiliate", href: "/affiliate" },
+    { name: "Privacy Policy", href: "/privacy" },
+    { name: "Refund Policy", href: "/refund" },
   ];
 
   const contactInfo = [
     { icon: Mail, text: supportEmail },
     { icon: Phone, text: contactPhone },
-    { icon: MapPin, text: "Global presence — serving clients worldwide" },
+    { icon: MapPin, text: "30 N GOULD ST STE 43673 SHERIDAN, WY, 82801, USA" },
   ];
 
-  const socialLinks = [
-    { icon: Twitter, href: "#" },
-    { icon: Facebook, href: "#" },
-    { icon: Instagram, href: "#" },
-    { icon: Linkedin, href: "#" },
-  ];
+  // const socialLinks = [
+  //   { icon: Facebook, href: "#" },
+  //   { icon: Instagram, href: "#" },
+  // ];
 
-  const handleSubscribe = (e: React.FormEvent<HTMLFormElement>) => {
+  const [newsletterStatus, setNewsletterStatus] = useState<string>("");
+  const [newsletterLoading, setNewsletterLoading] = useState<boolean>(false);
+
+  const handleSubscribe = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // TODO: Hook up to your newsletter provider (e.g., ConvertKit, Mailchimp, Brevo)
+    setNewsletterStatus("");
+    setNewsletterLoading(true);
+    const form = e.currentTarget;
+    const email = (
+      form.elements.namedItem("newsletterEmail") as HTMLInputElement
+    )?.value;
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNewsletterStatus(
+          "Thank you for subscribing! Please check your email for confirmation."
+        );
+        form.reset();
+      } else {
+        setNewsletterStatus(
+          data.error || "Subscription failed. Please try again."
+        );
+      }
+    } catch {
+      setNewsletterStatus("Subscription failed. Please try again.");
+    } finally {
+      setNewsletterLoading(false);
+    }
   };
 
   return (
@@ -70,7 +90,7 @@ export default function Footer() {
             strategy, creative campaigns, and growth solutions for businesses
             worldwide.
           </p>
-          <div className="flex gap-4">
+          {/* <div className="flex gap-4">
             {socialLinks.map((s, i) => (
               <motion.a
                 key={i}
@@ -82,7 +102,7 @@ export default function Footer() {
                 <s.icon className="h-5 w-5" />
               </motion.a>
             ))}
-          </div>
+          </div> */}
         </div>
 
         {/* Links */}
@@ -122,6 +142,25 @@ export default function Footer() {
               </li>
             ))}
           </ul>
+
+          {/* Payment Partners */}
+          <div className="mt-8">
+            <h3 className="mb-4 text-lg font-bold text-white">
+              Payment Partners
+            </h3>
+            <div className="flex gap-4 items-center">
+              <Image
+                src="/stripe.png"
+                alt="Stripe"
+                width={80}
+                height={32}
+                className="h-8 w-auto"
+              />
+              {/* Add more payment logos as needed */}
+              {/* <Image src="/paypal.svg" alt="PayPal" width={80} height={32} className="h-8 w-auto" /> */}
+              {/* <Image src="/visa.svg" alt="Visa" width={60} height={32} className="h-8 w-auto" /> */}
+            </div>
+          </div>
         </div>
 
         {/* Newsletter */}
@@ -134,6 +173,7 @@ export default function Footer() {
           <form onSubmit={handleSubscribe} className="flex">
             <input
               type="email"
+              name="newsletterEmail"
               required
               placeholder="Your email"
               className="w-full rounded-l-lg bg-slate-50 px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-700"
@@ -143,22 +183,34 @@ export default function Footer() {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               type="submit"
+              disabled={newsletterLoading}
               className="rounded-r-lg bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100"
               aria-label="Subscribe to newsletter"
             >
-              Subscribe
+              {newsletterLoading ? "Subscribing..." : "Subscribe"}
             </motion.button>
           </form>
+          {newsletterStatus && (
+            <p
+              className={`mt-2 text-sm ${
+                newsletterStatus.startsWith("Thank")
+                  ? "text-green-400"
+                  : "text-red-400"
+              }`}
+            >
+              {newsletterStatus}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Bottom bar */}
       <div className="border-t border-gray-800 py-6">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between px-4 sm:px-6 md:flex-row lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-4 sm:px-6 md:flex-row lg:px-8">
           <p className="text-sm">
             &copy; {currentYear} WeTrain Marketing. All rights reserved.
           </p>
-          <p className="mt-2 text-sm md:mt-0">
+          {/* <p className="mt-2 text-sm md:mt-0">
             Built by{" "}
             <motion.a
               href="https://ahsandevhub.com"
@@ -169,7 +221,7 @@ export default function Footer() {
             >
               Ahsan DevHub
             </motion.a>
-          </p>
+          </p> */}
         </div>
       </div>
     </footer>

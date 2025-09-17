@@ -14,10 +14,11 @@ export default function Header() {
   // SPA-friendly section anchors
   const navItems = [
     { id: 1, name: "Home", href: "/" },
-    { id: 2, name: "Services", href: "#services" },
+    { id: 2, name: "About", href: "/about" },
+    { id: 3, name: "Services", href: "#services" },
     { id: 4, name: "Pricing", href: "#pricing" },
-    { id: 6, name: "Terms and Conditions", href: "/terms" },
-    { id: 7, name: "Refund Policy", href: "/refund" },
+    { id: 5, name: "Terms and Conditions", href: "/terms" },
+    { id: 6, name: "Refund Policy", href: "/refund" },
   ];
 
   return (
@@ -79,7 +80,7 @@ export default function Header() {
             className="ml-2"
           >
             <Link
-              href="#contact"
+              href="#proposal"
               className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-900"
               aria-label="Get a proposal"
             >
@@ -124,7 +125,7 @@ export default function Header() {
               </Link>
             ))}
             <Link
-              href="#contact"
+              href="#proposal"
               className="mt-2 block rounded-lg bg-gray-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-gray-800"
               onClick={() => setMobileOpen(false)}
             >

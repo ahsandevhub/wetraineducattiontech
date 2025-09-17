@@ -3,6 +3,7 @@ import ChallengeFlow from "./components/ChallengeFlow";
 import ChallengePackages from "./components/ChallengePackages";
 import CTASection from "./components/CTASection";
 import HeroSection from "./components/HeroSection";
+import Proposal from "./components/Proposal";
 import Testimonials from "./components/Testimonials";
 import WhyChooseUs from "./components/WhyChooseUs";
 
@@ -15,6 +16,7 @@ export default function HomePage() {
       <ChallengePackages />
       <Testimonials />
       <CTASection />
+      <Proposal />
     </div>
   );
 }

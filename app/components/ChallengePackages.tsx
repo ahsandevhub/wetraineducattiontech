@@ -65,7 +65,7 @@ const packages: Package[] = [
       "Prioritized roadmap & SLAs",
     ],
     popular: false,
-    ctaHref: "#contact",
+    ctaHref: "#proposal",
     ctaLabel: "Get a Proposal",
   },
 ];
@@ -160,20 +160,42 @@ export default function Packages() {
                   ))}
                 </ul>
 
-                <Link href={pkg.ctaHref}>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`w-full cursor-pointer rounded-lg py-3 font-bold transition-colors ${
-                      pkg.popular
-                        ? "bg-[var(--primary-yellow)] text-white hover:bg-[var(--secondary-yellow)]"
-                        : "bg-gray-900 text-white hover:bg-gray-800"
-                    }`}
-                    aria-label={pkg.ctaLabel}
+                {pkg.name === "Scale" ? (
+                  <a href="#proposal">
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full cursor-pointer rounded-lg py-3 font-bold transition-colors ${
+                        pkg.popular
+                          ? "bg-[var(--primary-yellow)] text-white hover:bg-[var(--secondary-yellow)]"
+                          : "bg-gray-900 text-white hover:bg-gray-800"
+                      }`}
+                      aria-label={pkg.ctaLabel}
+                    >
+                      {pkg.ctaLabel}
+                    </motion.button>
+                  </a>
+                ) : (
+                  <Link
+                    href={`/checkout?name=${encodeURIComponent(
+                      pkg.name
+                    )}&price=${encodeURIComponent(pkg.price)}`}
+                    passHref
                   >
-                    {pkg.ctaLabel}
-                  </motion.button>
-                </Link>
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`w-full cursor-pointer rounded-lg py-3 font-bold transition-colors ${
+                        pkg.popular
+                          ? "bg-[var(--primary-yellow)] text-white hover:bg-[var(--secondary-yellow)]"
+                          : "bg-gray-900 text-white hover:bg-gray-800"
+                      }`}
+                      aria-label={pkg.ctaLabel}
+                    >
+                      {pkg.ctaLabel}
+                    </motion.button>
+                  </Link>
+                )}
               </div>
             </motion.div>
           ))}

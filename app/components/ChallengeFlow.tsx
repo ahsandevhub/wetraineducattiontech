@@ -47,7 +47,10 @@ export default function ChallengeFlow() {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-gray-50 to-yellow-50">
+    <section
+      id="how-we-work"
+      className="py-20 bg-gradient-to-br from-gray-50 to-yellow-50"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
@@ -104,24 +107,6 @@ export default function ChallengeFlow() {
             ))}
           </div>
         </div>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          viewport={{ once: true }}
-          className="mt-20 text-center"
-        >
-          <motion.a
-            href="#contact"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-[var(--primary-yellow)] text-gray-900 px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all hover:bg-[var(--secondary-yellow)]"
-          >
-            Start Your Project Today
-          </motion.a>
-        </motion.div>
       </div>
     </section>
   );
