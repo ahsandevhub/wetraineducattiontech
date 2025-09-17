@@ -218,12 +218,12 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-gray-800 py-6">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-center px-4 sm:px-6 md:flex-row lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between px-4 sm:px-6 md:flex-row lg:px-8">
           <p className="text-sm">
             &copy; {currentYear} WeTrain Marketing. All rights reserved.
           </p>
-          {/* <p className="mt-2 text-sm md:mt-0">
-            Built by{" "}
+          <p className="mt-2 text-sm md:mt-0">
+            Developed by{" "}
             <motion.a
               href="https://ahsandevhub.com"
               target="_blank"
@@ -231,9 +231,9 @@ export default function Footer() {
               whileHover={{ color: "#ffffff" }}
               className="underline decoration-gray-600 underline-offset-4 hover:decoration-white"
             >
-              Ahsan DevHub
+              Ahsan Habib
             </motion.a>
-          </p> */}
+          </p>
         </div>
       </div>
     </footer>
