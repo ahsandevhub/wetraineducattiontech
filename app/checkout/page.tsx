@@ -48,7 +48,6 @@ const packages = [
   },
 ];
 
-
 import { Suspense } from "react";
 
 function CheckoutPageContent() {
