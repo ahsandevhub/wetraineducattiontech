@@ -24,9 +24,9 @@ export default function HeroSection() {
         <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-yellow-400 opacity-10 blur-3xl" />
       </div>
 
-      <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-4 py-10 sm:px-6 md:py-28 lg:px-8">
-        <div className="grid grid-cols-1 items-center gap-12 text-center md:text-left lg:grid-cols-2">
-          {/* Left: Copy */}
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-80px)] max-w-7xl items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
+        <div className="w-full max-w-4xl text-center">
+          {/* Content */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -45,7 +45,7 @@ export default function HeroSection() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="mb-8 max-w-2xl text-lg text-gray-700 md:text-xl"
+              className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-gray-700 md:text-xl"
             >
               From professional courses to enterprise software, marketing
               automation to messaging services—WeTrainEducation & Tech delivers
@@ -57,7 +57,7 @@ export default function HeroSection() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.6, duration: 0.6 }}
-              className="mb-10 flex flex-wrap justify-center gap-4 md:justify-start"
+              className="flex flex-wrap justify-center gap-4"
             >
               <motion.a
                 href="#services"
@@ -85,90 +85,40 @@ export default function HeroSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.6 }}
-              className="grid max-w-md grid-cols-2 gap-4"
+              className="mx-auto mt-12 max-w-4xl"
             >
-              {[
-                "Professional Courses",
-                "Enterprise Software",
-                "Marketing Automation",
-                "24/7 Support",
-              ].map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 rounded-lg bg-white/80 p-3 backdrop-blur-sm"
-                >
-                  <div className="rounded-full bg-yellow-400 p-2">
-                    <svg
-                      className="h-5 w-5 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:gap-6">
+                {[
+                  "Professional Courses",
+                  "Enterprise Software",
+                  "Marketing Automation",
+                  "24/7 Support",
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center gap-2 rounded-lg bg-white/80 p-4 backdrop-blur-sm"
+                  >
+                    <div className="rounded-full bg-yellow-400 p-2">
+                      <svg
+                        className="h-5 w-5 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <span className="font-medium text-gray-800 text-sm text-center">
+                      {item}
+                    </span>
                   </div>
-                  <span className="font-medium text-gray-800">{item}</span>
-                </div>
-              ))}
+                ))}
+              </div>
             </motion.div>
-          </motion.div>
-
-          {/* Right: Video / Case Study Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="space-y-6"
-          >
-            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl">
-              <div className="relative aspect-video">
-                <iframe
-                  className="h-full w-full"
-                  // Replace with your brand reel or case study video
-                  src="https://www.youtube.com/embed/NKRq927M3no"
-                  title="WeTrain Marketing — Brand Reel"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </div>
-              <div className="bg-white p-6">
-                <h3 className="mb-3 text-xl font-bold text-gray-900">
-                  Why WeTrainEducation & Tech?
-                </h3>
-                <p className="mb-4 text-gray-600">
-                  In two minutes, see how our strategy, creative, and
-                  performance teams partner to drive measurable growth.
-                </p>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li>✔ Full-funnel strategy & execution</li>
-                  <li>✔ Creative built for performance</li>
-                  <li>✔ Clear KPIs and transparent reporting</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 text-center">
-              {[
-                { value: "1,000+", label: "Clients" },
-                { value: "95%", label: "Avg. CSAT" },
-                { value: "24/7", label: "Support" },
-              ].map((stat, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl border border-gray-100 bg-white/90 p-4 backdrop-blur-sm"
-                >
-                  <div className="text-2xl font-bold text-yellow-500">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
-                </div>
-              ))}
-            </div>
           </motion.div>
         </div>
       </div>
