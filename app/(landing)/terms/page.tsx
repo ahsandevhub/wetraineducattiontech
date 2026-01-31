@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 
 // Removed ShowBengaliButton import
-import { useContactInfo } from "../utils/contactInfo";
+import { useContactInfo } from "../../utils/contactInfo";
 
 export default function TermsPage() {
   const { contactPhone, supportEmail } = useContactInfo();

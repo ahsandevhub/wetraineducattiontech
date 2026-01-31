@@ -6,62 +6,62 @@ import {
   Award,
   BarChart2,
   Clock,
-  DollarSign,
+  CreditCard,
+  MessageSquare,
   Repeat,
   ShieldCheck,
-  TrendingUp,
-  UserPlus,
+  Zap,
 } from "lucide-react";
 
 export default function WhyChooseUs() {
   const features = [
     {
       icon: <ShieldCheck className="w-6 h-6" />,
-      title: "Trust & Brand Safety",
-      desc: "We prioritize compliance, brand safety, and privacy across every campaign and channel.",
+      title: "Professional Courses",
+      desc: "Industry-leading training programs in web development, marketing, design, and business management.",
     },
     {
-      icon: <TrendingUp className="w-6 h-6" />,
-      title: "Growth at Scale",
-      desc: "From launch to hyper-growth—our systems scale with your pipeline, markets, and budgets.",
+      icon: <MessageSquare className="w-6 h-6" />,
+      title: "WhatsApp Business",
+      desc: "Direct customer engagement with WhatsApp API integration for messaging and support automation.",
+    },
+    {
+      icon: <Zap className="w-6 h-6" />,
+      title: "Enterprise Software",
+      desc: "Custom software solutions including school management, e-commerce, POS systems, and more.",
     },
     {
       icon: <BarChart2 className="w-6 h-6" />,
-      title: "Data-Driven Strategy",
-      desc: "Clear hypotheses, testing plans, and dashboards that tie spend to measurable outcomes.",
-    },
-    {
-      icon: <UserPlus className="w-6 h-6" />,
-      title: "Frictionless Onboarding",
-      desc: "Kick off fast with a streamlined intake, immediate wins, and a 30-day roadmap.",
+      title: "Digital Marketing",
+      desc: "Comprehensive marketing campaigns including social media, SEO, paid ads, and content creation.",
     },
     {
       icon: <Clock className="w-6 h-6" />,
-      title: "On-Time Delivery",
-      desc: "Reliable sprint cycles with SLAs—no surprises, just predictable velocity.",
-    },
-    {
-      icon: <DollarSign className="w-6 h-6" />,
-      title: "ROI-Focused",
-      desc: "Performance creative and media plans designed to maximize CAC/LTV efficiency.",
+      title: "Bulk SMS Campaigns",
+      desc: "High-volume SMS sending for marketing, notifications, and customer communication needs.",
     },
     {
       icon: <Repeat className="w-6 h-6" />,
-      title: "Always-On Optimization",
-      desc: "Iterate, test, and improve continuously—creative, audiences, bids, and funnels.",
+      title: "WeSend Delivery",
+      desc: "Complete delivery management platform with GPS tracking, rider management, and notifications.",
     },
     {
       icon: <Award className="w-6 h-6" />,
-      title: "Senior Talent",
-      desc: "Cross-functional team of strategists, creatives, and analysts on every account.",
+      title: "Leadpilot CRM",
+      desc: "Advanced lead management and CRM system to capture, nurture, and convert prospects effectively.",
+    },
+    {
+      icon: <CreditCard className="w-6 h-6" />,
+      title: "Flexible Payments",
+      desc: "Multiple payment options including Bank Transfer, Nagad, and bKash for your convenience.",
     },
   ];
 
   const stats = [
-    { value: "1,000+", label: "Projects Delivered" },
-    { value: "95%", label: "Client CSAT" },
-    { value: "24/7", label: "Global Support" },
-    { value: "5+", label: "Service Lines" },
+    { value: "2,000+", label: "Active Students" },
+    { value: "500+", label: "Projects Delivered" },
+    { value: "50+", label: "Enterprise Clients" },
+    { value: "24/7", label: "Support Available" },
   ];
 
   return (
@@ -93,13 +93,13 @@ export default function WhyChooseUs() {
             id="why-heading"
             className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl"
           >
-            WeTrain{" "}
-            <span className="text-[var(--primary-yellow)]">Marketing</span>{" "}
-            Advantage
+            Complete Digital{" "}
+            <span className="text-[var(--primary-yellow)]">Ecosystem</span>
           </h2>
           <p className="mx-auto max-w-3xl text-lg text-gray-600">
-            Outcomes over outputs. We combine strategy, creative, and
-            performance marketing to drive measurable business growth—globally.
+            Everything you need to succeed online—from learning new skills to
+            building software, managing customers, and growing your business.
+            One platform, endless possibilities.
           </p>
         </motion.div>
 

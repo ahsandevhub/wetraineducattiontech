@@ -1,15 +1,46 @@
 // components/Header.tsx
 "use client";
 
+import { createClient } from "@/app/utils/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Header() {
   const [hovered, setHovered] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setUser(user);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getUser();
+
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription?.unsubscribe();
+  }, [supabase]);
 
   // SPA-friendly section anchors
   const navItems = [
@@ -30,7 +61,7 @@ export default function Header() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link
-          href="#home"
+          href="/"
           aria-label="WeTrain Marketing — Home"
           className="font-bold text-2xl text-gray-900"
         >
@@ -79,13 +110,27 @@ export default function Header() {
             whileTap={{ scale: 0.97 }}
             className="ml-2"
           >
-            <Link
-              href="#proposal"
-              className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-900"
-              aria-label="Get a proposal"
-            >
-              Get a Proposal
-            </Link>
+            {!loading && (
+              <>
+                {user ? (
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex items-center justify-center rounded-lg bg-[var(--primary-yellow)] px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm transition-colors hover:bg-[var(--secondary-yellow)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--primary-yellow)]"
+                    aria-label="My account"
+                  >
+                    My Account
+                  </Link>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-900"
+                    aria-label="Login to your account"
+                  >
+                    Login
+                  </Link>
+                )}
+              </>
+            )}
           </motion.div>
         </nav>
 
@@ -124,13 +169,29 @@ export default function Header() {
                 {item.name}
               </Link>
             ))}
-            <Link
-              href="#proposal"
-              className="mt-2 block rounded-lg bg-gray-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-gray-800"
-              onClick={() => setMobileOpen(false)}
-            >
-              Get a Proposal
-            </Link>
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="mt-2 block rounded-lg bg-[var(--primary-yellow)] px-4 py-2.5 text-center text-sm font-semibold text-gray-900 hover:bg-[var(--secondary-yellow)]"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      My Account
+                    </Link>
+                  </>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="mt-2 block rounded-lg bg-gray-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-gray-800"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Login
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </motion.div>
       )}

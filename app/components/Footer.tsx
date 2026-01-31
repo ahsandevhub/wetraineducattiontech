@@ -65,12 +65,12 @@ export default function Footer() {
       const data = await res.json();
       if (res.ok) {
         setNewsletterStatus(
-          "Thank you for subscribing! Please check your email for confirmation."
+          "Thank you for subscribing! Please check your email for confirmation.",
         );
         form.reset();
       } else {
         setNewsletterStatus(
-          data.error || "Subscription failed. Please try again."
+          data.error || "Subscription failed. Please try again.",
         );
       }
     } catch {
@@ -99,9 +99,9 @@ export default function Footer() {
             </span>
           </div>
           <p className="text-sm leading-6">
-            WeTrain Marketing is a global marketing company delivering brand
-            strategy, creative campaigns, and growth solutions for businesses
-            worldwide.
+            WeTrain Education & Tech is a global marketing and IT company
+            delivering brand strategy, creative campaigns, and growth solutions
+            for businesses worldwide.
           </p>
           <div className="flex gap-4">
             {socialLinks.map((s, i) => (

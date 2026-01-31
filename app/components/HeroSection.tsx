@@ -16,7 +16,7 @@ export default function HeroSection() {
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
-      aria-label="WeTrain Marketing — Global growth made simple"
+      aria-label="WeTrainEducation & Tech — Global growth made simple"
     >
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
@@ -38,9 +38,7 @@ export default function HeroSection() {
               transition={{ delay: 0.2, duration: 0.6 }}
               className="mb-6 text-4xl font-bold leading-tight text-gray-900 md:text-5xl lg:text-6xl"
             >
-              Global Marketing,
-              <br />
-              Real Business <br /> Growth
+              Complete Digital Solutions for Your Business Success
             </motion.h1>
 
             <motion.p
@@ -49,9 +47,10 @@ export default function HeroSection() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="mb-8 max-w-2xl text-lg text-gray-700 md:text-xl"
             >
-              WeTrain Marketing helps brands launch, scale, and win—worldwide.
-              From strategy and creative to performance campaigns and analytics,
-              we deliver measurable growth without the noise.
+              From professional courses to enterprise software, marketing
+              automation to messaging services—WeTrainEducation & Tech delivers
+              integrated solutions that drive real growth. One platform, endless
+              possibilities.
             </motion.p>
 
             <motion.div
@@ -89,10 +88,10 @@ export default function HeroSection() {
               className="grid max-w-md grid-cols-2 gap-4"
             >
               {[
-                "Strategy-first approach",
-                "Creative that converts",
-                "Performance marketing",
-                "Transparent reporting",
+                "Professional Courses",
+                "Enterprise Software",
+                "Marketing Automation",
+                "24/7 Support",
               ].map((item, i) => (
                 <div
                   key={i}
@@ -138,7 +137,7 @@ export default function HeroSection() {
               </div>
               <div className="bg-white p-6">
                 <h3 className="mb-3 text-xl font-bold text-gray-900">
-                  Why WeTrain Marketing?
+                  Why WeTrainEducation & Tech?
                 </h3>
                 <p className="mb-4 text-gray-600">
                   In two minutes, see how our strategy, creative, and

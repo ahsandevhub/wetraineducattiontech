@@ -28,10 +28,10 @@ export default function DisclaimerBanner() {
           className="w-full bg-gray-900 text-gray-100 text-xs px-4 py-3 flex justify-between items-center z-50"
         >
           <p className="flex-1 text-center">
-            <strong>Notice:</strong> WeTrain Marketing is a global marketing
-            solutions company. All content on this site is provided for general
-            informational purposes and does not constitute financial or legal
-            advice.
+            <strong>Notice:</strong> WeTrainEducation & Tech is a global IT and
+            marketing solutions company. All content on this site is provided
+            for general informational purposes and does not constitute financial
+            or legal advice.
           </p>
           <button
             onClick={handleClose}

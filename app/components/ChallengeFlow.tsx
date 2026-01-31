@@ -6,41 +6,41 @@ export default function ChallengeFlow() {
   const steps = [
     {
       step: "01",
-      title: "Discovery & Analysis",
+      title: "Choose Your Service",
       description:
-        "We analyze your business, competitors, and target audience to identify growth opportunities and create a custom strategy.",
-      icon: "🔍",
-      duration: "1-2 weeks",
+        "Browse our comprehensive range of courses, software solutions, and marketing services. Select what fits your business needs.",
+      icon: "🎯",
+      duration: "Instant",
     },
     {
       step: "02",
-      title: "Strategy Development",
+      title: "One-Click Purchase",
       description:
-        "Our team crafts a comprehensive marketing plan tailored to your goals, budget, and timeline for maximum impact.",
-      icon: "📋",
-      duration: "1-2 weeks",
+        "Simple checkout with multiple payment options. Secure transactions via Bank, Nagad, or bKash—whatever works best for you.",
+      icon: "🛒",
+      duration: "2 minutes",
     },
     {
       step: "03",
-      title: "Creative Execution",
+      title: "Onboarding & Setup",
       description:
-        "We bring your strategy to life with compelling content, engaging campaigns, and optimized marketing assets.",
-      icon: "🎨",
-      duration: "2-3 weeks",
+        "Our team reaches out immediately to understand your requirements and begin implementation or training setup.",
+      icon: "🚀",
+      duration: "24-48 hours",
     },
     {
       step: "04",
-      title: "Launch & Optimize",
+      title: "Implementation",
       description:
-        "We deploy campaigns across channels, monitor performance, and continuously optimize for better results.",
-      icon: "🚀",
-      duration: "1 week",
+        "For software: Custom development and deployment. For courses: Immediate access to learning materials and live sessions.",
+      icon: "⚙️",
+      duration: "1-4 weeks",
     },
     {
       step: "05",
-      title: "Scale & Grow",
+      title: "Support & Growth",
       description:
-        "Based on data insights, we scale successful campaigns and explore new opportunities to accelerate your growth.",
+        "Ongoing support, updates, and training. We're with you every step as your business grows and evolves.",
       icon: "📈",
       duration: "Ongoing",
     },
@@ -55,11 +55,11 @@ export default function ChallengeFlow() {
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            Our Proven Marketing Process
+            How It Works
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            From strategy to execution, we follow a systematic approach to
-            ensure your marketing success
+            From selection to implementation, we've streamlined the entire
+            process to get you up and running quickly
           </p>
         </div>
 

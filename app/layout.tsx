@@ -1,17 +1,14 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
-import { Toaster } from "react-hot-toast";
-import DisclaimerBanner from "./components/DisclaimerBanner";
-import Footer from "./components/Footer";
-import Header from "./components/Header";
-import TranslateButton from "./components/TranslateButton";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "WeTrain Marketing — Global Marketing Solutions",
+  title: "WeTrainEducation & Tech — Global IT and Marketing Solutions",
   description:
-    "WeTrain Marketing is a global marketing company delivering innovative strategies, brand growth, and creative campaigns for businesses worldwide.",
+    "WeTrainEducation & Tech is a global IT and marketing company delivering innovative strategies, brand growth, and creative campaigns for businesses worldwide.",
   keywords: [
+    "IT services",
+    "website development",
     "marketing",
     "global marketing solutions",
     "branding",
@@ -21,23 +18,23 @@ export const metadata: Metadata = {
     "growth strategy",
   ],
   openGraph: {
-    title: "WeTrain Marketing — Global Marketing Solutions",
+    title: "WeTrainEducation & Tech — Global IT and Marketing Solutions",
     description:
-      "Innovative global marketing strategies and creative campaigns to grow your brand worldwide.",
+      "Innovative global IT and marketing strategies and creative campaigns to grow your brand worldwide.",
     url: "https://wetraineducation.com",
-    siteName: "WeTrain Marketing",
+    siteName: "WeTrainEducation & Tech",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "WeTrain Marketing — Global Marketing Solutions",
+    title: "WeTrainEducation & Tech — Global IT and Marketing Solutions",
     description:
-      "Global marketing expertise and creative campaigns for brands that want to grow worldwide.",
+      "Global IT and marketing expertise and creative campaigns for brands that want to grow worldwide.",
   },
   robots: { index: true, follow: true },
   metadataBase: new URL("https://wetraineducation.com"),
-  category: "Marketing",
+  category: "Marketing and IT Services",
 };
 
 export const viewport: Viewport = {
@@ -55,21 +52,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
-        {/* Toast notifications */}
-        <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
-
-        {/* Optional top banner or announcement */}
-        <DisclaimerBanner />
-
-        {/* Global marketing header */}
-        <Header />
-
-        {/* Main content */}
         <main id="main-content">{children}</main>
-
-        {/* Footer */}
-        <Footer />
-        <TranslateButton />
       </body>
     </html>
   );

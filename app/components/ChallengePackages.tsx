@@ -19,54 +19,56 @@ interface Package {
 const packages: Package[] = [
   {
     name: "Starter",
-    price: "৳4,999",
-    priceNote: "one-time setup",
+    price: "৳3,999",
+    priceNote: "per month",
     description:
-      "Perfect for new brands: positioning, essential creatives, and a launch-ready playbook.",
+      "Perfect for growing businesses: Course Add + WhatsApp messaging + basic email support.",
     features: [
-      "Brand audit & positioning workshop",
-      "Creative starter kit (ads + social)",
-      "1 channel launch plan (e.g., Meta)",
-      "Tracking & pixel setup",
-      "Monthly report & roadmap",
+      "Course Add platform access",
+      "WhatsApp Service integration",
+      "Basic IT support",
+      "Monthly analytics report",
+      "Payment integration (Bank, Nagad, bKash)",
     ],
     popular: false,
     ctaHref: "#contact",
     ctaLabel: "Choose Starter",
   },
   {
-    name: "Growth",
-    price: "৳12,999",
+    name: "Professional",
+    price: "৳9,999",
     priceNote: "per month",
     description:
-      "Scale with performance: full-funnel campaigns, weekly experiments, and clear KPIs.",
+      "Scale faster: Full marketing suite + Bulk SMS + WeSend + advanced integrations.",
     features: [
-      "Cross-channel strategy (Meta/Google/TikTok)",
-      "Creative testing framework (UGC & statics)",
-      "Landing page recommendations",
-      "Weekly sprints & reporting dashboard",
-      "Quarterly growth review",
+      "All Starter features included",
+      "Marketing Service (campaigns & strategy)",
+      "Bulk SMS Service for campaigns",
+      "WeSend delivery platform",
+      "Advanced IT support (24/7)",
+      "Priority analytics & reporting",
     ],
     popular: true,
     ctaHref: "#contact",
-    ctaLabel: "Start Growth Plan",
+    ctaLabel: "Start Professional",
   },
   {
-    name: "Scale",
+    name: "Enterprise",
     price: "Custom",
     priceNote: "talk to sales",
     description:
-      "For high-velocity teams: multi-market orchestration, advanced analytics, and SLAs.",
+      "Complete platform access: All services including Leadpilot + dedicated support team.",
     features: [
-      "Multi-market & localization playbooks",
-      "Dedicated strategist + creative pod",
-      "Marketing mix modeling (MMM-light)",
-      "Advanced GA4/Server-side tracking",
-      "Prioritized roadmap & SLAs",
+      "All Professional features included",
+      "Leadpilot lead management system",
+      "Dedicated account manager",
+      "Custom integrations & API access",
+      "Enterprise-level IT infrastructure",
+      "Multi-channel campaign orchestration",
     ],
     popular: false,
     ctaHref: "#proposal",
-    ctaLabel: "Get a Proposal",
+    ctaLabel: "Get Enterprise Quote",
   },
 ];
 
@@ -94,18 +96,18 @@ export default function Packages() {
           className="mb-16 text-center"
         >
           <span className="mb-4 inline-block rounded-full bg-[var(--primary-yellow)]/10 px-4 py-2 text-sm font-medium text-[var(--primary-yellow)]">
-            Pricing & Plans
+            Simple Pricing
           </span>
           <h2
             id="pricing-heading"
             className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl"
           >
             Choose your{" "}
-            <span className="text-[var(--primary-yellow)]">growth path</span>
+            <span className="text-[var(--primary-yellow)]">plan</span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-gray-600">
-            Transparent plans designed for outcomes—not vanity metrics. Upgrade
-            or customize anytime.
+            Transparent pricing for all our integrated services. Start small,
+            scale up anytime—no long-term contracts.
           </p>
         </motion.div>
 
@@ -178,7 +180,7 @@ export default function Packages() {
                 ) : (
                   <Link
                     href={`/checkout?name=${encodeURIComponent(
-                      pkg.name
+                      pkg.name,
                     )}&price=${encodeURIComponent(pkg.price)}`}
                     passHref
                   >
