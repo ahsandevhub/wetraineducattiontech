@@ -352,7 +352,7 @@ function CheckoutPageContent() {
               className="mb-4 rounded-lg border border-green-300 bg-green-50 p-3"
             >
               <p className="text-sm text-green-700">
-                ✨ <strong>New here?</strong> No problem! We'll instantly create
+                ✨ <strong>New here?</strong> No problem! We&apos;ll instantly create
                 your account during checkout. You&apos;ll receive a magic link
                 to confirm your email and set your password.
               </p>

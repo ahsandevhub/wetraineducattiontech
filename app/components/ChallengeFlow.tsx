@@ -58,7 +58,7 @@ export default function ChallengeFlow() {
             How It Works
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            From selection to implementation, we've streamlined the entire
+            From selection to implementation, we&apos;ve streamlined the entire
             process to get you up and running quickly
           </p>
         </div>
