@@ -36,16 +36,16 @@ export default function Proposal() {
         // Reset form on success
         setFormData({ name: "", email: "", subject: "", message: "" });
         setSuccessMessage(
-          "Thank you for your proposal request! We'll get back to you soon. Check your email for confirmation."
+          "Thank you for your proposal request! We'll get back to you soon. Check your email for confirmation.",
         );
       } else {
         setErrorMessage(
-          data.error || "Something went wrong. Please try again."
+          data.error || "Something went wrong. Please try again.",
         );
       }
     } catch {
       setErrorMessage(
-        "Failed to send proposal request. Please check your connection and try again."
+        "Failed to send proposal request. Please check your connection and try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -53,7 +53,7 @@ export default function Proposal() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -62,7 +62,10 @@ export default function Proposal() {
   };
 
   return (
-    <section id="proposal" className="py-20 bg-gray-50">
+    <section
+      id="proposal"
+      className="py-20 bg-gradient-to-b from-yellow-50 to-white"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}

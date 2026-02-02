@@ -43,7 +43,7 @@ export default function Testimonials() {
   return (
     <section
       id="testimonials"
-      className="relative overflow-hidden border-y-2 border-yellow-200/50 bg-[var(--tertiary-yellow)] py-24"
+      className="relative overflow-hidden bg-gradient-to-b from-yellow-50 to-yellow-100 py-24"
       aria-labelledby="testimonials-heading"
     >
       {/* Background accents */}

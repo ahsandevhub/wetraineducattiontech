@@ -10,16 +10,22 @@ datasource db {
 }
 
 model Profile {
-  id        String   @id @db.Uuid
-  email     String?  @unique @map("email")
-  role      Role     @default(customer)
-  fullName  String?  @map("full_name")
-  phone     String?
-  avatarUrl String?  @map("avatar_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id         String   @id @db.Uuid
+  email      String?  @unique @map("email")
+  role       Role     @default(customer)
+  fullName   String?  @map("full_name")
+  phone      String?
+  avatarUrl  String?  @map("avatar_url")
+  address    String?
+  city       String?
+  state      String?
+  postalCode String?  @map("postal_code")
+  country    String?  @default("Bangladesh")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  orders Order[]
+  orders   Order[]
+  payments Payment[]
 
   @@map("profiles")
 }
@@ -36,6 +42,25 @@ model Order {
   profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("orders")
+}
+
+model Payment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid @map("user_id")
+  amount    Float
+  method    String
+  status    String   @default("pending")
+  service   String?
+  reference String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([method])
+  @@index([status])
+  @@map("payments")
 }
 
 enum Role {

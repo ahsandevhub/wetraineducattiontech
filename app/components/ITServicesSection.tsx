@@ -179,14 +179,14 @@ export default function ITServicesSection() {
   return (
     <section
       id="it-services"
-      className="relative overflow-hidden bg-gradient-to-b from-gray-50 to-white py-24"
+      className="relative overflow-hidden bg-white py-24"
       aria-labelledby="it-services-heading"
     >
       {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute left-0 top-0 h-full w-full bg-[url('/wireframe.png')] opacity-5" />
-        <div className="absolute -right-40 top-20 h-96 w-96 rounded-full bg-blue-400 opacity-5 blur-3xl" />
-        <div className="absolute -left-40 bottom-40 h-96 w-96 rounded-full bg-purple-400 opacity-5 blur-3xl" />
+        <div className="absolute -right-40 top-20 h-96 w-96 rounded-full bg-yellow-400 opacity-5 blur-3xl" />
+        <div className="absolute -left-40 bottom-40 h-96 w-96 rounded-full bg-orange-400 opacity-5 blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -198,14 +198,15 @@ export default function ITServicesSection() {
           viewport={{ once: true }}
           className="mb-16 text-center"
         >
-          <span className="mb-4 inline-block rounded-full bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-600">
+          <span className="mb-4 inline-block rounded-full bg-yellow-500/10 px-4 py-2 text-sm font-medium text-yellow-600">
             IT Services & Software
           </span>
           <h2
             id="it-services-heading"
             className="mb-4 text-4xl font-bold text-gray-900 md:text-5xl"
           >
-            Enterprise <span className="text-blue-600">Software Solutions</span>
+            Enterprise{" "}
+            <span className="text-yellow-600">Software Solutions</span>
           </h2>
           <p className="mx-auto max-w-2xl text-lg text-gray-600">
             Custom software development tailored to your business needs. From
@@ -224,20 +225,20 @@ export default function ITServicesSection() {
               viewport={{ once: true, margin: "-50px" }}
               className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-xl ${
                 service.popular
-                  ? "border-blue-400 ring-2 ring-blue-400/20"
-                  : "border-gray-200 hover:border-blue-300"
+                  ? "border-yellow-400 ring-2 ring-yellow-400/20"
+                  : "border-gray-200 hover:border-yellow-300"
               }`}
             >
               {/* Popular Badge */}
               {service.popular && (
-                <div className="absolute right-4 top-4 z-10 rounded-full bg-blue-500 px-3 py-1 text-xs font-bold text-white">
+                <div className="absolute right-4 top-4 z-10 rounded-full bg-yellow-500 px-3 py-1 text-xs font-bold text-white">
                   POPULAR
                 </div>
               )}
 
               <div className="flex flex-1 flex-col p-6">
                 {/* Icon */}
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
                   {service.icon}
                 </div>
 
@@ -255,7 +256,7 @@ export default function ITServicesSection() {
                   <ul className="space-y-2">
                     {service.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-500" />
                         <span className="text-gray-700">{feature}</span>
                       </li>
                     ))}
@@ -265,7 +266,7 @@ export default function ITServicesSection() {
                 {/* Price & CTA */}
                 <div className="border-t border-gray-100 pt-4">
                   <div className="mb-4">
-                    <span className="text-3xl font-bold text-blue-600">
+                    <span className="text-3xl font-bold text-yellow-600">
                       {service.price}
                     </span>
                     <span className="ml-2 text-sm text-gray-500">
@@ -275,7 +276,7 @@ export default function ITServicesSection() {
                   {service.id === "custom-software" ? (
                     <a
                       href="#proposal"
-                      className="block w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-center font-bold text-white transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-lg"
+                      className="block w-full rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 py-3 text-center font-bold text-white transition-all hover:from-yellow-600 hover:to-orange-600 hover:shadow-lg"
                     >
                       Request Quote
                     </a>
@@ -290,7 +291,7 @@ export default function ITServicesSection() {
                   ) : (
                     <Link
                       href={`/checkout?service=it-service&name=${encodeURIComponent(service.title)}&price=${encodeURIComponent(service.price)}&id=${service.id}`}
-                      className="block w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-center font-bold text-white transition-all hover:from-blue-600 hover:to-blue-700 hover:shadow-lg"
+                      className="block w-full rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 py-3 text-center font-bold text-white transition-all hover:from-yellow-600 hover:to-orange-600 hover:shadow-lg"
                     >
                       Purchase Now
                     </Link>
@@ -307,7 +308,7 @@ export default function ITServicesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           viewport={{ once: true }}
-          className="mt-16 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-8 text-center"
+          className="mt-16 rounded-2xl border border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50 p-8 text-center"
         >
           <h3 className="mb-3 text-2xl font-bold text-gray-900">
             Need a Custom Solution?
@@ -318,7 +319,7 @@ export default function ITServicesSection() {
           </p>
           <a
             href="#proposal"
-            className="inline-block rounded-xl border border-blue-400 bg-white px-8 py-3 font-bold text-blue-600 transition-all hover:bg-blue-50 hover:shadow-lg"
+            className="inline-block rounded-xl border border-yellow-400 bg-white px-8 py-3 font-bold text-yellow-600 transition-all hover:bg-yellow-50 hover:shadow-lg"
           >
             Schedule Consultation
           </a>

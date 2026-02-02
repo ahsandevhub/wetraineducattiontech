@@ -1,12 +1,12 @@
 import { createClient } from "@/app/utils/supabase/server";
 import { redirect } from "next/navigation";
-import AdminDashboardClient, {
-  type AdminCustomerRow,
-  type AdminOrderRow,
-  type AdminPaymentRow,
-  type AdminStats,
-} from "./AdminDashboardClient";
-import { updateOrderStatus, updatePaymentStatus } from "./actions";
+import AdminDashboardClient from "./AdminDashboardClient";
+import type {
+  AdminCustomerRow,
+  AdminOrderRow,
+  AdminPaymentRow,
+  AdminStats,
+} from "./types";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -104,8 +104,6 @@ export default async function AdminDashboardPage() {
       payments={payments}
       orders={orders}
       stats={stats}
-      updatePaymentStatus={updatePaymentStatus}
-      updateOrderStatus={updateOrderStatus}
     />
   );
 }

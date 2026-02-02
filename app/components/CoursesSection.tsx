@@ -172,7 +172,7 @@ export default function CoursesSection() {
   return (
     <section
       id="courses"
-      className="relative overflow-hidden bg-gradient-to-b from-white to-yellow-50 py-24"
+      className="relative overflow-hidden bg-gradient-to-b from-yellow-50 to-white py-24"
       aria-labelledby="courses-heading"
     >
       {/* Background Effects */}
