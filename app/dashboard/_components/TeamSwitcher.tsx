@@ -22,6 +22,11 @@ type Team = {
 
 const teams: Team[] = [
   {
+    name: "WeTrain",
+    logo: "WT",
+    domain: "https://wetraineducation.com",
+  },
+  {
     name: "WeSend",
     logo: "We",
     domain: "https://wesend.wetraineducation.com",

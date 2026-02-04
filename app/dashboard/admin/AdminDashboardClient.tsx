@@ -13,8 +13,11 @@ import {
 } from "@/components/ui/table";
 import { AlertCircle, Receipt, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import CopyButton from "./_components/CopyButton";
 import { formatCurrency, getStatusColor } from "./_components/formatters";
+import { ReportExportModal } from "./_components/ReportExportModal";
+import SalesChart from "./_components/SalesChart";
 import type {
   AdminCustomerRow,
   AdminOrderRow,
@@ -35,6 +38,7 @@ export default function AdminDashboardClient({
   orders,
   stats,
 }: AdminDashboardClientProps) {
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const latestCustomers = customers.slice(0, 5);
   const latestPayments = payments.slice(0, 5);
   const latestOrders = orders.slice(0, 5);
@@ -48,7 +52,12 @@ export default function AdminDashboardClient({
             Overview of customers, payments, and orders.
           </p>
         </div>
-        <Button className="bg-gray-900 hover:bg-gray-800">Export Report</Button>
+        <Button
+          className="bg-gray-900 hover:bg-gray-800"
+          onClick={() => setIsReportModalOpen(true)}
+        >
+          Export Report
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -74,15 +83,7 @@ export default function AdminDashboardClient({
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-gray-600">
-          This overview shows your latest activity. Use the left menu to manage
-          Customers, Payments, and Orders.
-        </CardContent>
-      </Card>
+      <SalesChart payments={payments} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
@@ -278,6 +279,14 @@ export default function AdminDashboardClient({
           </CardContent>
         </Card>
       </div>
+
+      <ReportExportModal
+        open={isReportModalOpen}
+        onOpenChange={setIsReportModalOpen}
+        customers={customers}
+        payments={payments}
+        orders={orders}
+      />
     </div>
   );
 }

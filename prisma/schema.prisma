@@ -31,15 +31,18 @@ model Profile {
 }
 
 model Order {
-  id          String   @id @default(cuid())
-  userId      String   @db.Uuid @map("user_id")
-  packageName String   @map("package_name")
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @db.Uuid @map("user_id")
+  orderNo     String?    @unique @map("order_no")
+  packageName String     @map("package_name")
   amount      Float
-  status      String   @default("pending")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  status      String     @default("pending")
+  currency    String     @default("BDT")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
 
   profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items   OrderItem[]
 
   @@map("orders")
 }
@@ -49,9 +52,11 @@ model Payment {
   userId    String   @db.Uuid @map("user_id")
   amount    Float
   method    String
+  provider  String?
   status    String   @default("pending")
   service   String?
   reference String?
+  currency  String   @default("BDT")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -63,7 +68,46 @@ model Payment {
   @@map("payments")
 }
 
+model Product {
+  id        String          @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String          @unique
+  code      String          @unique
+  category  ProductCategory
+  price     Float?
+  currency  String          @default("BDT")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  items OrderItem[]
+
+  @@map("products")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @db.Uuid @map("order_id")
+  productId String   @db.Uuid @map("product_id")
+  quantity  Int      @default(1)
+  unitPrice Float    @map("unit_price")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, productId])
+  @@map("order_items")
+}
+
 enum Role {
   customer
   admin
+}
+
+enum ProductCategory {
+  marketing
+  it
+  course
+  challenge
 }

@@ -2,6 +2,13 @@ export type AdminCustomerRow = {
   id: string;
   fullName: string;
   email: string;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string;
+  avatarUrl: string | null;
   role: string;
   createdAt: string | null;
 };

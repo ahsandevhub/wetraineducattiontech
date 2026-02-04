@@ -4,11 +4,10 @@ import { createClient } from "@/app/utils/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, CreditCard, LogOut, Settings, Zap } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -113,24 +112,12 @@ export function ProfileMenu() {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-xs text-muted-foreground">
-          Account
-        </DropdownMenuLabel>
-        <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
-          <Zap className="h-4 w-4" />
-          <span>Upgrade to Pro</span>
-        </button>
-        <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
-          <Settings className="h-4 w-4" />
-          <span>Account Settings</span>
-        </button>
-        <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
-          <CreditCard className="h-4 w-4" />
-          <span>Billing</span>
-        </button>
-        <button className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
-          <Bell className="h-4 w-4" />
-          <span>Notifications</span>
+        <button
+          onClick={() => router.push("/dashboard/profile")}
+          className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+        >
+          <User className="h-4 w-4" />
+          <span>My Profile</span>
         </button>
         <DropdownMenuSeparator />
         <button

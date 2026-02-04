@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,13 +19,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Filter } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Filter, MoreHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import CopyButton from "../_components/CopyButton";
 import { formatCurrency, getStatusColor } from "../_components/formatters";
 import TablePagination from "../_components/TablePagination";
 import type { AdminOrderRow } from "../types";
+import { OrderViewDialog } from "./OrderViewDialog";
+import { OrderExportModal } from "./OrderExportModal";
 
 type OrdersClientProps = {
   orders: AdminOrderRow[];
@@ -40,10 +49,15 @@ export default function OrdersClient({
   const [isPending, startTransition] = useTransition();
 
   const orderStatusFilter = searchParams.get("orderStatus") ?? "";
+  const orderSearch = searchParams.get("orderSearch") ?? "";
   const orderPage = parseInt(searchParams.get("orderPage") ?? "1");
   const orderRowsPerPage = parseInt(
     searchParams.get("orderRowsPerPage") ?? "10",
   );
+
+  const [searchValue, setSearchValue] = useState(orderSearch);
+  const [viewingOrder, setViewingOrder] = useState<AdminOrderRow | null>(null);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const updateParams = useCallback(
     (newParams: Record<string, string | number | null>) => {
@@ -55,17 +69,52 @@ export default function OrdersClient({
           params.set(key, String(value));
         }
       });
-      router.push(`?${params.toString()}`);
+      startTransition(() => {
+        router.push(`?${params.toString()}`);
+      });
     },
     [searchParams, router],
   );
 
-  const filteredOrders = orderStatusFilter
-    ? orders.filter(
-        (order) =>
-          order.status.toLowerCase() === orderStatusFilter.toLowerCase(),
-      )
-    : orders;
+  useEffect(() => {
+    setSearchValue(orderSearch);
+  }, [orderSearch]);
+
+  // Debounce search with 400ms delay
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchValue === orderSearch) return;
+      updateParams({
+        orderSearch: searchValue || null,
+        orderPage: 1,
+      });
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchValue, orderSearch, updateParams]);
+
+  const filteredOrders = orders.filter((order) => {
+    // Status filter
+    if (
+      orderStatusFilter &&
+      order.status.toLowerCase() !== orderStatusFilter.toLowerCase()
+    ) {
+      return false;
+    }
+
+    // Search filter
+    if (orderSearch) {
+      const query = orderSearch.toLowerCase();
+      return (
+        order.id.toLowerCase().includes(query) ||
+        order.customerName.toLowerCase().includes(query) ||
+        order.customerEmail.toLowerCase().includes(query) ||
+        order.packageName.toLowerCase().includes(query)
+      );
+    }
+
+    return true;
+  });
 
   const startIndex = (orderPage - 1) * orderRowsPerPage;
   const paginated = filteredOrders.slice(
@@ -81,7 +130,9 @@ export default function OrdersClient({
           <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
           <p className="text-sm text-gray-600">Manage orders and status.</p>
         </div>
-        <Button variant="outline">Export</Button>
+        <Button variant="outline" onClick={() => setExportModalOpen(true)}>
+          Export
+        </Button>
       </div>
 
       <Card>
@@ -89,27 +140,38 @@ export default function OrdersClient({
           <CardTitle>Orders</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-400" />
-            <Select
-              value={orderStatusFilter || "all"}
-              onValueChange={(value) =>
-                updateParams({
-                  orderStatus: value === "all" ? null : value,
-                  orderPage: 1,
-                })
-              }
-            >
-              <SelectTrigger className="h-8 w-[180px]">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="canceled">Canceled</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <Input
+                placeholder="Search by order ID, customer name, email or package..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="max-w-xs"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-400" />
+              <Select
+                value={orderStatusFilter || "all"}
+                onValueChange={(value) =>
+                  updateParams({
+                    orderStatus: value === "all" ? null : value,
+                    orderPage: 1,
+                  })
+                }
+              >
+                <SelectTrigger className="h-8 w-[180px]">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="canceled">Canceled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="border rounded-lg overflow-hidden">
@@ -138,7 +200,7 @@ export default function OrdersClient({
                     Date
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900">
-                    Action
+                    Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -184,38 +246,55 @@ export default function OrdersClient({
                           : "—"}
                       </TableCell>
                       <TableCell>
-                        {order.status === "processing" && (
-                          <div className="flex gap-1">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <Button
+                              variant="ghost"
                               size="sm"
                               disabled={isPending}
-                              onClick={() =>
-                                startTransition(async () => {
-                                  await updateOrderStatus(
-                                    order.id,
-                                    "completed",
-                                  );
-                                  router.refresh();
-                                })
-                              }
                             >
-                              Complete
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={isPending}
-                              onClick={() =>
-                                startTransition(async () => {
-                                  await updateOrderStatus(order.id, "canceled");
-                                  router.refresh();
-                                })
-                              }
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => setViewingOrder(order)}
                             >
-                              Cancel
-                            </Button>
-                          </div>
-                        )}
+                              View Details
+                            </DropdownMenuItem>
+                            {order.status === "processing" && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    startTransition(async () => {
+                                      await updateOrderStatus(
+                                        order.id,
+                                        "completed",
+                                      );
+                                      router.refresh();
+                                    })
+                                  }
+                                >
+                                  Mark as Completed
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    startTransition(async () => {
+                                      await updateOrderStatus(
+                                        order.id,
+                                        "canceled",
+                                      );
+                                      router.refresh();
+                                    })
+                                  }
+                                  className="text-red-600"
+                                >
+                                  Cancel Order
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
@@ -236,6 +315,20 @@ export default function OrdersClient({
           />
         </CardContent>
       </Card>
+
+      {/* Order View Dialog */}
+      <OrderViewDialog
+        order={viewingOrder}
+        open={!!viewingOrder}
+        onOpenChange={(open) => !open && setViewingOrder(null)}
+      />
+
+      {/* Export Modal */}
+      <OrderExportModal
+        orders={filteredOrders}
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+      />
     </div>
   );
 }

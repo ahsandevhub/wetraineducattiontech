@@ -1,6 +1,5 @@
 "use client";
 
-import { createClient } from "@/app/utils/supabase/client";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -29,11 +28,8 @@ import {
 import { cn } from "@/lib/utils";
 import {
   ClipboardList,
-  HelpCircle,
   LayoutDashboard,
-  LogOut,
   Receipt,
-  Settings,
   ShoppingCart,
   User,
   Users,
@@ -41,7 +37,7 @@ import {
 } from "lucide-react";
 import { AppProgressBar as ProgressBar } from "next-nprogress-bar";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
 import { ProfileMenu } from "./ProfileMenu";
 import { TeamSwitcher } from "./TeamSwitcher";
@@ -68,7 +64,6 @@ type SidebarData = {
     description: string;
   };
   navGroups: NavGroup[];
-  footerGroup: NavGroup;
 };
 
 type AdminLayoutProps = {
@@ -79,13 +74,6 @@ type AdminLayoutProps = {
 export default function AdminLayout({ children, role }: AdminLayoutProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const supabase = createClient();
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
 
   const adminBreadcrumbMap: Record<string, string> = {
     "/dashboard/admin": "Dashboard",
@@ -107,13 +95,6 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
         title: "WeTrain",
         description:
           role === "admin" ? "Admin workspace" : "Customer workspace",
-      },
-      footerGroup: {
-        title: "Support",
-        items: [
-          { label: "Help Center", icon: HelpCircle, href: "/support" },
-          { label: "Settings", icon: Settings, href: "/dashboard/settings" },
-        ],
       },
     };
 
@@ -231,37 +212,9 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
         ))}
       </SidebarContent>
       <SidebarFooter>
-        <SidebarGroup>
-          <SidebarGroupLabel>{sidebarData.footerGroup.title}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {sidebarData.footerGroup.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton asChild>
-                      <Link href={item.href}>
-                        <Icon className="mr-2 h-4 w-4" />
-                        {item.label}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <Separator className="my-2" />
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <button type="button" onClick={handleLogout} className="w-full">
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </button>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="px-4 py-2 text-xs text-muted-foreground text-center">
+          Version 1.0.0
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

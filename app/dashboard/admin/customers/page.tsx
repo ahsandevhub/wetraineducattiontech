@@ -25,7 +25,9 @@ export default async function AdminCustomersPage() {
 
   const customersResult = await supabase
     .from("profiles")
-    .select("id, full_name, email, role, created_at")
+    .select(
+      "id, full_name, email, phone, address, city, state, postal_code, country, avatar_url, role, created_at",
+    )
     .eq("role", "customer")
     .order("created_at", { ascending: false });
 
@@ -34,6 +36,13 @@ export default async function AdminCustomersPage() {
       id: row.id as string,
       fullName: row.full_name ?? "—",
       email: row.email ?? "—",
+      phone: row.phone ?? null,
+      address: row.address ?? null,
+      city: row.city ?? null,
+      state: row.state ?? null,
+      postalCode: row.postal_code ?? null,
+      country: row.country ?? "Bangladesh",
+      avatarUrl: row.avatar_url ?? null,
       role: row.role ?? "customer",
       createdAt: row.created_at ?? null,
     }),

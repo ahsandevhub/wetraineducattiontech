@@ -3,6 +3,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,16 +25,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, Filter, Receipt } from "lucide-react";
+import {
+  CheckCircle,
+  Eye,
+  Filter,
+  MoreHorizontal,
+  XCircle,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "react-hot-toast";
 import CopyButton from "../_components/CopyButton";
 import { formatCurrency, getStatusColor } from "../_components/formatters";
 import TablePagination from "../_components/TablePagination";
+import { rejectPayment } from "../actions";
 import type { AdminPaymentRow } from "../types";
 import AddPaymentDialog from "./AddPaymentDialog";
-import { generateInvoice, generateReceipt } from "./pdfGenerator";
+import { PaymentExportModal } from "./PaymentExportModal";
+import { PaymentViewDialog } from "./PaymentViewDialog";
 
 type PaymentsClientProps = {
   payments: AdminPaymentRow[];
@@ -54,6 +68,10 @@ export default function PaymentsClient({
   );
 
   const [searchValue, setSearchValue] = useState(paymentSearch);
+  const [viewingPayment, setViewingPayment] = useState<AdminPaymentRow | null>(
+    null,
+  );
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const updateParams = useCallback(
     (newParams: Record<string, string | number | null>) => {
@@ -88,32 +106,6 @@ export default function PaymentsClient({
 
     return () => clearTimeout(timeoutId);
   }, [searchValue, paymentSearch, updateParams]);
-
-  const handleDownloadDocument = async (
-    paymentId: string,
-    type: "invoice" | "receipt",
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/admin/payments?paymentId=${paymentId}`,
-      );
-      if (!response.ok) {
-        toast.error("Failed to fetch payment data");
-        return;
-      }
-
-      const paymentData = await response.json();
-
-      if (type === "invoice") {
-        generateInvoice(paymentData);
-      } else {
-        generateReceipt(paymentData);
-      }
-    } catch (error) {
-      toast.error(`Failed to generate ${type}`);
-      console.error(error);
-    }
-  };
 
   const filteredPayments = payments.filter((payment) => {
     // Status filter
@@ -152,6 +144,34 @@ export default function PaymentsClient({
   );
   const totalPages = Math.ceil(filteredPayments.length / paymentRowsPerPage);
 
+  const handleMarkPaid = async (paymentId: string) => {
+    startTransition(async () => {
+      try {
+        await updatePaymentStatus(paymentId, "paid");
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to mark payment as paid",
+        );
+      }
+    });
+  };
+
+  const handleRejectPayment = async (paymentId: string) => {
+    startTransition(async () => {
+      try {
+        await rejectPayment(paymentId);
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to reject payment",
+        );
+      }
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -166,7 +186,9 @@ export default function PaymentsClient({
             customers={customers}
             onPaymentAdded={() => router.refresh()}
           />
-          <Button variant="outline">Export</Button>
+          <Button variant="outline" onClick={() => setExportModalOpen(true)}>
+            Export
+          </Button>
         </div>
       </div>
 
@@ -257,13 +279,7 @@ export default function PaymentsClient({
                     Date
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900">
-                    Invoice
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-900">
-                    Receipt
-                  </TableHead>
-                  <TableHead className="font-semibold text-gray-900">
-                    Action
+                    Actions
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -271,7 +287,7 @@ export default function PaymentsClient({
                 {paginated.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={10}
+                      colSpan={8}
                       className="text-center py-8 text-gray-500"
                     >
                       No payments found.
@@ -309,49 +325,44 @@ export default function PaymentsClient({
                           : "—"}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            handleDownloadDocument(payment.id, "invoice")
-                          }
-                          title="Download Invoice"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        {payment.status === "paid" ? (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              handleDownloadDocument(payment.id, "receipt")
-                            }
-                            title="Download Receipt"
-                          >
-                            <Receipt className="h-4 w-4 text-green-600" />
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {payment.status === "pending" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isPending}
-                            onClick={() =>
-                              startTransition(async () => {
-                                await updatePaymentStatus(payment.id, "paid");
-                                router.refresh();
-                              })
-                            }
-                          >
-                            Mark Paid
-                          </Button>
-                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={isPending}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => setViewingPayment(payment)}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            {payment.status === "pending" && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => handleMarkPaid(payment.id)}
+                                >
+                                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                  Mark as Paid
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleRejectPayment(payment.id)
+                                  }
+                                  className="text-red-600"
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Reject
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
@@ -372,6 +383,22 @@ export default function PaymentsClient({
           />
         </CardContent>
       </Card>
+
+      {/* Payment View Dialog */}
+      <PaymentViewDialog
+        payment={viewingPayment}
+        open={!!viewingPayment}
+        onOpenChange={(open) => !open && setViewingPayment(null)}
+        onMarkPaid={handleMarkPaid}
+        onRejectPayment={handleRejectPayment}
+      />
+
+      {/* Export Modal */}
+      <PaymentExportModal
+        payments={filteredPayments}
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+      />
     </div>
   );
 }
