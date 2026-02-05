@@ -1,17 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/app/utils/supabase/server";
 
-export function createAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SECRET_KEY;
-
-  if (!supabaseUrl || !serviceKey) {
-    throw new Error("Supabase admin credentials are not configured.");
-  }
-
-  return createClient(supabaseUrl, serviceKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+export async function createAdminClient() {
+  return createClient();
 }

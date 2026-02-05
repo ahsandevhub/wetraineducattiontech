@@ -27,15 +27,19 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import {
+  Award,
+  Briefcase,
   ClipboardList,
+  FolderKanban,
   LayoutDashboard,
+  MessageSquare,
+  Package,
   Receipt,
   ShoppingCart,
   User,
   Users,
   Zap,
 } from "lucide-react";
-import { AppProgressBar as ProgressBar } from "next-nprogress-bar";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
@@ -80,6 +84,11 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
     "/dashboard/admin/customers": "Customers",
     "/dashboard/admin/payments": "Payments",
     "/dashboard/admin/orders": "Orders",
+    "/dashboard/admin/products": "Products",
+    "/dashboard/admin/services": "Services",
+    "/dashboard/admin/projects": "Projects",
+    "/dashboard/admin/certifications": "Certifications",
+    "/dashboard/admin/stories": "Client Stories",
   };
   const currentTab =
     role === "admin"
@@ -124,6 +133,31 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
                 label: "Orders",
                 icon: ShoppingCart,
                 href: "/dashboard/admin/orders",
+              },
+              {
+                label: "Products",
+                icon: Package,
+                href: "/dashboard/admin/products",
+              },
+              {
+                label: "Services",
+                icon: Briefcase,
+                href: "/dashboard/admin/services",
+              },
+              {
+                label: "Projects",
+                icon: FolderKanban,
+                href: "/dashboard/admin/projects",
+              },
+              {
+                label: "Certifications",
+                icon: Award,
+                href: "/dashboard/admin/certifications",
+              },
+              {
+                label: "Client Stories",
+                icon: MessageSquare,
+                href: "/dashboard/admin/stories",
               },
             ],
           },
@@ -222,14 +256,6 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
 
   return (
     <SidebarProvider className="min-h-screen">
-      <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
-        <ProgressBar
-          height="3px"
-          color="hsl(var(--primary))"
-          options={{ showSpinner: false }}
-          shallowRouting
-        />
-      </div>
       <AppSidebar />
       <SidebarInset>
         {/* Sticky Header */}

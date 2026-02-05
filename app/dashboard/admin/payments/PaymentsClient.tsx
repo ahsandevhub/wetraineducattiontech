@@ -29,6 +29,7 @@ import {
   CheckCircle,
   Eye,
   Filter,
+  Loader2,
   MoreHorizontal,
   XCircle,
 } from "lucide-react";
@@ -72,6 +73,10 @@ export default function PaymentsClient({
     null,
   );
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState<{
+    id: string;
+    type: "paid" | "reject";
+  } | null>(null);
 
   const updateParams = useCallback(
     (newParams: Record<string, string | number | null>) => {
@@ -145,6 +150,7 @@ export default function PaymentsClient({
   const totalPages = Math.ceil(filteredPayments.length / paymentRowsPerPage);
 
   const handleMarkPaid = async (paymentId: string) => {
+    setActionLoading({ id: paymentId, type: "paid" });
     startTransition(async () => {
       try {
         await updatePaymentStatus(paymentId, "paid");
@@ -155,11 +161,14 @@ export default function PaymentsClient({
             ? error.message
             : "Failed to mark payment as paid",
         );
+      } finally {
+        setActionLoading(null);
       }
     });
   };
 
   const handleRejectPayment = async (paymentId: string) => {
+    setActionLoading({ id: paymentId, type: "reject" });
     startTransition(async () => {
       try {
         await rejectPayment(paymentId);
@@ -168,6 +177,8 @@ export default function PaymentsClient({
         toast.error(
           error instanceof Error ? error.message : "Failed to reject payment",
         );
+      } finally {
+        setActionLoading(null);
       }
     });
   };
@@ -345,19 +356,49 @@ export default function PaymentsClient({
                             {payment.status === "pending" && (
                               <>
                                 <DropdownMenuItem
+                                  disabled={
+                                    isPending ||
+                                    (actionLoading?.id === payment.id &&
+                                      actionLoading.type === "paid")
+                                  }
                                   onClick={() => handleMarkPaid(payment.id)}
                                 >
-                                  <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                                  Mark as Paid
+                                  {actionLoading?.id === payment.id &&
+                                  actionLoading.type === "paid" ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Updating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                      Mark as Paid
+                                    </>
+                                  )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() =>
                                     handleRejectPayment(payment.id)
                                   }
+                                  disabled={
+                                    isPending ||
+                                    (actionLoading?.id === payment.id &&
+                                      actionLoading.type === "reject")
+                                  }
                                   className="text-red-600"
                                 >
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Reject
+                                  {actionLoading?.id === payment.id &&
+                                  actionLoading.type === "reject" ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Updating...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <XCircle className="mr-2 h-4 w-4" />
+                                      Reject
+                                    </>
+                                  )}
                                 </DropdownMenuItem>
                               </>
                             )}

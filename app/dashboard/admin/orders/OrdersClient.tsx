@@ -3,6 +3,12 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,21 +25,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Filter, MoreHorizontal } from "lucide-react";
+import { Filter, Loader2, MoreHorizontal } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, useTransition } from "react";
+import { toast } from "react-hot-toast";
 import CopyButton from "../_components/CopyButton";
 import { formatCurrency, getStatusColor } from "../_components/formatters";
 import TablePagination from "../_components/TablePagination";
 import type { AdminOrderRow } from "../types";
-import { OrderViewDialog } from "./OrderViewDialog";
 import { OrderExportModal } from "./OrderExportModal";
+import { OrderViewDialog } from "./OrderViewDialog";
 
 type OrdersClientProps = {
   orders: AdminOrderRow[];
@@ -58,6 +59,10 @@ export default function OrdersClient({
   const [searchValue, setSearchValue] = useState(orderSearch);
   const [viewingOrder, setViewingOrder] = useState<AdminOrderRow | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState<{
+    id: string;
+    type: "completed" | "canceled";
+  } | null>(null);
 
   const updateParams = useCallback(
     (newParams: Record<string, string | number | null>) => {
@@ -122,6 +127,24 @@ export default function OrdersClient({
     startIndex + orderRowsPerPage,
   );
   const totalPages = Math.ceil(filteredOrders.length / orderRowsPerPage);
+
+  const handleUpdateStatus = (id: string, status: "completed" | "canceled") => {
+    setActionLoading({ id, type: status });
+    startTransition(async () => {
+      try {
+        await updateOrderStatus(id, status);
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to update order status",
+        );
+      } finally {
+        setActionLoading(null);
+      }
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -265,31 +288,45 @@ export default function OrdersClient({
                             {order.status === "processing" && (
                               <>
                                 <DropdownMenuItem
+                                  disabled={
+                                    isPending ||
+                                    (actionLoading?.id === order.id &&
+                                      actionLoading.type === "completed")
+                                  }
                                   onClick={() =>
-                                    startTransition(async () => {
-                                      await updateOrderStatus(
-                                        order.id,
-                                        "completed",
-                                      );
-                                      router.refresh();
-                                    })
+                                    handleUpdateStatus(order.id, "completed")
                                   }
                                 >
-                                  Mark as Completed
+                                  {actionLoading?.id === order.id &&
+                                  actionLoading.type === "completed" ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Updating...
+                                    </>
+                                  ) : (
+                                    "Mark as Completed"
+                                  )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
+                                  disabled={
+                                    isPending ||
+                                    (actionLoading?.id === order.id &&
+                                      actionLoading.type === "canceled")
+                                  }
                                   onClick={() =>
-                                    startTransition(async () => {
-                                      await updateOrderStatus(
-                                        order.id,
-                                        "canceled",
-                                      );
-                                      router.refresh();
-                                    })
+                                    handleUpdateStatus(order.id, "canceled")
                                   }
                                   className="text-red-600"
                                 >
-                                  Cancel Order
+                                  {actionLoading?.id === order.id &&
+                                  actionLoading.type === "canceled" ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Updating...
+                                    </>
+                                  ) : (
+                                    "Cancel Order"
+                                  )}
                                 </DropdownMenuItem>
                               </>
                             )}

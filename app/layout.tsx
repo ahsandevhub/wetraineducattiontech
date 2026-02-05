@@ -1,5 +1,6 @@
 // app/layout.tsx
 import type { Metadata, Viewport } from "next";
+import ProgressBar from "./ProgressBar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -52,6 +53,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
+        <ProgressBar />
         <main id="main-content">{children}</main>
       </body>
     </html>

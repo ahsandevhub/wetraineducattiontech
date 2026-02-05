@@ -1,27 +1,30 @@
 // components/ProjectsSection.tsx
 "use client";
 
+import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
 import { ExternalLink, Github } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 interface Project {
   id: string;
   title: string;
   description: string;
-  image: string;
+  imageUrl?: string;
   category: string;
   tech: string[];
   liveUrl?: string;
   githubUrl?: string;
 }
 
-const projects: Project[] = [
+const fallbackProjects: Project[] = [
   {
     id: "school-system",
     title: "Modern School Management System",
     description:
       "Complete school administration platform with student portal, attendance tracking, grade management, and parent-teacher communication.",
-    image: "/projects/school-management.jpg",
+    imageUrl: "/projects/school-management.jpg",
     category: "Enterprise Software",
     tech: ["Next.js", "PostgreSQL", "Tailwind CSS", "Supabase"],
     liveUrl: "#",
@@ -31,7 +34,7 @@ const projects: Project[] = [
     title: "E-Commerce Platform",
     description:
       "Full-featured online marketplace with payment integration, inventory management, and real-time order tracking system.",
-    image: "/projects/ecommerce.jpg",
+    imageUrl: "/projects/ecommerce.jpg",
     category: "E-Commerce",
     tech: ["React", "Node.js", "Stripe", "MongoDB"],
     liveUrl: "#",
@@ -42,7 +45,7 @@ const projects: Project[] = [
     title: "Healthcare Management App",
     description:
       "Digital healthcare solution with appointment scheduling, patient records, and telemedicine capabilities.",
-    image: "/projects/healthcare.jpg",
+    imageUrl: "/projects/healthcare.jpg",
     category: "Healthcare",
     tech: ["React Native", "Firebase", "Node.js", "Express"],
     liveUrl: "#",
@@ -52,7 +55,7 @@ const projects: Project[] = [
     title: "CRM & Analytics Dashboard",
     description:
       "Customer relationship management system with advanced analytics, sales tracking, and automated reporting.",
-    image: "/projects/crm-dashboard.jpg",
+    imageUrl: "/projects/crm-dashboard.jpg",
     category: "Business Software",
     tech: ["Vue.js", "Laravel", "MySQL", "Chart.js"],
     liveUrl: "#",
@@ -62,7 +65,7 @@ const projects: Project[] = [
     title: "Restaurant POS System",
     description:
       "Point-of-sale solution with table management, kitchen display system, and integrated payment processing.",
-    image: "/projects/pos-system.jpg",
+    imageUrl: "/projects/pos-system.jpg",
     category: "Retail & POS",
     tech: ["React", "Python", "PostgreSQL", "Redis"],
     liveUrl: "#",
@@ -72,7 +75,7 @@ const projects: Project[] = [
     title: "Online Learning Platform",
     description:
       "Interactive e-learning system with video courses, live classes, quizzes, and progress tracking.",
-    image: "/projects/learning-platform.jpg",
+    imageUrl: "/projects/learning-platform.jpg",
     category: "Education",
     tech: ["Next.js", "TypeScript", "Prisma", "WebRTC"],
     liveUrl: "#",
@@ -81,6 +84,36 @@ const projects: Project[] = [
 ];
 
 export default function ProjectsSection() {
+  const [projects, setProjects] = useState<Project[]>(fallbackProjects);
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("featured_projects")
+        .select(
+          "id, title, description, featured_image_url, category, tech_stack, live_url, github_url",
+        )
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        const mapped: Project[] = data.map((project) => ({
+          id: project.id as string,
+          title: project.title ?? "",
+          description: project.description ?? "",
+          imageUrl: project.featured_image_url ?? undefined,
+          category: project.category ?? "",
+          tech: Array.isArray(project.tech_stack) ? project.tech_stack : [],
+          liveUrl: project.live_url ?? undefined,
+          githubUrl: project.github_url ?? undefined,
+        }));
+        setProjects(mapped);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
   return (
     <section
       id="projects"
@@ -131,14 +164,23 @@ export default function ProjectsSection() {
             >
               {/* Project Image */}
               <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-yellow-100 to-orange-100">
-                <div className="flex h-full items-center justify-center">
-                  <div className="text-center">
-                    <div className="mb-2 text-4xl">🚀</div>
-                    <p className="text-sm font-medium text-gray-600">
-                      {project.category}
-                    </p>
+                {project.imageUrl ? (
+                  <Image
+                    src={project.imageUrl}
+                    alt={project.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="text-center">
+                      <div className="mb-2 text-4xl">🚀</div>
+                      <p className="text-sm font-medium text-gray-600">
+                        {project.category}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
                 {/* Overlay on hover */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 

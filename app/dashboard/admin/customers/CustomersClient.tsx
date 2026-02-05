@@ -52,6 +52,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
     customerName: string;
   } | null>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const updateParams = useCallback(
     (newParams: Record<string, string | number | null>) => {
@@ -108,6 +109,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
   const confirmDelete = async () => {
     if (!deleteConfirm) return;
 
+    setIsDeleting(true);
     startTransition(async () => {
       try {
         await deleteCustomer(deleteConfirm.customerId);
@@ -119,6 +121,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
         );
       } finally {
         setDeleteConfirm(null);
+        setIsDeleting(false);
       }
     });
   };
@@ -275,6 +278,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
                                   customer.fullName,
                                 )
                               }
+                              disabled={isPending || isDeleting}
                               className="text-red-600"
                             >
                               Delete
@@ -322,7 +326,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
         cancelText="Cancel"
         onConfirm={confirmDelete}
         onCancel={() => setDeleteConfirm(null)}
-        isLoading={isPending}
+        isLoading={isDeleting}
       />
 
       {/* Customer Export Modal */}

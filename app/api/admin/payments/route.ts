@@ -1,12 +1,5 @@
 import { createClient } from "@/app/utils/supabase/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-
-// Service role client for admin operations that bypass RLS
-const supabaseAdmin = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -126,7 +119,7 @@ export async function POST(request: Request) {
 
     // Create corresponding order when payment is created
     try {
-      const { error: orderError } = await supabaseAdmin
+      const { error: orderError } = await supabase
         .from("orders")
         .insert({
           user_id: userId,

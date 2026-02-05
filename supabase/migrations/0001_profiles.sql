@@ -1,5 +1,15 @@
 -- Profiles table linked to auth.users
-create type if not exists public.user_role as enum ('customer', 'admin');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'user_role' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE public.user_role AS ENUM ('customer', 'admin');
+  END IF;
+END $$;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,

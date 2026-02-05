@@ -1,12 +1,14 @@
 // components/Testimonials.tsx
 "use client";
 
+import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
 import { Clock, Star, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export default function Testimonials() {
-  const testimonials = [
+  const [testimonials, setTestimonials] = useState([
     {
       name: "Ariana Chen",
       role: "CMO, SaaS Startup (US)",
@@ -31,7 +33,31 @@ export default function Testimonials() {
       achievement: "5-country rollout, on time",
       rating: 4,
     },
-  ];
+  ]);
+
+  useEffect(() => {
+    const loadStories = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("client_stories")
+        .select("id, name, role, quote, achievement, rating, image_url")
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        const mapped = data.map((story) => ({
+          name: story.name ?? "",
+          role: story.role ?? "",
+          text: story.quote ?? "",
+          avatar: story.image_url ?? "",
+          achievement: story.achievement ?? "",
+          rating: Number(story.rating ?? 5),
+        }));
+        setTestimonials(mapped);
+      }
+    };
+
+    loadStories();
+  }, []);
 
   const stats = [
     { value: "4.9/5", label: "Client Rating", icon: Star },
@@ -109,13 +135,23 @@ export default function Testimonials() {
               </p>
 
               <div className="flex items-center">
-                <Image
-                  src={t.avatar}
-                  alt={`${t.name} — ${t.role}`}
-                  height={48}
-                  width={48}
-                  className="mr-4 h-12 w-12 rounded-full border-2 border-[var(--primary-yellow)] object-cover"
-                />
+                {t.avatar ? (
+                  <Image
+                    src={t.avatar}
+                    alt={`${t.name} — ${t.role}`}
+                    height={48}
+                    width={48}
+                    className="mr-4 h-12 w-12 rounded-full border-2 border-[var(--primary-yellow)] object-cover"
+                  />
+                ) : (
+                  <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--primary-yellow)] bg-[var(--tertiary-yellow)] text-sm font-semibold text-[var(--primary-yellow)]">
+                    {t.name
+                      .split(" ")
+                      .map((part) => part[0])
+                      .slice(0, 2)
+                      .join("")}
+                  </div>
+                )}
                 <div>
                   <h4 className="font-bold text-gray-900">{t.name}</h4>
                   <p className="text-sm text-gray-500">{t.role}</p>

@@ -2,12 +2,22 @@
 -- Safe for non-production environments
 
 -- Product categories
-create type if not exists public.product_category as enum (
-  'marketing',
-  'it',
-  'course',
-  'challenge'
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type t
+    JOIN pg_namespace n ON n.oid = t.typnamespace
+    WHERE t.typname = 'product_category' AND n.nspname = 'public'
+  ) THEN
+    CREATE TYPE public.product_category AS ENUM (
+      'marketing',
+      'it',
+      'course',
+      'challenge'
+    );
+  END IF;
+END $$;
 
 -- Products/services table
 create table if not exists public.products (

@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/app/utils/supabase/admin";
+import { createClient } from "@/app/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import Stripe from "stripe";
@@ -19,7 +19,14 @@ export async function POST(req: NextRequest) {
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const admin = createAdminClient();
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const paymentStatus = status === "success" ? "paid" : "canceled";
     const orderStatus = status === "success" ? "completed" : "canceled";
@@ -28,13 +35,13 @@ export async function POST(req: NextRequest) {
     const customerEmail = session.customer_email ?? session.metadata?.email;
     const paymentMethod = session.metadata?.payment_method ?? "Card";
 
-    await admin
+    await supabase
       .from("payments")
       .update({ status: paymentStatus, method: paymentMethod })
       .eq("reference", sessionId);
 
     if (orderId) {
-      await admin
+      await supabase
         .from("orders")
         .update({ status: orderStatus })
         .eq("id", orderId);

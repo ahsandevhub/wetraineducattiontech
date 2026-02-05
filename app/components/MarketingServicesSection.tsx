@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -20,14 +21,15 @@ interface MarketingService {
   id: string;
   title: string;
   description: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
+  imageUrl?: string;
   features: string[];
   price: string;
   priceNote: string;
   popular?: boolean;
 }
 
-const marketingServices: MarketingService[] = [
+const fallbackServices: MarketingService[] = [
   {
     id: "whatsapp-service",
     title: "WhatsApp Business Service",
@@ -152,9 +154,20 @@ const marketingServices: MarketingService[] = [
 
 export default function MarketingServicesSection() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [services, setServices] =
+    useState<MarketingService[]>(fallbackServices);
+
+  const formatPrice = (price: number | null, currency: string) => {
+    if (price === null) return "Custom Quote";
+    return new Intl.NumberFormat("en-BD", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
 
   useEffect(() => {
-    const checkUserRole = async () => {
+    const loadData = async () => {
       const supabase = createClient();
       const {
         data: { user },
@@ -171,9 +184,39 @@ export default function MarketingServicesSection() {
           setIsAdmin(true);
         }
       }
+
+      const { data } = await supabase
+        .from("services")
+        .select(
+          "id, title, details, key_features, featured_image_url, price, discount, currency",
+        )
+        .eq("category", "marketing")
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        const mapped: MarketingService[] = data.map((service) => ({
+          id: service.id as string,
+          title: service.title ?? "",
+          description: service.details ?? "",
+          features: Array.isArray(service.key_features)
+            ? service.key_features
+            : [],
+          price: formatPrice(
+            service.price === null ? null : Number(service.price),
+            service.currency ?? "BDT",
+          ),
+          priceNote:
+            service.discount !== null && service.discount !== undefined
+              ? `Save ${service.discount}%`
+              : "",
+          imageUrl: service.featured_image_url ?? undefined,
+          popular: false,
+        }));
+        setServices(mapped);
+      }
     };
 
-    checkUserRole();
+    loadData();
   }, []);
 
   return (
@@ -217,7 +260,7 @@ export default function MarketingServicesSection() {
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {marketingServices.map((service, index) => (
+          {services.map((service, index) => (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 40 }}
@@ -241,7 +284,17 @@ export default function MarketingServicesSection() {
               <div className="flex flex-1 flex-col p-6">
                 {/* Icon */}
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-yellow-500 text-white">
-                  {service.icon}
+                  {service.imageUrl ? (
+                    <Image
+                      src={service.imageUrl}
+                      alt={service.title}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                  ) : (
+                    service.icon
+                  )}
                 </div>
 
                 {/* Title & Description */}
@@ -271,9 +324,11 @@ export default function MarketingServicesSection() {
                     <span className="text-3xl font-bold text-orange-600">
                       {service.price}
                     </span>
-                    <span className="ml-2 text-sm text-gray-500">
-                      {service.priceNote}
-                    </span>
+                    {service.priceNote ? (
+                      <span className="ml-2 text-sm text-gray-500">
+                        {service.priceNote}
+                      </span>
+                    ) : null}
                   </div>
                   {service.id === "influencer-marketing" ? (
                     <a

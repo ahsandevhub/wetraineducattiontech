@@ -4,6 +4,7 @@
 import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
 import { BookOpen, Clock, Star, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -16,11 +17,12 @@ interface Course {
   students: string;
   rating: number;
   price: string;
-  image: string;
+  imageUrl?: string;
+  emoji?: string;
   features: string[];
 }
 
-const courses: Course[] = [
+const fallbackCourses: Course[] = [
   {
     id: "web-development",
     title: "Full-Stack Web Development",
@@ -31,7 +33,7 @@ const courses: Course[] = [
     students: "2,500+",
     rating: 4.9,
     price: "৳15,999",
-    image: "💻",
+    emoji: "💻",
     features: [
       "React & Next.js fundamentals",
       "Backend with Node.js & Express",
@@ -51,7 +53,7 @@ const courses: Course[] = [
     students: "3,200+",
     rating: 4.8,
     price: "৳12,999",
-    image: "📱",
+    emoji: "📱",
     features: [
       "Social media marketing strategies",
       "SEO & content optimization",
@@ -71,7 +73,7 @@ const courses: Course[] = [
     students: "1,800+",
     rating: 4.7,
     price: "৳13,999",
-    image: "🎨",
+    emoji: "🎨",
     features: [
       "Adobe Photoshop mastery",
       "Illustrator for vector graphics",
@@ -91,7 +93,7 @@ const courses: Course[] = [
     students: "2,100+",
     rating: 4.9,
     price: "৳14,999",
-    image: "🐍",
+    emoji: "🐍",
     features: [
       "Python programming fundamentals",
       "Data analysis with Pandas",
@@ -111,7 +113,7 @@ const courses: Course[] = [
     students: "1,500+",
     rating: 4.6,
     price: "৳11,999",
-    image: "📊",
+    emoji: "📊",
     features: [
       "Leadership & team management",
       "Strategic business planning",
@@ -131,7 +133,7 @@ const courses: Course[] = [
     students: "1,900+",
     rating: 4.8,
     price: "৳16,999",
-    image: "📱",
+    emoji: "📱",
     features: [
       "React Native development",
       "iOS & Android deployment",
@@ -145,9 +147,19 @@ const courses: Course[] = [
 
 export default function CoursesSection() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [courses, setCourses] = useState<Course[]>(fallbackCourses);
+
+  const formatPrice = (price: number | null, currency: string) => {
+    if (price === null) return "Custom Quote";
+    return new Intl.NumberFormat("en-BD", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
 
   useEffect(() => {
-    const checkUserRole = async () => {
+    const loadData = async () => {
       const supabase = createClient();
       const {
         data: { user },
@@ -164,9 +176,38 @@ export default function CoursesSection() {
           setIsAdmin(true);
         }
       }
+
+      const { data } = await supabase
+        .from("services")
+        .select(
+          "id, title, details, key_features, featured_image_url, price, discount, currency",
+        )
+        .eq("category", "course")
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        const mapped: Course[] = data.map((service) => ({
+          id: service.id as string,
+          title: service.title ?? "",
+          description: service.details ?? "",
+          instructor: "WeTrain Team",
+          duration: "Flexible",
+          students: "—",
+          rating: 4.8,
+          price: formatPrice(
+            service.price === null ? null : Number(service.price),
+            service.currency ?? "BDT",
+          ),
+          imageUrl: service.featured_image_url ?? undefined,
+          features: Array.isArray(service.key_features)
+            ? service.key_features
+            : [],
+        }));
+        setCourses(mapped);
+      }
     };
 
-    checkUserRole();
+    loadData();
   }, []);
 
   return (
@@ -219,7 +260,18 @@ export default function CoursesSection() {
             >
               {/* Course Image/Icon */}
               <div className="flex h-48 items-center justify-center bg-gradient-to-br from-yellow-100 to-yellow-50 text-6xl">
-                {course.image}
+                {course.imageUrl ? (
+                  <div className="relative h-full w-full">
+                    <Image
+                      src={course.imageUrl}
+                      alt={course.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <span>{course.emoji ?? "🎓"}</span>
+                )}
               </div>
 
               <div className="flex flex-1 flex-col p-6">

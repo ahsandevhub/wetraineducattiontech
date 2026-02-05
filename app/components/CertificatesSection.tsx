@@ -1,8 +1,11 @@
 // components/CertificatesSection.tsx
 "use client";
 
+import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
 import { Award, CheckCircle2, ExternalLink, Shield } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 interface Certificate {
   id: string;
@@ -12,10 +15,11 @@ interface Certificate {
   description: string;
   credentialId?: string;
   verifyUrl?: string;
+  imageUrl?: string | null;
   icon?: React.ReactNode;
 }
 
-const certificates: Certificate[] = [
+const fallbackCertificates: Certificate[] = [
   {
     id: "iso-9001",
     title: "ISO 9001:2015 Certification",
@@ -108,6 +112,37 @@ const achievements = [
 ];
 
 export default function CertificatesSection() {
+  const [certificates, setCertificates] =
+    useState<Certificate[]>(fallbackCertificates);
+
+  useEffect(() => {
+    const loadCerts = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("certifications")
+        .select(
+          "id, title, issuer, issued_at, description, credential_id, verify_url, image_url",
+        )
+        .order("created_at", { ascending: false });
+
+      if (data && data.length > 0) {
+        const mapped: Certificate[] = data.map((cert) => ({
+          id: cert.id as string,
+          title: cert.title ?? "",
+          issuer: cert.issuer ?? "",
+          date: cert.issued_at ?? "",
+          description: cert.description ?? "",
+          credentialId: cert.credential_id ?? undefined,
+          verifyUrl: cert.verify_url ?? undefined,
+          imageUrl: cert.image_url ?? null,
+        }));
+        setCertificates(mapped);
+      }
+    };
+
+    loadCerts();
+  }, []);
+
   return (
     <section
       id="certificates"
@@ -185,7 +220,17 @@ export default function CertificatesSection() {
               <div className="flex flex-1 flex-col p-6">
                 {/* Icon */}
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
-                  {certificate.icon}
+                  {certificate.imageUrl ? (
+                    <Image
+                      src={certificate.imageUrl}
+                      alt={certificate.title}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                  ) : (
+                    (certificate.icon ?? <Award className="h-8 w-8" />)
+                  )}
                 </div>
 
                 {/* Title & Issuer */}

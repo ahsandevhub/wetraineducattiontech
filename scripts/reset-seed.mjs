@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import "dotenv/config";
 import { Client } from "pg";
 
@@ -28,25 +27,15 @@ if (process.env.RESET_SEED_ALLOW !== "true") {
   );
 }
 
-const databaseUrl = (
-  process.env.SUPABASE_DB_URL ||
-  process.env.SUPABASE_POOLER_URL ||
-  process.env.DATABASE_URL ||
-  ""
-).trim();
+const databaseUrl = (process.env.DATABASE_URL || "").trim();
 
 if (!databaseUrl) {
-  throw new Error(
-    "Missing SUPABASE_DB_URL, SUPABASE_POOLER_URL, or DATABASE_URL environment variable.",
-  );
+  throw new Error("Missing DATABASE_URL environment variable.");
 }
 
-const supabaseUrl = process.env.SUPABASE_URL || "";
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-
-if (withAuth && (!supabaseUrl || !serviceRoleKey)) {
+if (withAuth) {
   throw new Error(
-    "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required when using --with-auth.",
+    "--with-auth is disabled. Create demo users in Supabase Dashboard instead.",
   );
 }
 
@@ -85,7 +74,7 @@ const seedProfiles = [
     city: "Dhaka",
     state: "Dhaka",
     postalCode: "1207",
-    country: "BD",
+    country: "Bangladesh",
   },
   {
     fullName: "Nabila Rahman",
@@ -94,7 +83,7 @@ const seedProfiles = [
     city: "Dhaka",
     state: "Dhaka",
     postalCode: "1212",
-    country: "BD",
+    country: "Bangladesh",
   },
   {
     fullName: "Farhan Ahmed",
@@ -103,7 +92,7 @@ const seedProfiles = [
     city: "Chattogram",
     state: "Chattogram",
     postalCode: "4100",
-    country: "BD",
+    country: "Bangladesh",
   },
   {
     fullName: "Tania Islam",
@@ -112,7 +101,7 @@ const seedProfiles = [
     city: "Khulna",
     state: "Khulna",
     postalCode: "9100",
-    country: "BD",
+    country: "Bangladesh",
   },
 ];
 
@@ -337,6 +326,7 @@ const payments = [
     amount: 9999,
     method: "bkash",
     provider: "bkash",
+    service: "WhatsApp Business Service",
     status: "paid",
     reference: "BKASH-1001",
   },
@@ -346,6 +336,7 @@ const payments = [
     amount: 15999,
     method: "nagad",
     provider: "nagad",
+    service: "Full-Stack Web Development",
     status: "pending",
     reference: "NAGAD-1002",
   },
@@ -355,6 +346,7 @@ const payments = [
     amount: 49999,
     method: "bank",
     provider: "bank",
+    service: "School Management System",
     status: "paid",
     reference: "BANK-1003",
   },
@@ -364,31 +356,11 @@ const payments = [
     amount: 9999,
     method: "card",
     provider: "card",
+    service: "Professional Challenge Package",
     status: "failed",
     reference: "CARD-1004",
   },
 ];
-
-async function upsertAuthUsers(client) {
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false },
-  });
-
-  for (const user of seedUsers) {
-    await supabase.auth.admin.createUser({
-      id: user.id,
-      email: user.email,
-      password: "P@ssw0rd!",
-      email_confirm: true,
-      user_metadata: { name: user.name },
-    });
-  }
-
-  await client.query(
-    "update public.profiles set role = 'admin' where id = $1",
-    [seedUsers[0].id],
-  );
-}
 
 async function getExistingAuthUsers(client) {
   const { rows } = await client.query(
@@ -406,27 +378,19 @@ async function main() {
     console.log(`Mode: ${mode}`);
     console.log(`With auth: ${withAuth ? "yes" : "no"}`);
 
-    await client.query("begin");
+    await client.query(
+      "truncate table public.order_items, public.orders, public.payments, public.products, public.profiles restart identity cascade;",
+    );
 
     if (mode === "full") {
       await client.query("delete from auth.users;");
     }
 
-    await client.query(
-      "truncate table public.order_items, public.orders, public.payments, public.products, public.profiles restart identity cascade;",
-    );
-
-    if (withAuth) {
-      await upsertAuthUsers(client);
-    }
-
-    const authUsers = withAuth
-      ? seedUsers.map((user) => ({ id: user.id, email: user.email }))
-      : await getExistingAuthUsers(client);
+    const authUsers = await getExistingAuthUsers(client);
 
     if (!authUsers.length) {
       throw new Error(
-        "No auth users available. Use --with-auth or create users first.",
+        "No auth users available. Create users first in Supabase Auth.",
       );
     }
 
@@ -517,18 +481,12 @@ async function main() {
         `insert into public.order_items
           (id, order_id, product_id, quantity, unit_price, created_at, updated_at)
          values
-          ($1, $2, $3, $4, $5, now(), now())
+          (gen_random_uuid(), $1, $2, $3, $4, now(), now())
          on conflict (order_id, product_id) do update set
           quantity = excluded.quantity,
           unit_price = excluded.unit_price,
           updated_at = now();`,
-        [
-          `iiiiiiii-0000-0000-0000-${order.id.slice(-12)}`,
-          order.id,
-          order.productId,
-          1,
-          order.amount,
-        ],
+        [order.id, order.productId, 1, order.amount],
       );
     }
 
@@ -536,13 +494,14 @@ async function main() {
       const user = authUsers[payment.userIndex % authUsers.length];
       await client.query(
         `insert into public.payments
-          (id, user_id, amount, method, provider, status, reference, currency, created_at, updated_at)
+          (id, user_id, amount, method, provider, service, status, reference, currency, created_at, updated_at)
          values
-          ($1, $2, $3, $4, $5, $6, $7, 'BDT', now(), now())
+          ($1, $2, $3, $4, $5, $6, $7, $8, 'BDT', now(), now())
          on conflict (id) do update set
           amount = excluded.amount,
           method = excluded.method,
           provider = excluded.provider,
+          service = excluded.service,
           status = excluded.status,
           reference = excluded.reference,
           currency = excluded.currency,
@@ -553,6 +512,7 @@ async function main() {
           payment.amount,
           payment.method,
           payment.provider,
+          payment.service,
           payment.status,
           payment.reference,
         ],
@@ -568,13 +528,10 @@ async function main() {
         (select count(*)::int from public.payments) as payments;`,
     );
 
-    await client.query("commit");
-
     console.log("\nSeed complete. Counts:");
     console.table(rows[0]);
     console.log("\nDone.");
   } catch (error) {
-    await client.query("rollback");
     console.error("Reset + seed failed:", error);
     process.exitCode = 1;
   } finally {

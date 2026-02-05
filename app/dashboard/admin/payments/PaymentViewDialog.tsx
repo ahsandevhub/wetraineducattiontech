@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FileText, Receipt, X } from "lucide-react";
+import { FileText, Loader2, Receipt, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "react-hot-toast";
 import { ConfirmDialog } from "../_components/ConfirmDialog";
@@ -203,7 +203,14 @@ export function PaymentViewDialog({
                   onClick={() => setConfirmAction({ type: "mark-paid" })}
                   disabled={isPending}
                 >
-                  Mark as Paid
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Mark as Paid"
+                  )}
                 </Button>
               )}
 
@@ -214,8 +221,17 @@ export function PaymentViewDialog({
                   onClick={() => setConfirmAction({ type: "reject" })}
                   disabled={isPending}
                 >
-                  <X className="mr-2 h-4 w-4" />
-                  Reject Payment
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <X className="mr-2 h-4 w-4" />
+                      Reject Payment
+                    </>
+                  )}
                 </Button>
               )}
             </div>

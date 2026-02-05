@@ -16,8 +16,7 @@
 
 ## Auth Seeding
 
-- By default, the script **does not** create auth users. It reuses existing users (if any) and seeds profiles for them.
-- To create deterministic demo auth users, run with `--with-auth`.
+- The script **does not** create auth users. Create demo users in Supabase Dashboard first, then seed profiles for them.
 
 ## What Gets Seeded
 
@@ -42,14 +41,13 @@
 # data-only mode (preserve auth.users)
 RESET_SEED_ALLOW=true node scripts/reset-seed.mjs --mode data-only
 
-# full reset + create auth users
-RESET_SEED_ALLOW=true node scripts/reset-seed.mjs --mode full --with-auth
+# full reset
+RESET_SEED_ALLOW=true node scripts/reset-seed.mjs --mode full
 ```
 
 ## Required Environment Variables
 
 - `SUPABASE_DB_URL`, `SUPABASE_POOLER_URL`, or `DATABASE_URL`
-- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (only if using `--with-auth`)
 
 ## Verification
 
