@@ -18,73 +18,8 @@ interface Project {
   githubUrl?: string;
 }
 
-const fallbackProjects: Project[] = [
-  {
-    id: "school-system",
-    title: "Modern School Management System",
-    description:
-      "Complete school administration platform with student portal, attendance tracking, grade management, and parent-teacher communication.",
-    imageUrl: "/projects/school-management.jpg",
-    category: "Enterprise Software",
-    tech: ["Next.js", "PostgreSQL", "Tailwind CSS", "Supabase"],
-    liveUrl: "#",
-  },
-  {
-    id: "ecommerce-platform",
-    title: "E-Commerce Platform",
-    description:
-      "Full-featured online marketplace with payment integration, inventory management, and real-time order tracking system.",
-    imageUrl: "/projects/ecommerce.jpg",
-    category: "E-Commerce",
-    tech: ["React", "Node.js", "Stripe", "MongoDB"],
-    liveUrl: "#",
-    githubUrl: "#",
-  },
-  {
-    id: "healthcare-app",
-    title: "Healthcare Management App",
-    description:
-      "Digital healthcare solution with appointment scheduling, patient records, and telemedicine capabilities.",
-    imageUrl: "/projects/healthcare.jpg",
-    category: "Healthcare",
-    tech: ["React Native", "Firebase", "Node.js", "Express"],
-    liveUrl: "#",
-  },
-  {
-    id: "crm-dashboard",
-    title: "CRM & Analytics Dashboard",
-    description:
-      "Customer relationship management system with advanced analytics, sales tracking, and automated reporting.",
-    imageUrl: "/projects/crm-dashboard.jpg",
-    category: "Business Software",
-    tech: ["Vue.js", "Laravel", "MySQL", "Chart.js"],
-    liveUrl: "#",
-  },
-  {
-    id: "pos-system",
-    title: "Restaurant POS System",
-    description:
-      "Point-of-sale solution with table management, kitchen display system, and integrated payment processing.",
-    imageUrl: "/projects/pos-system.jpg",
-    category: "Retail & POS",
-    tech: ["React", "Python", "PostgreSQL", "Redis"],
-    liveUrl: "#",
-  },
-  {
-    id: "learning-platform",
-    title: "Online Learning Platform",
-    description:
-      "Interactive e-learning system with video courses, live classes, quizzes, and progress tracking.",
-    imageUrl: "/projects/learning-platform.jpg",
-    category: "Education",
-    tech: ["Next.js", "TypeScript", "Prisma", "WebRTC"],
-    liveUrl: "#",
-    githubUrl: "#",
-  },
-];
-
 export default function ProjectsSection() {
-  const [projects, setProjects] = useState<Project[]>(fallbackProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -152,95 +87,108 @@ export default function ProjectsSection() {
         </motion.div>
 
         {/* Projects Grid */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project, index) => (
-            <motion.div
-              key={project.id}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true, margin: "-50px" }}
-              className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-xl hover:border-yellow-300"
-            >
-              {/* Project Image */}
-              <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-yellow-100 to-orange-100">
-                {project.imageUrl ? (
-                  <Image
-                    src={project.imageUrl}
-                    alt={project.title}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <div className="text-center">
-                      <div className="mb-2 text-4xl">🚀</div>
-                      <p className="text-sm font-medium text-gray-600">
-                        {project.category}
-                      </p>
+        {projects.length > 0 ? (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project, index) => (
+              <motion.div
+                key={project.id}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-xl hover:border-yellow-300"
+              >
+                {/* Project Image */}
+                <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-yellow-100 to-orange-100">
+                  {project.imageUrl ? (
+                    <Image
+                      src={project.imageUrl}
+                      alt={project.title}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="text-center">
+                        <div className="mb-2 text-4xl">🚀</div>
+                        <p className="text-sm font-medium text-gray-600">
+                          {project.category}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+
+                  {/* Action Buttons */}
+                  <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 transition-opacity group-hover:opacity-100">
+                    {project.liveUrl && (
+                      <a
+                        href={project.liveUrl}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-yellow-600 transition-all hover:bg-yellow-500 hover:text-white"
+                        aria-label="View live project"
+                      >
+                        <ExternalLink className="h-5 w-5" />
+                      </a>
+                    )}
+                    {project.githubUrl && (
+                      <a
+                        href={project.githubUrl}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-900 transition-all hover:bg-gray-900 hover:text-white"
+                        aria-label="View on GitHub"
+                      >
+                        <Github className="h-5 w-5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Project Info */}
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="mb-2">
+                    <span className="text-xs font-medium text-yellow-600">
+                      {project.category}
+                    </span>
+                  </div>
+                  <h3 className="mb-3 text-xl font-bold text-gray-900">
+                    {project.title}
+                  </h3>
+                  <p className="mb-4 flex-1 text-gray-600">
+                    {project.description}
+                  </p>
+
+                  {/* Tech Stack */}
+                  <div className="border-t border-gray-100 pt-4">
+                    <p className="mb-2 text-xs font-semibold text-gray-500">
+                      TECH STACK
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {project.tech.map((tech, i) => (
+                        <span
+                          key={i}
+                          className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
+                        >
+                          {tech}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                )}
-                {/* Overlay on hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-
-                {/* Action Buttons */}
-                <div className="absolute inset-0 flex items-center justify-center gap-3 opacity-0 transition-opacity group-hover:opacity-100">
-                  {project.liveUrl && (
-                    <a
-                      href={project.liveUrl}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-yellow-600 transition-all hover:bg-yellow-500 hover:text-white"
-                      aria-label="View live project"
-                    >
-                      <ExternalLink className="h-5 w-5" />
-                    </a>
-                  )}
-                  {project.githubUrl && (
-                    <a
-                      href={project.githubUrl}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-900 transition-all hover:bg-gray-900 hover:text-white"
-                      aria-label="View on GitHub"
-                    >
-                      <Github className="h-5 w-5" />
-                    </a>
-                  )}
                 </div>
-              </div>
-
-              {/* Project Info */}
-              <div className="flex flex-1 flex-col p-6">
-                <div className="mb-2">
-                  <span className="text-xs font-medium text-yellow-600">
-                    {project.category}
-                  </span>
-                </div>
-                <h3 className="mb-3 text-xl font-bold text-gray-900">
-                  {project.title}
-                </h3>
-                <p className="mb-4 flex-1 text-gray-600">
-                  {project.description}
-                </p>
-
-                {/* Tech Stack */}
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="mb-2 text-xs font-semibold text-gray-500">
-                    TECH STACK
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {project.tech.map((tech, i) => (
-                      <span
-                        key={i}
-                        className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-700"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="min-h-96 flex flex-col items-center justify-center text-center py-20">
+            <div className="text-6xl mb-6">🚀</div>
+            <h3 className="text-3xl font-bold text-gray-900 mb-3">
+              Coming Soon
+            </h3>
+            <p className="text-xl text-gray-600 max-w-2xl">
+              We&apos;re working on exciting projects to showcase. Check back
+              soon to see our latest work!
+            </p>
+          </div>
+        )}
 
         {/* Bottom CTA */}
         <motion.div

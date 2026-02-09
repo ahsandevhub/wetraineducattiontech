@@ -29,11 +29,9 @@ import { cn } from "@/lib/utils";
 import {
   Award,
   Briefcase,
-  ClipboardList,
   FolderKanban,
   LayoutDashboard,
   MessageSquare,
-  Package,
   Receipt,
   ShoppingCart,
   User,
@@ -41,7 +39,7 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
 import { ProfileMenu } from "./ProfileMenu";
 import { TeamSwitcher } from "./TeamSwitcher";
@@ -77,7 +75,6 @@ type AdminLayoutProps = {
 
 export default function AdminLayout({ children, role }: AdminLayoutProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const adminBreadcrumbMap: Record<string, string> = {
     "/dashboard/admin": "Dashboard",
@@ -90,10 +87,18 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
     "/dashboard/admin/certifications": "Certifications",
     "/dashboard/admin/stories": "Client Stories",
   };
+
+  const customerBreadcrumbMap: Record<string, string> = {
+    "/dashboard/customer": "Dashboard",
+    "/dashboard/customer/services": "Services",
+    "/dashboard/customer/payments": "Payments",
+    "/dashboard/profile": "Profile",
+  };
+
   const currentTab =
     role === "admin"
       ? (adminBreadcrumbMap[pathname] ?? "Dashboard")
-      : (searchParams.get("tab") ?? "Dashboard");
+      : (customerBreadcrumbMap[pathname] ?? "Dashboard");
   const breadcrumbRoot = role === "admin" ? "Admin" : "Customer";
 
   const sidebarData: SidebarData = (() => {
@@ -135,11 +140,6 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
                 href: "/dashboard/admin/orders",
               },
               {
-                label: "Products",
-                icon: Package,
-                href: "/dashboard/admin/products",
-              },
-              {
                 label: "Services",
                 icon: Briefcase,
                 href: "/dashboard/admin/services",
@@ -179,22 +179,17 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
             {
               label: "Services",
               icon: Zap,
-              href: "/dashboard/customer?tab=services",
+              href: "/dashboard/customer/services",
             },
             {
               label: "Payments",
               icon: Receipt,
-              href: "/dashboard/customer?tab=payments",
-            },
-            {
-              label: "Tasks",
-              icon: ClipboardList,
-              href: "/dashboard/customer?tab=tasks",
+              href: "/dashboard/customer/payments",
             },
             {
               label: "Profile",
               icon: User,
-              href: "/dashboard/customer?tab=profile",
+              href: "/dashboard/profile",
             },
           ],
         },
@@ -214,16 +209,13 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => {
-                  const [baseHref, queryString] = item.href.split("?");
-                  const tabValue = queryString?.startsWith("tab=")
-                    ? queryString.replace("tab=", "")
-                    : null;
-                  const isActive = tabValue
-                    ? pathname === baseHref &&
-                      searchParams.get("tab") === tabValue
-                    : pathname === baseHref ||
-                      (baseHref !== "/dashboard/admin" &&
-                        pathname.startsWith(baseHref));
+                  const isActive =
+                    role === "admin"
+                      ? pathname === item.href ||
+                        (item.href !== "/dashboard/admin" &&
+                          pathname.startsWith(item.href))
+                      : pathname === item.href;
+
                   const Icon = item.icon;
                   return (
                     <SidebarMenuItem key={item.label}>

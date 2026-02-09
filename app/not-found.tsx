@@ -13,20 +13,20 @@ export default function NotFound() {
         className="max-w-xl"
       >
         <SearchX className="w-20 h-20 text-yellow-400 mx-auto mb-6" />
-        <h1 className="text-5xl font-bold text-gray-900 mb-4">৪০৪</h1>
+        <h1 className="text-5xl font-bold text-gray-900 mb-4">404</h1>
         <p className="text-xl text-gray-700 font-semibold mb-2">
-          উফ! পেজটি খুঁজে পাওয়া যায়নি।
+          Oops! Page not found.
         </p>
         <p className="text-gray-600 mb-6">
-          আপনি যে পেজটি খুঁজছেন সেটি মুছে ফেলা হয়েছে, স্থানান্তর করা হয়েছে,
-          অথবা কখনও ছিল না।
+          The page you are looking for may have been removed, moved, or never
+          existed.
         </p>
         <Link
           href="/"
           className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium bg-[var(--primary-yellow)] text-gray-900 rounded-lg shadow hover:bg-[var(--secondary-yellow)] transition-all"
         >
           <ArrowLeft className="w-4 h-4" />
-          হোম পেজে ফিরে যান
+          Back to Home
         </Link>
       </motion.div>
     </section>

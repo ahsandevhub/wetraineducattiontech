@@ -1,9 +1,9 @@
 // app/layout.tsx
+import DisclaimerBanner from "@/app/components/DisclaimerBanner";
+import Footer from "@/app/components/Footer";
+import Header from "@/app/components/Header";
+import WhatsAppButton from "@/app/components/WhatsAppButton";
 import { Toaster } from "react-hot-toast";
-import DisclaimerBanner from "../components/DisclaimerBanner";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
-import TranslateButton from "../components/TranslateButton";
 
 export default function RootLayout({
   children,
@@ -26,7 +26,9 @@ export default function RootLayout({
 
       {/* Footer */}
       <Footer />
-      <TranslateButton />
+
+      {/* Fixed WhatsApp Button */}
+      <WhatsAppButton />
     </div>
   );
 }

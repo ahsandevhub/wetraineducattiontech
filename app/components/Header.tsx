@@ -45,7 +45,7 @@ export default function Header() {
   const navItems = [
     { id: "home", name: "Home", href: "/", type: "link" },
     { id: "about", name: "About", href: "/about", type: "link" },
-    { id: "services", name: "Services", href: "#", type: "dropdown" },
+    { id: "services", name: "Services", href: "/services", type: "dropdown" },
     { id: "projects", name: "Projects", href: "/#projects", type: "link" },
     {
       id: "certificates",
@@ -57,9 +57,9 @@ export default function Header() {
   ];
 
   const servicesSubmenu = [
-    { name: "Courses", href: "/#courses" },
-    { name: "Software", href: "/#it-services" },
-    { name: "Marketing", href: "/#marketing-services" },
+    { name: "Courses", href: "/courses" },
+    { name: "IT Services", href: "/software" },
+    { name: "Marketing Services", href: "/marketing" },
   ];
 
   return (

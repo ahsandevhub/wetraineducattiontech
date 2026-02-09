@@ -28,7 +28,6 @@ import {
 } from "react";
 import { toast } from "react-hot-toast";
 import { ConfirmDialog } from "../_components/ConfirmDialog";
-import CopyButton from "../_components/CopyButton";
 import TablePagination from "../_components/TablePagination";
 import { createProject, deleteProject, updateProject } from "../actions";
 import type { AdminProjectRow } from "../types";
@@ -244,7 +243,6 @@ export default function ProjectsClient({ projects }: ProjectsClientProps) {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                           <span>{project.slug}</span>
-                          <CopyButton text={project.slug} />
                         </div>
                       </div>
                     </TableCell>

@@ -38,13 +38,56 @@ export default function LoginPage() {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profileError) {
+        const isMissingProfile =
+          profileError.code === "PGRST116" ||
+          profileError.message?.toLowerCase().includes("0 rows");
+
+        if (isMissingProfile) {
+          const fullName =
+            data.user?.user_metadata?.name ||
+            data.user?.email?.split("@")[0] ||
+            "New User";
+
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({
+              id: userId,
+              full_name: fullName,
+              email: data.user?.email ?? null,
+              avatar_url: data.user?.user_metadata?.avatar_url ?? null,
+              role: "customer",
+            });
+
+          if (insertError) {
+            setError(
+              insertError.message ||
+                "Unable to create your profile. Please try again.",
+            );
+            return;
+          }
+        } else {
+          setError(
+            profileError.message ||
+              "Unable to access your profile. Please try again.",
+          );
+          return;
+        }
+      }
+
+      const { data: finalProfile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
-      const role = profile?.role ?? "customer";
+      const role = finalProfile?.role ?? profile?.role ?? "customer";
       router.push(
         role === "admin" ? "/dashboard/admin" : "/dashboard/customer",
       );

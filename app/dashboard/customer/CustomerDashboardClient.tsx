@@ -11,88 +11,70 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, Zap } from "lucide-react";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-
-export type CustomerServiceRow = {
-  id: string;
-  name: string;
-  status: "active" | "inactive";
-};
-
-export type CustomerPaymentRow = {
-  id: string;
-  plan: string;
-  amount: number;
-  date: string | null;
-  status: string;
-  method: string;
-};
-
-export type CustomerStats = {
-  activeServices: number;
-  totalSpent: number;
-};
-
-export type CustomerProfile = {
-  id: string;
-  fullName: string;
-  email: string;
-  role: string;
-  createdAt: string | null;
-};
+import { AlertCircle, CreditCard, Zap } from "lucide-react";
+import Link from "next/link";
+import type {
+  CustomerPaymentRow,
+  CustomerProfile,
+  CustomerServiceRow,
+  CustomerStats,
+} from "./types";
 
 type CustomerDashboardClientProps = {
-  profile: CustomerProfile;
-  payments: CustomerPaymentRow[];
-  services: CustomerServiceRow[];
   stats: CustomerStats;
+  profile: CustomerProfile;
+  lastPayments: CustomerPaymentRow[];
+  activeServices: CustomerServiceRow[];
 };
 
 const formatCurrency = (value: number) => `৳${value.toLocaleString()}`;
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "paid":
+      return "bg-green-100 text-green-800";
+    case "pending":
+      return "bg-yellow-100 text-yellow-800";
+    case "failed":
+      return "bg-red-100 text-red-800";
+    case "active":
+      return "bg-blue-100 text-blue-800";
+    case "inactive":
+      return "bg-gray-100 text-gray-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+};
 
 export default function CustomerDashboardClient({
-  profile,
-  payments,
-  services,
   stats,
+  profile,
+  lastPayments,
+  activeServices,
 }: CustomerDashboardClientProps) {
-  const search = useSearchParams();
-  const [activeTab, setActiveTab] = useState("overview");
-
-  useEffect(() => {
-    setActiveTab(search.get("tab") ?? "overview");
-  }, [search]);
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Customer Dashboard
-          </h1>
-          <p className="text-sm text-gray-600">
-            Track your services, payments, and profile.
-          </p>
-        </div>
-        <Button variant="secondary">Upgrade Plan</Button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Customer Dashboard</h1>
+        <p className="text-sm text-gray-600">
+          Welcome back, {profile.fullName}. Here&apos;s an overview of your
+          account.
+        </p>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
               Active Services
             </CardTitle>
-            <Zap className="h-4 w-4 text-[var(--primary-yellow)]" />
+            <Zap className="h-5 w-5 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold text-gray-900">
+            <div className="text-2xl font-bold text-gray-900">
               {stats.activeServices}
             </div>
-            <p className="text-xs text-gray-500">Running services</p>
+            <p className="text-xs text-gray-500">Currently active</p>
           </CardContent>
         </Card>
 
@@ -101,185 +83,132 @@ export default function CustomerDashboardClient({
             <CardTitle className="text-sm font-medium text-gray-600">
               Total Spent
             </CardTitle>
-            <CreditCard className="h-4 w-4 text-blue-500" />
+            <CreditCard className="h-5 w-5 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold text-gray-900">
+            <div className="text-2xl font-bold text-gray-900">
               {formatCurrency(stats.totalSpent)}
             </div>
-            <p className="text-xs text-gray-500">All-time</p>
+            <p className="text-xs text-gray-500">All-time spending</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
-              Membership
+              Pending Payments
             </CardTitle>
-            <Badge>{profile.role}</Badge>
+            <AlertCircle className="h-5 w-5 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">
-              Member since{" "}
-              {profile.createdAt
-                ? new Date(profile.createdAt).toLocaleDateString()
-                : "—"}
-            </p>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats.pendingPayments}
+            </div>
+            <p className="text-xs text-gray-500">Awaiting action</p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-4"
-      >
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-          <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-gray-600">
-              Stay on top of your active services and recent payments. Use tabs
-              to manage details.
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="services">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Services</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {services.length === 0 ? (
-                <div className="text-sm text-gray-500">
-                  No active services yet.
-                </div>
-              ) : (
-                services.map((service) => (
-                  <Card key={service.id} className="border border-gray-200">
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <CardTitle className="text-base">
-                        {service.name}
-                      </CardTitle>
-                      <Badge
-                        variant={
-                          service.status === "active" ? "default" : "secondary"
-                        }
-                      >
-                        {service.status}
-                      </Badge>
-                    </CardHeader>
-                    <CardContent className="flex items-center justify-between">
-                      <Zap className="h-6 w-6 text-gray-500" />
-                      <Button
-                        size="sm"
-                        variant={
-                          service.status === "active" ? "default" : "secondary"
-                        }
-                      >
-                        {service.status === "active" ? "Manage" : "Activate"}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="payments">
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment History</CardTitle>
-            </CardHeader>
-            <CardContent>
+      {/* Last 3 Payments Preview */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Recent Payments</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/customer/payments">View all</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {lastPayments.length > 0 ? (
+            <div className="border rounded-lg overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Plan</TableHead>
+                    <TableHead>Reference</TableHead>
                     <TableHead>Amount</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Method</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payments.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center text-gray-500"
-                      >
-                        No payments recorded.
+                  {lastPayments.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell className="font-mono text-xs">
+                        {payment.reference.substring(0, 12)}...
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(payment.amount)}
+                      </TableCell>
+                      <TableCell className="capitalize">
+                        {payment.method}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={`capitalize ${getStatusColor(payment.status)}`}
+                        >
+                          {payment.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {payment.createdAt
+                          ? new Date(payment.createdAt).toLocaleDateString()
+                          : "—"}
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    payments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="font-medium">
-                          {payment.id}
-                        </TableCell>
-                        <TableCell>{payment.plan}</TableCell>
-                        <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                        <TableCell>
-                          {payment.date
-                            ? new Date(payment.date).toLocaleDateString()
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              payment.status === "paid"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
-                            {payment.status}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
+                  ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No payments yet
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-gray-600">
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Full Name</p>
-                <p className="font-medium text-gray-900">
-                  {profile.fullName || "—"}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Email</p>
-                <p className="font-medium text-gray-900">{profile.email}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-gray-500">Role</p>
-                <Badge variant="secondary">{profile.role}</Badge>
-              </div>
-              <Button variant="secondary">Request Profile Update</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Active Services Preview */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Active Services</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/customer/services">View all</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {activeServices.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-3">
+              {activeServices.map((service) => (
+                <Card key={service.id}>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {service.packageName}
+                        </p>
+                        <Badge
+                          className={`mt-2 capitalize ${getStatusColor(service.status)}`}
+                        >
+                          {service.status}
+                        </Badge>
+                      </div>
+                      <Zap className="h-5 w-5 text-yellow-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No active services
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { uploadToSupabase } from "./supabaseStorageUtils";
+import { WarningDialog } from "./WarningDialog";
 
 export interface AvatarUploadProps {
   currentAvatarUrl?: string;
@@ -25,6 +26,7 @@ export function AvatarUpload({
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(
     currentAvatarUrl,
   );
+  const [warning, setWarning] = useState<string | null>(null);
 
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -34,13 +36,13 @@ export function AvatarUpload({
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      setWarning("Please select an image file");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("File size must be less than 5MB");
+      setWarning("File size must be less than 5MB");
       return;
     }
 
@@ -59,7 +61,7 @@ export function AvatarUpload({
       onUpload(url);
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Failed to upload image");
+      setWarning("Failed to upload image");
       // Reset preview on error
       setPreviewUrl(currentAvatarUrl);
     } finally {
@@ -81,6 +83,11 @@ export function AvatarUpload({
 
   return (
     <div className="space-y-3">
+      <WarningDialog
+        open={Boolean(warning)}
+        description={warning ?? ""}
+        onClose={() => setWarning(null)}
+      />
       <label className="text-sm font-medium">Profile Picture</label>
       <div className="flex items-center gap-4">
         <Avatar className="h-20 w-20">

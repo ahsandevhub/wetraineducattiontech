@@ -63,7 +63,7 @@ export default function CertificationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? "Edit Certification" : "Add Certification"}
@@ -154,7 +154,7 @@ export default function CertificationDialog({
                 }))
               }
               disabled={isSaving}
-              rows={4}
+              rows={3}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="Certification description"
             />

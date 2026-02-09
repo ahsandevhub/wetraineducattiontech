@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 
 interface Course {
   id: string;
+  slug: string;
   title: string;
   description: string;
   instructor: string;
@@ -22,132 +23,9 @@ interface Course {
   features: string[];
 }
 
-const fallbackCourses: Course[] = [
-  {
-    id: "web-development",
-    title: "Full-Stack Web Development",
-    description:
-      "Master modern web development with React, Next.js, Node.js, and MongoDB. Build real-world projects from scratch.",
-    instructor: "Senior Developer Team",
-    duration: "12 Weeks",
-    students: "2,500+",
-    rating: 4.9,
-    price: "৳15,999",
-    emoji: "💻",
-    features: [
-      "React & Next.js fundamentals",
-      "Backend with Node.js & Express",
-      "Database design with MongoDB",
-      "Deployment & DevOps basics",
-      "Real-world projects",
-      "Lifetime access",
-    ],
-  },
-  {
-    id: "digital-marketing",
-    title: "Digital Marketing Mastery",
-    description:
-      "Learn proven strategies for social media marketing, SEO, content marketing, and paid advertising to grow your business.",
-    instructor: "Marketing Expert Team",
-    duration: "8 Weeks",
-    students: "3,200+",
-    rating: 4.8,
-    price: "৳12,999",
-    emoji: "📱",
-    features: [
-      "Social media marketing strategies",
-      "SEO & content optimization",
-      "Facebook & Google Ads",
-      "Email marketing campaigns",
-      "Analytics & reporting",
-      "Certification included",
-    ],
-  },
-  {
-    id: "graphic-design",
-    title: "Professional Graphic Design",
-    description:
-      "Create stunning designs with Adobe Creative Suite. Master Photoshop, Illustrator, and design principles.",
-    instructor: "Creative Design Team",
-    duration: "10 Weeks",
-    students: "1,800+",
-    rating: 4.7,
-    price: "৳13,999",
-    emoji: "🎨",
-    features: [
-      "Adobe Photoshop mastery",
-      "Illustrator for vector graphics",
-      "Brand identity design",
-      "UI/UX design basics",
-      "Portfolio development",
-      "Job placement support",
-    ],
-  },
-  {
-    id: "python-programming",
-    title: "Python for Data Science",
-    description:
-      "Learn Python programming, data analysis with Pandas, visualization with Matplotlib, and machine learning basics.",
-    instructor: "Data Science Team",
-    duration: "10 Weeks",
-    students: "2,100+",
-    rating: 4.9,
-    price: "৳14,999",
-    emoji: "🐍",
-    features: [
-      "Python programming fundamentals",
-      "Data analysis with Pandas",
-      "Data visualization",
-      "Machine learning basics",
-      "Real datasets & projects",
-      "Industry certification",
-    ],
-  },
-  {
-    id: "business-management",
-    title: "Business Management & Strategy",
-    description:
-      "Essential business skills including leadership, strategic planning, operations management, and entrepreneurship.",
-    instructor: "Business Consultant Team",
-    duration: "6 Weeks",
-    students: "1,500+",
-    rating: 4.6,
-    price: "৳11,999",
-    emoji: "📊",
-    features: [
-      "Leadership & team management",
-      "Strategic business planning",
-      "Financial management basics",
-      "Operations & supply chain",
-      "Case study analysis",
-      "Expert mentorship",
-    ],
-  },
-  {
-    id: "mobile-app-development",
-    title: "Mobile App Development",
-    description:
-      "Build native and cross-platform mobile apps with React Native. Deploy to iOS and Android app stores.",
-    instructor: "Mobile Dev Team",
-    duration: "12 Weeks",
-    students: "1,900+",
-    rating: 4.8,
-    price: "৳16,999",
-    emoji: "📱",
-    features: [
-      "React Native development",
-      "iOS & Android deployment",
-      "App store optimization",
-      "Push notifications & APIs",
-      "3+ real app projects",
-      "Freelancing guidance",
-    ],
-  },
-];
-
 export default function CoursesSection() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [courses, setCourses] = useState<Course[]>(fallbackCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
 
   const formatPrice = (price: number | null, currency: string) => {
     if (price === null) return "Custom Quote";
@@ -180,7 +58,7 @@ export default function CoursesSection() {
       const { data } = await supabase
         .from("services")
         .select(
-          "id, title, details, key_features, featured_image_url, price, discount, currency",
+          "id, slug, title, details, key_features, featured_image_url, price, discount, currency",
         )
         .eq("category", "course")
         .order("created_at", { ascending: false });
@@ -188,6 +66,7 @@ export default function CoursesSection() {
       if (data && data.length > 0) {
         const mapped: Course[] = data.map((service) => ({
           id: service.id as string,
+          slug: service.slug as string,
           title: service.title ?? "",
           description: service.details ?? "",
           instructor: "WeTrain Team",
@@ -248,100 +127,113 @@ export default function CoursesSection() {
         </motion.div>
 
         {/* Courses Grid */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course, index) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true, margin: "-50px" }}
-              className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all hover:border-yellow-300 hover:shadow-xl"
-            >
-              {/* Course Image/Icon */}
-              <div className="flex h-48 items-center justify-center bg-gradient-to-br from-yellow-100 to-yellow-50 text-6xl">
-                {course.imageUrl ? (
-                  <div className="relative h-full w-full">
-                    <Image
-                      src={course.imageUrl}
-                      alt={course.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <span>{course.emoji ?? "🎓"}</span>
-                )}
-              </div>
-
-              <div className="flex flex-1 flex-col p-6">
-                {/* Rating & Stats */}
-                <div className="mb-4 flex items-center justify-between text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{course.rating}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span>{course.students}</span>
+        {courses.length > 0 ? (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {courses.slice(0, 3).map((course, index) => (
+              <motion.div
+                key={course.id}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all hover:border-yellow-300 hover:shadow-xl"
+              >
+                {/* Course Image/Icon */}
+                <div className="flex h-48 items-center justify-center bg-gradient-to-br from-yellow-100 to-yellow-50 text-6xl">
+                  {course.imageUrl ? (
+                    <div className="relative h-full w-full">
+                      <Image
+                        src={course.imageUrl}
+                        alt={course.title}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{course.duration}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Title & Description */}
-                <h3 className="mb-2 text-xl font-bold text-gray-900">
-                  {course.title}
-                </h3>
-                <p className="mb-4 text-gray-600">{course.description}</p>
-
-                {/* Features */}
-                <ul className="mb-6 space-y-2 text-sm">
-                  {course.features.slice(0, 3).map((feature, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <BookOpen className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-500" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Instructor */}
-                <p className="mb-4 text-sm text-gray-500">
-                  By {course.instructor}
-                </p>
-
-                {/* Price & CTA */}
-                <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
-                  <div>
-                    <span className="text-2xl font-bold text-yellow-500">
-                      {course.price}
-                    </span>
-                  </div>
-                  {isAdmin ? (
-                    <button
-                      disabled
-                      className="rounded-lg bg-gray-300 px-6 py-2.5 font-bold text-gray-600 cursor-not-allowed"
-                      title="Admins cannot purchase"
-                    >
-                      Enroll Now
-                    </button>
                   ) : (
-                    <Link
-                      href={`/checkout?service=course&name=${encodeURIComponent(course.title)}&price=${encodeURIComponent(course.price)}&id=${course.id}`}
-                      className="rounded-lg bg-yellow-500 px-6 py-2.5 font-bold text-white transition-all hover:bg-yellow-600 hover:shadow-lg"
-                    >
-                      Enroll Now
-                    </Link>
+                    <span>{course.emoji ?? "🎓"}</span>
                   )}
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
+                <div className="flex flex-1 flex-col p-6">
+                  {/* Rating & Stats */}
+                  <div className="mb-4 flex items-center justify-between text-sm text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold">{course.rating}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span>{course.students}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{course.duration}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Title & Description */}
+                  <h3 className="mb-2 text-xl font-bold text-gray-900">
+                    {course.title}
+                  </h3>
+                  <p className="mb-4 text-gray-600">{course.description}</p>
+
+                  {/* Features */}
+                  <ul className="mb-6 space-y-2 text-sm">
+                    {course.features.slice(0, 3).map((feature, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <BookOpen className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-500" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Instructor */}
+                  <p className="mb-4 text-sm text-gray-500">
+                    By {course.instructor}
+                  </p>
+
+                  {/* Price & CTA */}
+                  <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
+                    <div>
+                      <span className="text-2xl font-bold text-yellow-500">
+                        {course.price}
+                      </span>
+                    </div>
+                    {isAdmin ? (
+                      <button
+                        disabled
+                        className="rounded-lg bg-gray-300 px-6 py-2.5 font-bold text-gray-600 cursor-not-allowed"
+                        title="Admins cannot purchase"
+                      >
+                        Enroll Now
+                      </button>
+                    ) : (
+                      <Link
+                        href={`/courses/${course.slug}`}
+                        className="rounded-lg bg-yellow-500 px-6 py-2.5 font-bold text-white transition-all hover:bg-yellow-600 hover:shadow-lg"
+                      >
+                        Enroll Now
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="min-h-96 flex flex-col items-center justify-center text-center py-20">
+            <div className="text-6xl mb-6">🚀</div>
+            <h3 className="text-3xl font-bold text-gray-900 mb-3">
+              Coming Soon
+            </h3>
+            <p className="text-xl text-gray-600 max-w-2xl">
+              We&apos;re working hard to bring you amazing training courses.
+              Check back soon!
+            </p>
+          </div>
+        )}
 
         {/* Bottom CTA */}
         <motion.div
@@ -349,8 +241,16 @@ export default function CoursesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
           viewport={{ once: true }}
-          className="mt-16 text-center"
+          className="mt-16 text-center space-y-6"
         >
+          {courses.length > 3 && (
+            <Link
+              href="/courses"
+              className="inline-block rounded-xl bg-yellow-500 px-8 py-3 font-bold text-white transition-all hover:bg-yellow-600 hover:shadow-lg"
+            >
+              View All Courses
+            </Link>
+          )}
           <p className="mb-4 text-lg text-gray-600">
             Can&apos;t find the right course? We offer custom training programs
             tailored to your needs.

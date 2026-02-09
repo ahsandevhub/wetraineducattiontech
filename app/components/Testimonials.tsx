@@ -8,32 +8,16 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function Testimonials() {
-  const [testimonials, setTestimonials] = useState([
+  const [testimonials, setTestimonials] = useState<
     {
-      name: "Ariana Chen",
-      role: "CMO, SaaS Startup (US)",
-      text: "WeTrain Marketing helped us clarify our positioning and scale paid social without wasting spend. Clear KPIs, fast iterations, real results.",
-      avatar: "/avatars/ariana.jpg",
-      achievement: "142% QoQ pipeline growth",
-      rating: 5,
-    },
-    {
-      name: "Mateo Silva",
-      role: "Founder, DTC Brand (EU)",
-      text: "Their creative testing framework finally gave us consistent winners. CPA dropped, AOV rose, and reporting is refreshingly transparent.",
-      avatar: "/avatars/mateo.jpg",
-      achievement: "38% lower CPA in 60 days",
-      rating: 5,
-    },
-    {
-      name: "Riya Kapoor",
-      role: "Head of Growth, Fintech (APAC)",
-      text: "From strategy to execution, the team is senior and proactive. Cross-channel orchestration was seamless across markets.",
-      avatar: "/avatars/riya.jpg",
-      achievement: "5-country rollout, on time",
-      rating: 4,
-    },
-  ]);
+      name: string;
+      role: string;
+      text: string;
+      avatar: string;
+      achievement: string;
+      rating: number;
+    }[]
+  >([]);
 
   useEffect(() => {
     const loadStories = async () => {
@@ -105,68 +89,81 @@ export default function Testimonials() {
         </motion.div>
 
         {/* Testimonials */}
-        <div className="mb-20 grid grid-cols-1 gap-8 md:grid-cols-3">
-          {testimonials.map((t, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: idx * 0.1 }}
-              viewport={{ once: true, margin: "-50px" }}
-              whileHover={{ y: -5 }}
-              className="flex h-full flex-col rounded-xl border border-gray-100 bg-white p-8 transition-all hover:shadow-lg"
-            >
-              <div className="mb-4 flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-5 w-5 ${
-                      i < t.rating
-                        ? "text-[var(--primary-yellow)] fill-[var(--primary-yellow)]"
-                        : "text-gray-300"
-                    }`}
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-
-              <p className="mb-6 flex-grow italic text-gray-600">
-                &quot;{t.text}&quot;
-              </p>
-
-              <div className="flex items-center">
-                {t.avatar ? (
-                  <Image
-                    src={t.avatar}
-                    alt={`${t.name} — ${t.role}`}
-                    height={48}
-                    width={48}
-                    className="mr-4 h-12 w-12 rounded-full border-2 border-[var(--primary-yellow)] object-cover"
-                  />
-                ) : (
-                  <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--primary-yellow)] bg-[var(--tertiary-yellow)] text-sm font-semibold text-[var(--primary-yellow)]">
-                    {t.name
-                      .split(" ")
-                      .map((part) => part[0])
-                      .slice(0, 2)
-                      .join("")}
-                  </div>
-                )}
-                <div>
-                  <h4 className="font-bold text-gray-900">{t.name}</h4>
-                  <p className="text-sm text-gray-500">{t.role}</p>
+        {testimonials.length > 0 ? (
+          <div className="mb-20 grid grid-cols-1 gap-8 md:grid-cols-3">
+            {testimonials.map((t, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                viewport={{ once: true, margin: "-50px" }}
+                whileHover={{ y: -5 }}
+                className="flex h-full flex-col rounded-xl border border-gray-100 bg-white p-8 transition-all hover:shadow-lg"
+              >
+                <div className="mb-4 flex">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-5 w-5 ${
+                        i < t.rating
+                          ? "text-[var(--primary-yellow)] fill-[var(--primary-yellow)]"
+                          : "text-gray-300"
+                      }`}
+                      aria-hidden="true"
+                    />
+                  ))}
                 </div>
-              </div>
 
-              <div className="mt-6 rounded-lg bg-[var(--tertiary-yellow)] p-3 text-center">
-                <p className="text-sm text-gray-600">Result</p>
-                <p className="text-xl font-bold text-[var(--primary-yellow)]">
-                  {t.achievement}
+                <p className="mb-6 flex-grow italic text-gray-600">
+                  &quot;{t.text}&quot;
                 </p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
+                <div className="flex items-center">
+                  {t.avatar ? (
+                    <Image
+                      src={t.avatar}
+                      alt={`${t.name} — ${t.role}`}
+                      height={48}
+                      width={48}
+                      className="mr-4 h-12 w-12 rounded-full border-2 border-[var(--primary-yellow)] object-cover"
+                    />
+                  ) : (
+                    <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--primary-yellow)] bg-[var(--tertiary-yellow)] text-sm font-semibold text-[var(--primary-yellow)]">
+                      {t.name
+                        .split(" ")
+                        .map((part) => part[0])
+                        .slice(0, 2)
+                        .join("")}
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="font-bold text-gray-900">{t.name}</h4>
+                    <p className="text-sm text-gray-500">{t.role}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-lg bg-[var(--tertiary-yellow)] p-3 text-center">
+                  <p className="text-sm text-gray-600">Result</p>
+                  <p className="text-xl font-bold text-[var(--primary-yellow)]">
+                    {t.achievement}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="mb-20 min-h-96 flex flex-col items-center justify-center text-center py-20">
+            <div className="text-6xl mb-6">💬</div>
+            <h3 className="text-3xl font-bold text-gray-900 mb-3">
+              Coming Soon
+            </h3>
+            <p className="text-xl text-gray-600 max-w-2xl">
+              We&apos;re collecting client testimonials and success stories.
+              Check back soon to hear from our happy clients!
+            </p>
+          </div>
+        )}
 
         {/* Stats */}
         <motion.div

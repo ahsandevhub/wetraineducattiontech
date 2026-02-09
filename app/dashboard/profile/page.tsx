@@ -67,36 +67,88 @@ const COUNTRIES = [
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        setError(null);
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) {
-          router.push("/login");
+          setError("You are not authenticated. Redirecting to login...");
+          setTimeout(() => router.push("/login"), 1500);
           return;
         }
 
-        const { data, error } = await supabase
+        const { data, error: fetchError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", user.id)
           .single();
 
-        if (error) throw error;
+        // Only treat as error if there's an actual error with a message or code
+        if (fetchError && (fetchError.message || fetchError.code)) {
+          if (fetchError.code === "PGRST116") {
+            setError("Profile not found. Please complete your registration.");
+            return;
+          }
+          // Only throw if it's a real error (not an empty object)
+          if (fetchError.message) {
+            throw fetchError;
+          }
+        }
 
-        setProfile(data);
+        if (!data || Object.keys(data).length === 0) {
+          setError("Failed to load profile data.");
+          return;
+        }
+
+        // Ensure all required fields have default values
+        const profileData = {
+          ...data,
+          full_name: data.full_name || "",
+          email: data.email || "",
+          phone: data.phone || null,
+          address: data.address || null,
+          city: data.city || null,
+          state: data.state || null,
+          postal_code: data.postal_code || null,
+          country: data.country || null,
+          avatar_url: data.avatar_url || null,
+        };
+
+        setProfile(profileData);
+        setOriginalProfile(profileData);
       } catch (error) {
+        // Ignore empty error objects
+        if (
+          error &&
+          typeof error === "object" &&
+          Object.keys(error).length === 0
+        ) {
+          console.warn("Empty error object caught and ignored");
+          setLoading(false);
+          return;
+        }
+
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.";
         console.error("Error fetching profile:", error);
-        toast.error("Failed to load profile");
+        setError(errorMessage);
+        toast.error(`✗ ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -105,31 +157,65 @@ export default function ProfilePage() {
     fetchProfile();
   }, [supabase, router]);
 
+  const hasChanges =
+    originalProfile &&
+    profile &&
+    ((profile.full_name || "") !== (originalProfile.full_name || "") ||
+      (profile.phone || "") !== (originalProfile.phone || "") ||
+      (profile.address || "") !== (originalProfile.address || "") ||
+      (profile.city || "") !== (originalProfile.city || "") ||
+      (profile.state || "") !== (originalProfile.state || "") ||
+      (profile.postal_code || "") !== (originalProfile.postal_code || "") ||
+      (profile.country || "") !== (originalProfile.country || ""));
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile || !hasChanges) return;
+
+    // Validate full name
+    const fullName = (profile.full_name || "").trim();
+    if (!fullName || fullName.length === 0) {
+      toast.error("✗ Full name is required");
+      return;
+    }
 
     setSaving(true);
+    setError(null);
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({
-          full_name: profile.full_name,
-          phone: profile.phone,
-          address: profile.address,
-          city: profile.city,
-          state: profile.state,
-          postal_code: profile.postal_code,
-          country: profile.country,
+          full_name: fullName,
+          phone: profile.phone?.trim() || null,
+          address: profile.address?.trim() || null,
+          city: profile.city?.trim() || null,
+          state: profile.state?.trim() || null,
+          postal_code: profile.postal_code?.trim() || null,
+          country: profile.country || null,
         })
         .eq("id", profile.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      toast.success("Profile updated successfully!");
+      // Update with trimmed values
+      const updatedProfile = {
+        ...profile,
+        full_name: fullName,
+        phone: profile.phone?.trim() || null,
+        address: profile.address?.trim() || null,
+        city: profile.city?.trim() || null,
+        state: profile.state?.trim() || null,
+        postal_code: profile.postal_code?.trim() || null,
+      };
+      setProfile(updatedProfile);
+      setOriginalProfile(updatedProfile);
+      toast.success("✓ Profile updated successfully!");
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update profile";
       console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
+      setError(`Failed to save changes: ${errorMessage}`);
+      toast.error(`✗ ${errorMessage}`);
     } finally {
       setSaving(false);
     }
@@ -139,11 +225,31 @@ export default function ProfilePage() {
     if (!e.target.files || !e.target.files[0] || !profile) return;
 
     const file = e.target.files[0];
-    const fileExt = file.name.split(".").pop();
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+    // Validate file size
+    if (file.size > MAX_SIZE) {
+      toast.error("✗ File size must be less than 5MB");
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("✗ Please select a valid image file");
+      return;
+    }
+
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    if (!["jpg", "jpeg", "png", "gif", "webp"].includes(fileExt || "")) {
+      toast.error("✗ Only JPG, PNG, GIF, or WebP files are allowed");
+      return;
+    }
+
     const fileName = `${profile.id}-${Math.random()}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
 
     setUploading(true);
+    setError(null);
     try {
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -165,11 +271,16 @@ export default function ProfilePage() {
 
       if (updateError) throw updateError;
 
-      setProfile({ ...profile, avatar_url: publicUrl });
-      toast.success("Avatar updated successfully!");
+      const updatedProfile = { ...profile, avatar_url: publicUrl };
+      setProfile(updatedProfile);
+      setOriginalProfile(updatedProfile);
+      toast.success("✓ Avatar updated successfully!");
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to upload avatar";
       console.error("Error uploading avatar:", error);
-      toast.error("Failed to upload avatar");
+      setError(`Failed to upload avatar: ${errorMessage}`);
+      toast.error(`✗ ${errorMessage}`);
     } finally {
       setUploading(false);
     }
@@ -178,7 +289,32 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto" />
+          <p className="text-muted-foreground">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">{error}</p>
+            <Button
+              onClick={() => router.push("/dashboard")}
+              variant="outline"
+              className="w-full"
+            >
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -186,30 +322,70 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">Profile not found</p>
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle>Profile Unavailable</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Unable to load profile data.
+            </p>
+            <Button
+              onClick={() => router.push("/dashboard")}
+              variant="outline"
+              className="w-full"
+            >
+              Go Back
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  const initials = profile.full_name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const initials =
+    (profile.full_name || "")
+      .split(" ")
+      .map((n) => n?.[0] || "")
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?";
 
   return (
-    <div className="container mx-auto max-w-4xl py-8">
+    <div className="container max-w-4xl space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Manage your profile information
+          </p>
+        </div>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>My Profile</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error Alert */}
+            {error && (
+              <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+                <div className="flex items-start gap-3">
+                  <span className="text-lg leading-none">⚠️</span>
+                  <div>{error}</div>
+                </div>
+              </div>
+            )}
+
             {/* Avatar Section */}
             <div className="flex items-center gap-6">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={profile.avatar_url || undefined} />
+                <AvatarImage
+                  src={profile.avatar_url || undefined}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
                 <AvatarFallback className="bg-primary-yellow text-white text-2xl">
                   {initials}
                 </AvatarFallback>
@@ -242,7 +418,7 @@ export default function ProfilePage() {
               <Input
                 id="email"
                 type="email"
-                value={profile.email}
+                value={profile.email || ""}
                 disabled
                 className="bg-muted"
               />
@@ -259,7 +435,7 @@ export default function ProfilePage() {
               <Input
                 id="full_name"
                 type="text"
-                value={profile.full_name}
+                value={profile.full_name || ""}
                 onChange={(e) =>
                   setProfile({ ...profile, full_name: e.target.value })
                 }
@@ -392,7 +568,11 @@ export default function ProfilePage() {
 
             {/* Submit Button */}
             <div className="flex gap-4">
-              <Button type="submit" disabled={saving}>
+              <Button
+                type="submit"
+                disabled={saving || !hasChanges}
+                className={!hasChanges ? "opacity-50 cursor-not-allowed" : ""}
+              >
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
               <Button

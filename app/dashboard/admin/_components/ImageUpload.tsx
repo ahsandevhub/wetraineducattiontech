@@ -6,6 +6,7 @@ import { Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { uploadToSupabase } from "./supabaseStorageUtils";
+import { WarningDialog } from "./WarningDialog";
 
 export type ImageUploadProps = {
   label: string;
@@ -29,6 +30,7 @@ export function ImageUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(currentUrl);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -37,12 +39,12 @@ export function ImageUpload({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      setWarning("Please select an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("File size must be less than 5MB");
+      setWarning("File size must be less than 5MB");
       return;
     }
 
@@ -59,7 +61,7 @@ export function ImageUpload({
       onUpload(url);
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Failed to upload image");
+      setWarning("Failed to upload image");
       setPreviewUrl(currentUrl);
     } finally {
       setIsUploading(false);
@@ -79,6 +81,11 @@ export function ImageUpload({
 
   return (
     <div className="space-y-3">
+      <WarningDialog
+        open={Boolean(warning)}
+        description={warning ?? ""}
+        onClose={() => setWarning(null)}
+      />
       <label className="text-sm font-medium">
         {label}
         {required ? <span className="text-red-500"> *</span> : null}

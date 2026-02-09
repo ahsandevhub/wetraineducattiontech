@@ -3,7 +3,7 @@
 
 import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
-import { Award, CheckCircle2, ExternalLink, Shield } from "lucide-react";
+import { Award, ExternalLink, Shield } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
@@ -18,75 +18,6 @@ interface Certificate {
   imageUrl?: string | null;
   icon?: React.ReactNode;
 }
-
-const fallbackCertificates: Certificate[] = [
-  {
-    id: "iso-9001",
-    title: "ISO 9001:2015 Certification",
-    issuer: "International Organization for Standardization",
-    date: "2024",
-    description:
-      "Quality Management System certification demonstrating our commitment to delivering consistent, high-quality products and services.",
-    credentialId: "ISO-9001-2024-BD-12345",
-    verifyUrl: "#",
-    icon: <Shield className="h-8 w-8" />,
-  },
-  {
-    id: "aws-certified",
-    title: "AWS Certified Solutions Architect",
-    issuer: "Amazon Web Services",
-    date: "2023",
-    description:
-      "Professional-level certification validating expertise in designing distributed systems on AWS infrastructure.",
-    credentialId: "AWS-SAA-C03-2023-456789",
-    verifyUrl: "#",
-    icon: <Award className="h-8 w-8" />,
-  },
-  {
-    id: "google-partner",
-    title: "Google Cloud Partner",
-    issuer: "Google Cloud",
-    date: "2023",
-    description:
-      "Official Google Cloud Partner status, demonstrating proficiency in Google Cloud Platform services and solutions.",
-    credentialId: "GCP-PARTNER-2023-78901",
-    verifyUrl: "#",
-    icon: <Award className="h-8 w-8" />,
-  },
-  {
-    id: "microsoft-certified",
-    title: "Microsoft Certified: Azure Developer Associate",
-    issuer: "Microsoft",
-    date: "2023",
-    description:
-      "Certification validating skills in designing, building, testing, and maintaining cloud applications on Azure.",
-    credentialId: "MS-AZ-204-2023-23456",
-    verifyUrl: "#",
-    icon: <Award className="h-8 w-8" />,
-  },
-  {
-    id: "pmp-certified",
-    title: "PMP® Certification",
-    issuer: "Project Management Institute",
-    date: "2022",
-    description:
-      "Project Management Professional certification demonstrating expertise in leading and directing projects.",
-    credentialId: "PMP-2022-34567",
-    verifyUrl: "#",
-    icon: <CheckCircle2 className="h-8 w-8" />,
-  },
-  {
-    id: "security-plus",
-    title: "CompTIA Security+",
-    issuer: "CompTIA",
-    date: "2022",
-    description:
-      "Vendor-neutral certification validating baseline cybersecurity skills and best practices.",
-    credentialId: "SEC-PLUS-2022-45678",
-    verifyUrl: "#",
-    icon: <Shield className="h-8 w-8" />,
-  },
-];
 
 const achievements = [
   {
@@ -112,8 +43,7 @@ const achievements = [
 ];
 
 export default function CertificatesSection() {
-  const [certificates, setCertificates] =
-    useState<Certificate[]>(fallbackCertificates);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
 
   useEffect(() => {
     const loadCerts = async () => {
@@ -207,72 +137,118 @@ export default function CertificatesSection() {
         </motion.div>
 
         {/* Certificates Grid */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {certificates.map((certificate, index) => (
-            <motion.div
-              key={certificate.id}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true, margin: "-50px" }}
-              className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-xl hover:border-yellow-300"
-            >
-              <div className="flex flex-1 flex-col p-6">
-                {/* Icon */}
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
-                  {certificate.imageUrl ? (
-                    <Image
-                      src={certificate.imageUrl}
-                      alt={certificate.title}
-                      width={48}
-                      height={48}
-                      className="h-12 w-12 rounded-lg object-cover"
-                    />
-                  ) : (
-                    (certificate.icon ?? <Award className="h-8 w-8" />)
-                  )}
-                </div>
+        {certificates.length > 0 ? (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {certificates.map((certificate, index) => (
+              <motion.div
+                key={certificate.id}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:border-yellow-300 hover:shadow-xl"
+              >
+                {/* A4 Landscape Image (full width). Portrait-safe: blur background + contain foreground */}
+                <div className="relative w-full overflow-hidden bg-gray-100">
+                  <div className="relative aspect-[297/210] w-full">
+                    {certificate.imageUrl ? (
+                      <>
+                        {/* Blurred background layer (fills empty space when portrait) */}
+                        <Image
+                          src={certificate.imageUrl}
+                          alt=""
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="scale-110 object-cover blur-2xl"
+                          priority={false}
+                        />
+                        <div className="absolute inset-0 bg-black/10" />
 
-                {/* Title & Issuer */}
-                <h3 className="mb-2 text-xl font-bold text-gray-900">
-                  {certificate.title}
-                </h3>
-                <p className="mb-1 text-sm font-medium text-yellow-600">
-                  {certificate.issuer}
-                </p>
-                <p className="mb-4 text-sm text-gray-500">{certificate.date}</p>
+                        {/* Foreground image (always visible, keeps full image) */}
+                        <Image
+                          src={certificate.imageUrl}
+                          alt={certificate.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-contain"
+                        />
 
-                {/* Description */}
-                <p className="mb-6 flex-1 text-gray-600">
-                  {certificate.description}
-                </p>
+                        {/* Top subtle gradient for readability */}
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/20 to-transparent" />
+                      </>
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
+                        {certificate.icon ?? <Award className="h-10 w-10" />}
+                      </div>
+                    )}
+                  </div>
 
-                {/* Credential Info */}
-                <div className="border-t border-gray-100 pt-4">
-                  {certificate.credentialId && (
-                    <div className="mb-3">
-                      <p className="mb-1 text-xs font-semibold text-gray-500">
-                        CREDENTIAL ID
-                      </p>
-                      <p className="font-mono text-sm text-gray-700">
-                        {certificate.credentialId}
-                      </p>
+                  {/* Floating badge (Issuer) */}
+                  {certificate.issuer && (
+                    <div className="absolute left-4 top-4 rounded-full border border-white/30 bg-white/90 px-3 py-1 text-xs font-semibold text-gray-800 shadow-sm backdrop-blur">
+                      {certificate.issuer}
                     </div>
                   )}
-                  {certificate.verifyUrl && (
-                    <a
-                      href={certificate.verifyUrl}
-                      className="flex items-center justify-center gap-2 rounded-lg border border-yellow-300 bg-yellow-50 py-2 text-sm font-medium text-yellow-700 transition-all hover:bg-yellow-100"
-                    >
-                      Verify Credential
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  )}
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
+                {/* Body */}
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold leading-snug text-gray-900">
+                      {certificate.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {certificate.date}
+                    </p>
+                  </div>
+
+                  {certificate.description && (
+                    <p className="mb-5 flex-1 text-sm leading-relaxed text-gray-600">
+                      {certificate.description}
+                    </p>
+                  )}
+
+                  {/* Footer */}
+                  <div className="mt-auto rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    {certificate.credentialId && (
+                      <div className="mb-3">
+                        <p className="mb-1 text-[11px] font-semibold tracking-wide text-gray-500">
+                          CREDENTIAL ID
+                        </p>
+                        <p className="break-all font-mono text-sm text-gray-800">
+                          {certificate.credentialId}
+                        </p>
+                      </div>
+                    )}
+
+                    {certificate.verifyUrl && (
+                      <a
+                        href={certificate.verifyUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group/btn inline-flex w-full items-center justify-center gap-2 rounded-lg border border-yellow-300 bg-yellow-50 py-2.5 text-sm font-semibold text-yellow-800 transition-all hover:bg-yellow-100 hover:shadow-sm"
+                      >
+                        Verify Credential
+                        <ExternalLink className="h-4 w-4 transition-transform group-hover/btn:translate-x-0.5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="min-h-96 flex flex-col items-center justify-center text-center py-20">
+            <div className="text-6xl mb-6">🏆</div>
+            <h3 className="text-3xl font-bold text-gray-900 mb-3">
+              Coming Soon
+            </h3>
+            <p className="text-xl text-gray-600 max-w-2xl">
+              We&apos;re gathering our professional certifications and
+              achievements. Stay tuned!
+            </p>
+          </div>
+        )}
 
         {/* Trust Badges */}
         <motion.div

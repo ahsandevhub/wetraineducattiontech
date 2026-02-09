@@ -15,12 +15,3 @@ create index if not exists idx_payments_created_at_desc on public.payments(creat
 create index if not exists idx_profiles_role on public.profiles(role);
 create index if not exists idx_profiles_email on public.profiles(email);
 create index if not exists idx_profiles_created_at_desc on public.profiles(created_at desc);
-
--- Order items table indexes (if exists)
-create index if not exists idx_order_items_order_id on public.order_items(order_id);
-create index if not exists idx_order_items_product_id on public.order_items(product_id);
-
--- Products table indexes (if exists)
-create index if not exists idx_products_slug on public.products(slug);
-create index if not exists idx_products_code on public.products(code);
-create index if not exists idx_products_category on public.products(category);

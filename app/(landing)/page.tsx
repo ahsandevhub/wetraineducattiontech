@@ -17,12 +17,12 @@ export default function HomePage() {
       <HeroSection />
       <WhyChooseUs />
       <CoursesSection />
-      <ITServicesSection />
       <MarketingServicesSection />
-      <ProjectsSection />
+      <ITServicesSection />
       <CertificatesSection />
-      <ChallengeFlow />
+      <ProjectsSection />
       <Testimonials />
+      <ChallengeFlow />
       <CTASection />
       <Proposal />
     </div>

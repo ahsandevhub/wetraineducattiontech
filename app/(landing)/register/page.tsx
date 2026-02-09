@@ -38,19 +38,38 @@ export default function RegisterPage() {
 
     try {
       // Sign up with Supabase
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name,
+            },
           },
-        },
-      });
+        });
 
       if (signUpError) {
         setError(signUpError.message);
         return;
+      }
+
+      if (signUpData?.session?.access_token && signUpData.user?.id) {
+        const { data: existingProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", signUpData.user.id)
+          .maybeSingle();
+
+        if (!existingProfile && !profileError) {
+          await supabase.from("profiles").insert({
+            id: signUpData.user.id,
+            full_name: name.trim() || "New User",
+            email: signUpData.user.email ?? null,
+            avatar_url: signUpData.user.user_metadata?.avatar_url ?? null,
+            role: "customer",
+          });
+        }
       }
 
       setSuccess(true);

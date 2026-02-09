@@ -57,30 +57,45 @@ as $$
   );
 $$;
 
-create policy "profiles select own or admin"
-  on public.profiles
-  for select
-  using (auth.uid() = id or public.is_admin());
+DO $$
+BEGIN
+  BEGIN
+    create policy "profiles select own or admin"
+      on public.profiles
+      for select
+      using (auth.uid() = id or public.is_admin());
+  EXCEPTION WHEN duplicate_object THEN null;
+  END;
 
-create policy "profiles insert own"
-  on public.profiles
-  for insert
-  with check (auth.uid() = id);
+  BEGIN
+    create policy "profiles insert own"
+      on public.profiles
+      for insert
+      with check (auth.uid() = id);
+  EXCEPTION WHEN duplicate_object THEN null;
+  END;
 
-create policy "profiles update own no role change"
-  on public.profiles
-  for update
-  using (auth.uid() = id)
-  with check (
-    auth.uid() = id
-    and role = (select role from public.profiles where id = auth.uid())
-  );
+  BEGIN
+    create policy "profiles update own no role change"
+      on public.profiles
+      for update
+      using (auth.uid() = id)
+      with check (
+        auth.uid() = id
+        and role = (select role from public.profiles where id = auth.uid())
+      );
+  EXCEPTION WHEN duplicate_object THEN null;
+  END;
 
-create policy "profiles admin update"
-  on public.profiles
-  for update
-  using (public.is_admin())
-  with check (public.is_admin());
+  BEGIN
+    create policy "profiles admin update"
+      on public.profiles
+      for update
+      using (public.is_admin())
+      with check (public.is_admin());
+  EXCEPTION WHEN duplicate_object THEN null;
+  END;
+END $$;
 
 -- Optional RLS rules for orders and payments if tables exist
 DO $$

@@ -35,7 +35,6 @@ import {
 } from "react";
 import { toast } from "react-hot-toast";
 import { ConfirmDialog } from "../_components/ConfirmDialog";
-import CopyButton from "../_components/CopyButton";
 import { formatCurrency } from "../_components/formatters";
 import TablePagination from "../_components/TablePagination";
 import { createService, deleteService, updateService } from "../actions";
@@ -306,10 +305,6 @@ export default function ServicesClient({ services }: ServicesClientProps) {
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                           <span>{service.slug}</span>
-                          <CopyButton text={service.slug} />
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {service.keyFeatures.length} features
                         </div>
                       </div>
                     </TableCell>

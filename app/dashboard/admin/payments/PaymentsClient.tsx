@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -77,6 +87,11 @@ export default function PaymentsClient({
     id: string;
     type: "paid" | "reject";
   } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    type: "paid" | "reject";
+    paymentId: string;
+  }>({ open: false, type: "paid", paymentId: "" });
 
   const updateParams = useCallback(
     (newParams: Record<string, string | number | null>) => {
@@ -151,9 +166,11 @@ export default function PaymentsClient({
 
   const handleMarkPaid = async (paymentId: string) => {
     setActionLoading({ id: paymentId, type: "paid" });
+    setConfirmDialog({ open: false, type: "paid", paymentId: "" });
     startTransition(async () => {
       try {
         await updatePaymentStatus(paymentId, "paid");
+        toast.success("Payment marked as paid");
         router.refresh();
       } catch (error) {
         toast.error(
@@ -169,9 +186,11 @@ export default function PaymentsClient({
 
   const handleRejectPayment = async (paymentId: string) => {
     setActionLoading({ id: paymentId, type: "reject" });
+    setConfirmDialog({ open: false, type: "reject", paymentId: "" });
     startTransition(async () => {
       try {
         await rejectPayment(paymentId);
+        toast.success("Payment rejected");
         router.refresh();
       } catch (error) {
         toast.error(
@@ -361,7 +380,13 @@ export default function PaymentsClient({
                                     (actionLoading?.id === payment.id &&
                                       actionLoading.type === "paid")
                                   }
-                                  onClick={() => handleMarkPaid(payment.id)}
+                                  onClick={() =>
+                                    setConfirmDialog({
+                                      open: true,
+                                      type: "paid",
+                                      paymentId: payment.id,
+                                    })
+                                  }
                                 >
                                   {actionLoading?.id === payment.id &&
                                   actionLoading.type === "paid" ? (
@@ -378,14 +403,17 @@ export default function PaymentsClient({
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    handleRejectPayment(payment.id)
+                                    setConfirmDialog({
+                                      open: true,
+                                      type: "reject",
+                                      paymentId: payment.id,
+                                    })
                                   }
                                   disabled={
                                     isPending ||
                                     (actionLoading?.id === payment.id &&
                                       actionLoading.type === "reject")
                                   }
-                                  className="text-red-600"
                                 >
                                   {actionLoading?.id === payment.id &&
                                   actionLoading.type === "reject" ? (
@@ -395,7 +423,7 @@ export default function PaymentsClient({
                                     </>
                                   ) : (
                                     <>
-                                      <XCircle className="mr-2 h-4 w-4" />
+                                      <XCircle className="mr-2 h-4 w-4 text-red-600" />
                                       Reject
                                     </>
                                   )}
@@ -440,6 +468,46 @@ export default function PaymentsClient({
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
       />
+
+      {/* Confirmation Dialog */}
+      <AlertDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog.type === "paid"
+                ? "Confirm Payment"
+                : "Reject Payment"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog.type === "paid"
+                ? "Are you sure you want to mark this payment as paid? This action will update the payment status."
+                : "Are you sure you want to reject this payment? This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmDialog.type === "paid") {
+                  handleMarkPaid(confirmDialog.paymentId);
+                } else {
+                  handleRejectPayment(confirmDialog.paymentId);
+                }
+              }}
+              className={
+                confirmDialog.type === "paid"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
+              }
+            >
+              {confirmDialog.type === "paid" ? "Confirm" : "Reject"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -232,6 +232,7 @@ export default function AddPaymentDialog({
                             setCustomerOpen(false);
                           }}
                           role="option"
+                          aria-selected={formData.userId === customer.id}
                         >
                           <Check
                             className={cn(
