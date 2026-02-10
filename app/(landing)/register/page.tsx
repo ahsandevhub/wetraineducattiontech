@@ -37,51 +37,31 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // Sign up with Supabase
-      const { data: signUpData, error: signUpError } =
-        await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name,
-            },
+      // Sign up with email confirmation required
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          data: {
+            name,
           },
-        });
+        },
+      });
 
       if (signUpError) {
         setError(signUpError.message);
         return;
       }
 
-      if (signUpData?.session?.access_token && signUpData.user?.id) {
-        const { data: existingProfile, error: profileError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("id", signUpData.user.id)
-          .maybeSingle();
-
-        if (!existingProfile && !profileError) {
-          await supabase.from("profiles").insert({
-            id: signUpData.user.id,
-            full_name: name.trim() || "New User",
-            email: signUpData.user.email ?? null,
-            avatar_url: signUpData.user.user_metadata?.avatar_url ?? null,
-            role: "customer",
-          });
-        }
-      }
-
+      // Show confirmation message - do NOT log user in
       setSuccess(true);
       setName("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
 
-      // Redirect to login after 2 seconds
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      // Do NOT redirect - wait for user to click email confirmation link
     } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
@@ -116,10 +96,11 @@ export default function RegisterPage() {
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-green-600">
-                  Account created successfully!
+                  Confirmation email sent!
                 </p>
-                <p className="text-xs text-green-500">
-                  Redirecting to login...
+                <p className="text-xs text-green-600 mt-1">
+                  Please check your email ({email}) and click the confirmation
+                  link to verify your account and access the dashboard.
                 </p>
               </div>
             </motion.div>
@@ -238,7 +219,7 @@ export default function RegisterPage() {
               {loading
                 ? "Creating Account..."
                 : success
-                  ? "Account Created!"
+                  ? "Check Your Email"
                   : "Create Account"}
             </motion.button>
           </form>
