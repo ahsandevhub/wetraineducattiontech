@@ -3,7 +3,6 @@ import DisclaimerBanner from "@/app/components/DisclaimerBanner";
 import Footer from "@/app/components/Footer";
 import Header from "@/app/components/Header";
 import WhatsAppButton from "@/app/components/WhatsAppButton";
-import { Toaster } from "react-hot-toast";
 
 export default function RootLayout({
   children,
@@ -12,9 +11,6 @@ export default function RootLayout({
 }) {
   return (
     <div className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
-      {/* Toast notifications */}
-      <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
-
       {/* Optional top banner or announcement */}
       <DisclaimerBanner />
 
