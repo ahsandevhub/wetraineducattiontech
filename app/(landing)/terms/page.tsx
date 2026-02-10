@@ -35,17 +35,6 @@ export default function TermsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* Language Toggle Button */}
-          <div className="mb-6">
-            <button
-              onClick={() => setShowBengali(!showBengali)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 text-gray-900 font-semibold rounded-lg hover:bg-yellow-600 transition-colors"
-            >
-              <Languages className="h-4 w-4" />
-              {showBengali ? "Show English" : "বাংলায় দেখুন"}
-            </button>
-          </div>
-
           {/* Content Card - Both Languages */}
           <div className="text-gray-700 leading-7 border border-yellow-300 rounded-lg p-6 bg-yellow-50">
             {showBengali ? (
@@ -187,6 +176,16 @@ export default function TermsPage() {
                 </div>
               </>
             )}
+          </div>
+          {/* Language Toggle Button */}
+          <div className="mt-6 mx-auto text-center">
+            <button
+              onClick={() => setShowBengali(!showBengali)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 text-gray-900 font-semibold rounded-lg hover:bg-yellow-600 transition-colors"
+            >
+              <Languages className="h-4 w-4" />
+              {showBengali ? "Show English" : "বাংলায় দেখুন"}
+            </button>
           </div>
         </motion.div>
       </section>

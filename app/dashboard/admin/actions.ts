@@ -27,6 +27,15 @@ async function assertAdmin() {
 
 export async function updatePaymentStatus(id: string, status: string) {
   const supabase = await assertAdmin();
+
+  // Get the payment to find related order
+  const { data: payment } = await supabase
+    .from("payments")
+    .select("user_id, amount, created_at")
+    .eq("id", id)
+    .single();
+
+  // Update payment status
   const { error } = await supabase
     .from("payments")
     .update({ status })
@@ -35,10 +44,47 @@ export async function updatePaymentStatus(id: string, status: string) {
   if (error) {
     throw new Error(error.message);
   }
+
+  // Also update related order status
+  if (payment?.user_id && payment?.amount) {
+    const orderStatus =
+      status === "paid"
+        ? "completed"
+        : status === "failed"
+          ? "canceled"
+          : "pending";
+
+    // Find related order by matching user_id, amount, and created around the same time
+    // This helps link payment to the correct order when multiple orders exist
+    const paymentDate = new Date(payment.created_at);
+    const timeWindow = new Date(paymentDate.getTime() - 5 * 60 * 1000); // 5 minutes before
+
+    const { error: orderError } = await supabase
+      .from("orders")
+      .update({ status: orderStatus })
+      .eq("user_id", payment.user_id)
+      .eq("amount", payment.amount)
+      .gte("created_at", timeWindow.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (orderError) {
+      console.error("Order status update error:", orderError);
+    }
+  }
 }
 
 export async function rejectPayment(id: string) {
   const supabase = await assertAdmin();
+
+  // Get the payment to find related order
+  const { data: payment } = await supabase
+    .from("payments")
+    .select("user_id, amount, created_at")
+    .eq("id", id)
+    .single();
+
+  // Update payment status to failed
   const { error } = await supabase
     .from("payments")
     .update({ status: "failed" })
@@ -46,6 +92,25 @@ export async function rejectPayment(id: string) {
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  // Also update related order status to canceled
+  if (payment?.user_id && payment?.amount) {
+    const paymentDate = new Date(payment.created_at);
+    const timeWindow = new Date(paymentDate.getTime() - 5 * 60 * 1000); // 5 minutes before
+
+    const { error: orderError } = await supabase
+      .from("orders")
+      .update({ status: "canceled" })
+      .eq("user_id", payment.user_id)
+      .eq("amount", payment.amount)
+      .gte("created_at", timeWindow.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (orderError) {
+      console.error("Order status update error:", orderError);
+    }
   }
 }
 

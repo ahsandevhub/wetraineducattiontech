@@ -247,12 +247,12 @@ export default function CoursesPage() {
               Can&apos;t find the right course? We offer custom training
               programs tailored to your needs.
             </p>
-            <a
-              href="#proposal"
+            <Link
+              href="/#proposal"
               className="inline-block rounded-xl border border-yellow-400 bg-white px-8 py-3 font-bold text-gray-900 transition-all hover:bg-yellow-50 hover:shadow-lg"
             >
               Request Custom Training
-            </a>
+            </Link>
           </motion.div>
         </div>
       </section>

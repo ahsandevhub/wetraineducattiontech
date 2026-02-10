@@ -217,12 +217,12 @@ export default function ITServicesPage() {
                       </div>
 
                       {service.id === "custom-software" ? (
-                        <a
-                          href="#proposal"
+                        <Link
+                          href="/#proposal"
                           className="block w-full rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 py-3 text-center font-bold text-white transition-all hover:from-yellow-600 hover:to-orange-600 hover:shadow-lg"
                         >
                           Request Quote
-                        </a>
+                        </Link>
                       ) : isAdmin ? (
                         <button
                           disabled
@@ -273,12 +273,12 @@ export default function ITServicesPage() {
                 Every business is unique. Let&apos;s discuss your specific
                 requirements and build the perfect solution.
               </p>
-              <a
-                href="#proposal"
+              <Link
+                href="/#proposal"
                 className="inline-block rounded-xl border border-yellow-400 bg-white px-8 py-3 font-bold text-yellow-600 transition-all hover:bg-yellow-50 hover:shadow-lg"
               >
                 Schedule Consultation
-              </a>
+              </Link>
             </div>
           </motion.div>
         </div>

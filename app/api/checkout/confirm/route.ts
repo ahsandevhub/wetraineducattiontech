@@ -1,4 +1,5 @@
 import { createClient } from "@/app/utils/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import Stripe from "stripe";
@@ -24,9 +25,20 @@ export async function POST(req: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // Create admin client for guest checkout (bypasses RLS)
+    const adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      },
+    );
+
+    // Use admin client if no user session (guest checkout)
+    const dbClient = user ? supabase : adminClient;
 
     const paymentStatus = status === "success" ? "paid" : "canceled";
     const orderStatus = status === "success" ? "completed" : "canceled";
@@ -35,16 +47,26 @@ export async function POST(req: NextRequest) {
     const customerEmail = session.customer_email ?? session.metadata?.email;
     const paymentMethod = session.metadata?.payment_method ?? "Card";
 
-    await supabase
+    // Update payment status
+    const { error: paymentError } = await dbClient
       .from("payments")
       .update({ status: paymentStatus, method: paymentMethod })
       .eq("reference", sessionId);
 
+    if (paymentError) {
+      console.error("Payment update error:", paymentError);
+    }
+
+    // Update order status
     if (orderId) {
-      await supabase
+      const { error: orderError } = await dbClient
         .from("orders")
         .update({ status: orderStatus })
         .eq("id", orderId);
+
+      if (orderError) {
+        console.error("Order update error:", orderError);
+      }
     }
 
     if (customerEmail) {

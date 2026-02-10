@@ -1,10 +1,9 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, CheckCircle, Code, Cpu, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -63,8 +62,12 @@ export default function SoftwareDetailPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600" />
+      <div className="min-h-screen bg-gradient-to-b from-yellow-100 to-white flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="rounded-full h-12 w-12 border-4 border-yellow-300 border-t-gray-900"
+        />
       </div>
     );
   }
@@ -78,150 +81,224 @@ export default function SoftwareDetailPage({
       ? service.price! - service.discount
       : service.price;
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
-        <Link
-          href="/software"
-          className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 mb-8"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to IT Services
-        </Link>
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {/* Hero Image */}
-            <div className="relative h-96 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden mb-8">
-              {service.featured_image_url ? (
-                <Image
-                  src={service.featured_image_url}
-                  alt={service.title}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-8xl">
-                  💻
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6 },
+    },
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Link
+            href="/software"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-semibold transition-colors mb-8"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Back to IT Services
+          </Link>
+        </motion.div>
+
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-12"
+        >
+          {/* Hero Section */}
+          <motion.div
+            variants={itemVariants}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+          >
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              {/* Hero Image */}
+              <motion.div
+                variants={itemVariants}
+                className="relative h-96 bg-gradient-to-br from-yellow-200 to-yellow-100 rounded-2xl overflow-hidden shadow-lg mb-8"
+              >
+                {service.featured_image_url ? (
+                  <Image
+                    src={service.featured_image_url}
+                    alt={service.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-9xl">
+                    💻
+                  </div>
+                )}
+              </motion.div>
+
+              {/* Title & Badge */}
+              <motion.div variants={itemVariants} className="mb-8">
+                <h1 className="text-5xl font-bold text-gray-900 mb-4 leading-tight">
+                  {service.title}
+                </h1>
+                <div className="flex flex-wrap items-center gap-4">
+                  <span className="inline-block px-4 py-2 bg-yellow-100 text-gray-900 font-semibold rounded-xl border border-yellow-300">
+                    Software Solution
+                  </span>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Cpu className="h-5 w-5" />
+                    <span>Enterprise Grade</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Code className="h-5 w-5" />
+                    <span>Tech Advanced</span>
+                  </div>
                 </div>
+              </motion.div>
+
+              {/* Description */}
+              {service.details && (
+                <motion.div
+                  variants={itemVariants}
+                  className="bg-white rounded-2xl shadow-md p-8 mb-8 border border-yellow-100"
+                >
+                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                    Service Overview
+                  </h2>
+                  <p className="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">
+                    {service.details}
+                  </p>
+                </motion.div>
+              )}
+
+              {/* Key Features */}
+              {service.key_features && service.key_features.length > 0 && (
+                <motion.div
+                  variants={itemVariants}
+                  className="bg-white rounded-2xl shadow-md p-8 border border-yellow-100"
+                >
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                    Key Features
+                  </h2>
+                  <ul className="space-y-4">
+                    {service.key_features.map((feature, idx) => (
+                      <motion.li
+                        key={idx}
+                        variants={itemVariants}
+                        className="flex items-start gap-4"
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 360 }}
+                          transition={{ duration: 0.6 }}
+                        >
+                          <CheckCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
+                        </motion.div>
+                        <span className="text-gray-700 text-lg leading-relaxed">
+                          {feature}
+                        </span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </motion.div>
               )}
             </div>
 
-            {/* Title & Badge */}
-            <div className="mb-6">
-              <div className="flex items-start gap-4">
-                <div className="flex-1">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-3">
-                    {service.title}
-                  </h1>
-                  <Badge
-                    variant="outline"
-                    className="text-purple-600 border-purple-300"
-                  >
-                    Software Solution
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            {/* Description */}
-            {service.details && (
-              <Card className="mb-8 border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-xl">Service Overview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {service.details}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Key Features */}
-            {service.key_features && service.key_features.length > 0 && (
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-xl">Key Features</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3">
-                    {service.key_features.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <CheckCircle className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Sidebar - Pricing & CTA */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-8 shadow-lg">
-              <CardContent className="p-6">
+            {/* Sidebar - Pricing & CTA */}
+            <motion.div variants={itemVariants} className="lg:col-span-1">
+              <motion.div className="bg-white rounded-2xl shadow-lg border border-yellow-100 p-8">
                 {/* Pricing */}
                 {service.price !== null && (
-                  <div className="mb-6">
-                    <p className="text-sm text-gray-600 mb-2">Price</p>
+                  <div className="pb-6 border-yellow-100">
+                    <p className="text-sm text-gray-600 font-semibold mb-3 uppercase">
+                      Investment
+                    </p>
                     <div className="flex items-baseline gap-3">
                       {service.discount && service.discount > 0 && (
-                        <span className="text-3xl font-bold text-gray-900">
+                        <span className="text-4xl font-bold text-gray-900">
                           ৳{finalPrice!.toFixed(0)}
                         </span>
                       )}
                       <span
                         className={
                           service.discount && service.discount > 0
-                            ? "text-lg text-gray-500 line-through"
-                            : "text-3xl font-bold text-gray-900"
+                            ? "text-xl text-gray-500 line-through"
+                            : "text-4xl font-bold text-gray-900"
                         }
                       >
                         ৳{service.price.toFixed(0)}
                       </span>
                     </div>
                     {service.discount && service.discount > 0 && (
-                      <p className="text-sm text-green-600 font-semibold mt-2">
-                        Save ৳{service.discount.toFixed(0)}
+                      <p className="text-sm text-green-600 font-bold mt-3">
+                        Save ৳{service.discount.toFixed(0)} • Limited Time
                       </p>
                     )}
                   </div>
                 )}
 
                 {/* CTA Buttons */}
-                <div className="space-y-3">
-                  <Link
-                    href={`/checkout?service=${service.id}`}
-                    className="block"
+                <div className="space-y-3 mb-8">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
-                      Purchase Now
-                    </Button>
-                  </Link>
-                  <Button variant="outline" className="w-full">
-                    <a href="#proposal" className="w-full">
-                      Request Custom Solution
-                    </a>
-                  </Button>
+                    <Link
+                      href={`/checkout?service=${service.id}`}
+                      className="block"
+                    >
+                      <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white text-lg py-6 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2">
+                        <Zap className="h-5 w-5" />
+                        Purchase Now
+                      </Button>
+                    </Link>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Link href="/#proposal" className="block">
+                      <Button
+                        variant="outline"
+                        className="w-full border-2 border-yellow-300 text-gray-900 hover:bg-yellow-50 text-lg py-6 rounded-xl font-bold"
+                      >
+                        Custom Solution
+                      </Button>
+                    </Link>
+                  </motion.div>
                 </div>
 
-                {/* Service Info */}
-                <div className="mt-6 pt-6 border-t border-gray-200 space-y-4">
-                  <div>
-                    <p className="text-xs text-gray-600 uppercase font-semibold">
-                      Category
+                {/* Info Cards */}
+                <div className="space-y-3 text-sm">
+                  <div className="bg-yellow-50 rounded-xl p-4">
+                    <p className="text-gray-600 font-semibold mb-1">Support</p>
+                    <p className="text-gray-900 font-bold">24/7 • Full Stack</p>
+                  </div>
+                  <div className="bg-yellow-50 rounded-xl p-4">
+                    <p className="text-gray-600 font-semibold mb-1">
+                      Deployment
                     </p>
-                    <p className="text-sm text-gray-900 mt-1">IT Solution</p>
+                    <p className="text-gray-900 font-bold">Quick & Scalable</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );

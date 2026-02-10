@@ -5,6 +5,7 @@ import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
 import { ExternalLink, Github } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 interface Project {
@@ -201,12 +202,12 @@ export default function ProjectsSection() {
           <p className="mb-6 text-lg text-gray-600">
             Have a project in mind? Let&apos;s bring your vision to life.
           </p>
-          <a
-            href="#proposal"
+          <Link
+            href="/#proposal"
             className="inline-block rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 px-8 py-4 font-bold text-white transition-all hover:from-yellow-600 hover:to-orange-600 hover:shadow-lg"
           >
             Start Your Project
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>

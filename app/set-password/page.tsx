@@ -69,13 +69,13 @@ export default function SetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-md border border-gray-200">
+    <div className="min-h-screen bg-gradient-to-br from-[var(--tertiary-yellow)] to-white flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-yellow-200/50">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
           Set your password
         </h1>
         <p className="text-sm text-gray-600 mb-6">
-          Create a password to finish setting up your account.
+          Create a secure password to protect your account.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,8 +87,9 @@ export default function SetPasswordPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
-              placeholder="Enter a new password"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary-yellow)] focus:border-transparent"
+              placeholder="At least 8 characters"
+              minLength={8}
             />
           </div>
 
@@ -100,18 +101,27 @@ export default function SetPasswordPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary-yellow)] focus:border-transparent"
               placeholder="Confirm your password"
+              minLength={8}
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {success && <p className="text-sm text-green-600">{success}</p>}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-sm text-green-600">{success}</p>
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-yellow-500 py-2 font-bold text-white hover:bg-yellow-600 disabled:opacity-60"
+            className="w-full rounded-lg bg-[var(--primary-yellow)] py-2 font-bold text-gray-900 hover:bg-[var(--secondary-yellow)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Saving..." : "Set Password"}
           </button>

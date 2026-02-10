@@ -53,7 +53,7 @@ export default function Header() {
       href: "/#certificates",
       type: "link",
     },
-    { id: "contact", name: "Contact", href: "#proposal", type: "link" },
+    { id: "contact", name: "Contact", href: "/#proposal", type: "link" },
   ];
 
   const servicesSubmenu = [
@@ -154,7 +154,7 @@ export default function Header() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute left-0 top-full mt-1 w-48 rounded-lg bg-white shadow-lg border border-gray-200 py-2 z-50"
+                  className="absolute left-0 top-full w-48 rounded-lg bg-white shadow-lg border border-gray-200 py-2 z-50"
                 >
                   {servicesSubmenu.map((submenu) => (
                     <Link

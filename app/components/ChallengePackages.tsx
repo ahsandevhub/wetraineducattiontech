@@ -67,7 +67,7 @@ const packages: Package[] = [
       "Multi-channel campaign orchestration",
     ],
     popular: false,
-    ctaHref: "#proposal",
+    ctaHref: "/#proposal",
     ctaLabel: "Get Enterprise Quote",
   },
 ];
@@ -163,7 +163,7 @@ export default function Packages() {
                 </ul>
 
                 {pkg.name === "Scale" ? (
-                  <a href="#proposal">
+                  <Link href="/#proposal">
                     <motion.button
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.98 }}
@@ -176,7 +176,7 @@ export default function Packages() {
                     >
                       {pkg.ctaLabel}
                     </motion.button>
-                  </a>
+                  </Link>
                 ) : (
                   <Link
                     href={`/checkout?name=${encodeURIComponent(

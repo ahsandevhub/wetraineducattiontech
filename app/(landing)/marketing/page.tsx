@@ -218,12 +218,12 @@ export default function MarketingServicesPage() {
                         ) : null}
                       </div>
                       {service.id === "influencer-marketing" ? (
-                        <a
-                          href="#proposal"
+                        <Link
+                          href="/#proposal"
                           className="block w-full rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 py-3 text-center font-bold text-white transition-all hover:from-orange-600 hover:to-yellow-600 hover:shadow-lg"
                         >
                           Get Quote
-                        </a>
+                        </Link>
                       ) : isAdmin ? (
                         <button
                           disabled
@@ -277,12 +277,12 @@ export default function MarketingServicesPage() {
                 </p>
               </div>
               <div className="flex items-center justify-center md:justify-end">
-                <a
-                  href="#proposal"
+                <Link
+                  href="/#proposal"
                   className="inline-block rounded-xl border border-orange-400 bg-white px-8 py-3 font-bold text-orange-600 transition-all hover:bg-orange-50 hover:shadow-lg"
                 >
                   Request Custom Package
-                </a>
+                </Link>
               </div>
             </div>
           </motion.div>

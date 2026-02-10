@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function WhyChooseUs() {
   const features = [
@@ -153,13 +154,13 @@ export default function WhyChooseUs() {
           viewport={{ once: true }}
           className="mt-20 text-center"
         >
-          <a
-            href="#proposal"
+          <Link
+            href="/#proposal"
             className="rounded-xl bg-[var(--primary-yellow)] px-8 py-4 text-lg font-bold text-gray-900 shadow-lg transition-all hover:bg-[var(--secondary-yellow)] hover:shadow-xl"
             aria-label="Get a proposal"
           >
             Get a Proposal
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>

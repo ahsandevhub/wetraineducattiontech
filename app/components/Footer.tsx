@@ -22,7 +22,7 @@ export default function Footer() {
 
   const quickLinks = [
     { name: "About", href: "/about" },
-    { name: "Services", href: "#services" },
+    { name: "Services", href: "/#services" },
     { name: "Projects", href: "/#projects" },
     { name: "Terms of Use", href: "/terms" },
     { name: "Privacy Policy", href: "/privacy" },
@@ -125,12 +125,12 @@ export default function Footer() {
             {quickLinks.map((l, i) => (
               <motion.li key={i} whileHover={{ x: 5 }}>
                 {l.href.startsWith("#") ? (
-                  <a
+                  <Link
                     href={l.href}
                     className="text-sm transition-colors hover:text-white"
                   >
                     {l.name}
-                  </a>
+                  </Link>
                 ) : (
                   <Link
                     href={l.href}
