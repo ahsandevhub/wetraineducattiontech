@@ -345,7 +345,7 @@ export default function LoginPage() {
                       Check your inbox at <strong>{resetEmail.trim()}</strong>
                     </p>
                     <p className="text-green-600/80 text-xs mt-2">
-                      💡 Don't see it? Check your spam folder or wait a few
+                      💡 Don&apos;t see it? Check your spam folder or wait a few
                       minutes.
                     </p>
                   </div>
@@ -370,7 +370,7 @@ export default function LoginPage() {
                       ⚠️ No account found
                     </p>
                     <p className="text-amber-700 text-sm">
-                      We couldn't find an account with{" "}
+                      We couldn&apos;t find an account with{" "}
                       <strong>{resetEmail.trim()}</strong>
                     </p>
                     <p className="text-amber-600/80 text-xs mt-2">
@@ -408,8 +408,8 @@ export default function LoginPage() {
               ) : (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <p className="text-gray-600 text-sm">
-                    Enter your email address and we'll send you a link to reset
-                    your password.
+                    Enter your email address and we&apos;ll send you a link to
+                    reset your password.
                   </p>
 
                   {resetError && (
