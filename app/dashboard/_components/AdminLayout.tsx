@@ -90,9 +90,10 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
 
   const customerBreadcrumbMap: Record<string, string> = {
     "/dashboard/customer": "Dashboard",
-    "/dashboard/customer/services": "Services",
-    "/dashboard/customer/payments": "Payments",
-    "/dashboard/profile": "Profile",
+    "/dashboard/customer/services": "My Services",
+    "/dashboard/customer/packages": "Browse Packages",
+    "/dashboard/customer/payments": "My Payments",
+    "/dashboard/profile": "My Profile",
   };
 
   const currentTab =
@@ -175,6 +176,11 @@ export default function AdminLayout({ children, role }: AdminLayoutProps) {
               label: "Dashboard",
               icon: LayoutDashboard,
               href: "/dashboard/customer",
+            },
+            {
+              label: "Browse Packages",
+              icon: ShoppingCart,
+              href: "/dashboard/customer/packages",
             },
             {
               label: "Services",

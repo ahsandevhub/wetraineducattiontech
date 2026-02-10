@@ -11,13 +11,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertCircle, CreditCard, Zap } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  CreditCard,
+  ShoppingCart,
+  Tag,
+  Zap,
+} from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type {
   CustomerPaymentRow,
   CustomerProfile,
   CustomerServiceRow,
   CustomerStats,
+  Service,
 } from "./types";
 
 type CustomerDashboardClientProps = {
@@ -25,6 +35,8 @@ type CustomerDashboardClientProps = {
   profile: CustomerProfile;
   lastPayments: CustomerPaymentRow[];
   activeServices: CustomerServiceRow[];
+  availableServices: Service[];
+  purchasedPackages: string[];
 };
 
 const formatCurrency = (value: number) => `৳${value.toLocaleString()}`;
@@ -45,12 +57,42 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case "course":
+      return "bg-blue-100 text-blue-800 hover:bg-blue-200";
+    case "software":
+      return "bg-purple-100 text-purple-800 hover:bg-purple-200";
+    case "marketing":
+      return "bg-green-100 text-green-800 hover:bg-green-200";
+    default:
+      return "bg-gray-100 text-gray-800 hover:bg-gray-200";
+  }
+};
+
+const calculateFinalPrice = (price: number, discount: number | null) => {
+  if (!discount) return price;
+  return price - discount;
+};
+
 export default function CustomerDashboardClient({
   stats,
   profile,
   lastPayments,
   activeServices,
+  availableServices,
+  purchasedPackages,
 }: CustomerDashboardClientProps) {
+  const router = useRouter();
+
+  const handleCheckout = (serviceId: string) => {
+    router.push(`/checkout?id=${serviceId}`);
+  };
+
+  const isPurchased = (title: string) => {
+    return purchasedPackages.includes(title);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -205,6 +247,126 @@ export default function CustomerDashboardClient({
           ) : (
             <div className="text-center py-8 text-gray-500">
               No active services
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Available Packages Preview */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Browse Packages</CardTitle>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/dashboard/customer/packages">Browse All</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {availableServices.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {availableServices.slice(0, 6).map((service) => {
+                const finalPrice = calculateFinalPrice(
+                  service.price,
+                  service.discount,
+                );
+                const purchased = isPurchased(service.title);
+
+                return (
+                  <Card
+                    key={service.id}
+                    className={`pt-0 flex flex-col ${purchased ? "border-green-300 bg-green-50/30" : ""}  hover:shadow-md transition-shadow`}
+                  >
+                    <CardHeader className="p-0">
+                      <div className="relative w-full h-32 rounded-t-lg overflow-hidden">
+                        <Image
+                          src={service.featured_image_url}
+                          alt={service.title}
+                          fill
+                          className="object-cover"
+                        />
+                        {purchased && (
+                          <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                            <Check className="w-3 h-3" />
+                            Purchased
+                          </div>
+                        )}
+                        {service.discount && service.discount > 0 && (
+                          <div className="absolute top-2 left-2 bg-yellow-500 text-gray-900 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                            <Tag className="w-3 h-3" />
+                            Save ৳{service.discount}
+                          </div>
+                        )}
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="flex-1 p-4 space-y-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Badge className={getCategoryColor(service.category)}>
+                            {service.category.charAt(0).toUpperCase() +
+                              service.category.slice(1)}
+                          </Badge>
+                        </div>
+                        <h3 className="font-semibold text-sm line-clamp-2">
+                          {service.title}
+                        </h3>
+                        {service.details && (
+                          <p className="text-xs text-gray-600 line-clamp-1">
+                            {service.details}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Pricing */}
+                      <div className="pt-2 border-t">
+                        {service.discount && service.discount > 0 ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold text-gray-900">
+                                ৳{finalPrice.toLocaleString()}
+                              </span>
+                              <span className="text-sm text-gray-400 line-through">
+                                ৳{service.price.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-lg font-bold text-gray-900">
+                            ৳{service.price.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </CardContent>
+
+                    <div className="px-4 pb-4">
+                      <Button
+                        onClick={() => handleCheckout(service.id)}
+                        disabled={purchased}
+                        className="w-full text-xs"
+                        variant={purchased ? "outline" : "default"}
+                        size="sm"
+                      >
+                        {purchased ? (
+                          <>
+                            <Check className="w-3 h-3 mr-1" />
+                            Purchased
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-3 h-3 mr-1" />
+                            Get Now
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              No packages available
             </div>
           )}
         </CardContent>

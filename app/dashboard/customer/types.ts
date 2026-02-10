@@ -35,3 +35,16 @@ export type CustomerStats = {
   totalSpent: number;
   pendingPayments: number;
 };
+
+export type Service = {
+  id: string;
+  title: string;
+  slug: string;
+  category: "course" | "software" | "marketing";
+  price: number;
+  discount: number | null;
+  currency: string;
+  details: string | null;
+  key_features: string[];
+  featured_image_url: string;
+};

@@ -6,6 +6,7 @@ import type {
   CustomerProfile,
   CustomerServiceRow,
   CustomerStats,
+  Service,
 } from "./types";
 
 export default async function CustomerDashboardPage() {
@@ -30,7 +31,7 @@ export default async function CustomerDashboardPage() {
     redirect("/dashboard/admin");
   }
 
-  const [paymentsResult, ordersResult] = await Promise.all([
+  const [paymentsResult, ordersResult, servicesResult] = await Promise.all([
     supabase
       .from("payments")
       .select("id, amount, method, status, reference, service, created_at")
@@ -40,6 +41,10 @@ export default async function CustomerDashboardPage() {
       .from("orders")
       .select("id, package_name, amount, status, created_at")
       .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("services")
+      .select("*")
       .order("created_at", { ascending: false }),
   ]);
 
@@ -62,6 +67,21 @@ export default async function CustomerDashboardPage() {
       amount: order.amount ?? 0,
       status: (order.status ?? "processing").toString(),
       createdAt: order.created_at,
+    }),
+  );
+
+  const availableServices: Service[] = (servicesResult.data ?? []).map(
+    (service) => ({
+      id: service.id,
+      title: service.title,
+      slug: service.slug,
+      category: service.category as "course" | "software" | "marketing",
+      price: Number(service.price ?? 0),
+      discount: service.discount ? Number(service.discount) : null,
+      currency: service.currency ?? "BDT",
+      details: service.details,
+      key_features: service.key_features ?? [],
+      featured_image_url: service.featured_image_url,
     }),
   );
 
@@ -92,6 +112,15 @@ export default async function CustomerDashboardPage() {
     createdAt: profile?.created_at ?? null,
   };
 
+  // Get purchased package names
+  const purchasedPackages = new Set(
+    (ordersResult.data ?? [])
+      .filter(
+        (order) => order.status === "completed" || order.status === "pending",
+      )
+      .map((order) => order.package_name),
+  );
+
   // Get last 3 payments for preview
   const lastPayments = payments.slice(0, 3);
   // Get active services preview (completed orders)
@@ -105,6 +134,8 @@ export default async function CustomerDashboardPage() {
       profile={profileData}
       lastPayments={lastPayments}
       activeServices={activeServicesPreview}
+      availableServices={availableServices}
+      purchasedPackages={Array.from(purchasedPackages)}
     />
   );
 }
