@@ -4,7 +4,6 @@ import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
 import { AlertCircle, CheckCircle, Lock, Mail, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function RegisterPage() {
@@ -15,7 +14,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const router = useRouter();
   const supabase = createClient();
 
   const handleSignUp = async (e: React.FormEvent) => {
