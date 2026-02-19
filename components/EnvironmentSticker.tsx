@@ -16,21 +16,26 @@ export function EnvironmentSticker() {
     <div
       style={{
         position: "fixed",
-        top: 40,
-        left: -42,
+        top: 140,
+        left: -20,
         zIndex: 9999,
-        background: "#facc15", // yellow-400
-        color: "#1e293b", // slate-800
-        padding: "8px 48px",
+
+        width: "40vw", // auto scales with screen
+        textAlign: "center",
+        padding: "8px 0",
+
+        background: "#facc15",
+        color: "#1e293b",
         fontWeight: 700,
-        fontSize: 14,
-        borderRadius: 8,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-        transform: "rotate(-45deg)",
-        pointerEvents: "none",
-        textTransform: "uppercase",
+        fontSize: "clamp(10px, 1vw, 14px)",
+
         letterSpacing: 2,
-        opacity: 0.8,
+        textTransform: "uppercase",
+        pointerEvents: "none",
+        opacity: 0.85,
+
+        transformOrigin: "top left",
+        transform: "rotate(-45deg) translate(-30%, 0%)",
       }}
     >
       {envLabelMap[env] || env}
