@@ -44,59 +44,40 @@ export default function LoginPage() {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
+      // Check both education profile and CRM access
+      const { data: profile } = await supabase
         .from("profiles")
         .select("id, role")
         .eq("id", userId)
         .maybeSingle();
 
-      if (profileError) {
-        const isMissingProfile =
-          profileError.code === "PGRST116" ||
-          profileError.message?.toLowerCase().includes("0 rows");
-
-        if (isMissingProfile) {
-          const fullName =
-            data.user?.user_metadata?.name ||
-            data.user?.email?.split("@")[0] ||
-            "New User";
-
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert({
-              id: userId,
-              full_name: fullName,
-              email: data.user?.email ?? null,
-              avatar_url: data.user?.user_metadata?.avatar_url ?? null,
-              role: "customer",
-            });
-
-          if (insertError) {
-            setError(
-              insertError.message ||
-                "Unable to create your profile. Please try again.",
-            );
-            return;
-          }
-        } else {
-          setError(
-            profileError.message ||
-              "Unable to access your profile. Please try again.",
-          );
-          return;
-        }
-      }
-
-      const { data: finalProfile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
+      const { data: crmUser } = await supabase
+        .from("crm_users")
+        .select("id, crm_role")
+        .eq("auth_user_id", userId)
         .maybeSingle();
 
-      const role = finalProfile?.role ?? profile?.role ?? "customer";
-      router.push(
-        role === "admin" ? "/dashboard/admin" : "/dashboard/customer",
-      );
+      const hasEducationAccess = profile !== null;
+      const hasCrmAccess = crmUser !== null;
+
+      // If user has neither education nor CRM access, block login
+      if (!hasEducationAccess && !hasCrmAccess) {
+        setError(
+          "Your account does not have access to any application. Please contact support.",
+        );
+        await supabase.auth.signOut();
+        return;
+      }
+
+      // Determine redirect target based on access
+      // Priority: CRM users → /dashboard/crm, Education admin → /dashboard/admin, Customer → /dashboard/customer
+      if (hasCrmAccess) {
+        router.push("/dashboard/crm");
+      } else if (profile?.role === "admin") {
+        router.push("/dashboard/admin");
+      } else {
+        router.push("/dashboard/customer");
+      }
     } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
@@ -192,9 +173,9 @@ export default function LoginPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 flex items-start gap-3 rounded-lg bg-red-50 p-4 border border-red-200"
+              className="mb-6 flex items-center gap-3 rounded-lg bg-red-50 p-4 border border-red-200"
             >
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
               <p className="text-sm text-red-600">{error}</p>
             </motion.div>
           )}

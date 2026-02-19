@@ -1,5 +1,5 @@
 import { createClient } from "@/app/utils/supabase/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import Stripe from "stripe";
@@ -26,16 +26,7 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser();
 
     // Create admin client for guest checkout (bypasses RLS)
-    const adminClient = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      },
-    );
+    const adminClient = createAdminClient();
 
     // Use admin client if no user session (guest checkout)
     const dbClient = user ? supabase : adminClient;

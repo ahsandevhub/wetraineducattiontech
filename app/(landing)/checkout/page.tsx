@@ -230,7 +230,7 @@ function CheckoutPageContent() {
   if (success) {
     return (
       <>
-        <section className="relative bg-gradient-to-b from-yellow-200 to-white py-20 text-center">
+        <section className="relative bg-gradient-to-b from-yellow-200 to-white py-20 text-center min-h-dvh">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -251,7 +251,7 @@ function CheckoutPageContent() {
   if (canceled) {
     return (
       <>
-        <section className="relative bg-gradient-to-b from-yellow-200 to-white py-20 text-center">
+        <section className="relative bg-gradient-to-b from-yellow-200 to-white py-20 text-center min-h-dvh">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

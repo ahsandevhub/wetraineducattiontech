@@ -4,6 +4,7 @@ import { createClient } from "@/app/utils/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -21,6 +22,7 @@ interface UserProfile {
 export function ProfileMenu() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
   const supabase = createClient();
   const router = useRouter();
 
@@ -56,7 +58,13 @@ export function ProfileMenu() {
     fetchProfile();
   }, [supabase]);
 
+  const goToProfile = () => {
+    setOpen(false);
+    router.push("/dashboard/profile");
+  };
+
   const handleLogout = async () => {
+    setOpen(false);
     await supabase.auth.signOut();
     router.push("/login");
   };
@@ -73,7 +81,7 @@ export function ProfileMenu() {
     .slice(0, 2);
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button className="rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary-yellow focus:ring-offset-2 transition-all hover:shadow-lg">
           {profile.avatar_url ? (
@@ -112,21 +120,14 @@ export function ProfileMenu() {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <button
-          onClick={() => router.push("/dashboard/profile")}
-          className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
-        >
+        <DropdownMenuItem onSelect={goToProfile} className="cursor-pointer">
           <User className="h-4 w-4" />
           <span>My Profile</span>
-        </button>
-        <DropdownMenuSeparator />
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-destructive/10 hover:text-destructive cursor-pointer"
-        >
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={handleLogout} className="cursor-pointer">
           <LogOut className="h-4 w-4" />
           <span>Log out</span>
-        </button>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

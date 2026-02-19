@@ -1,5 +1,5 @@
 import DashboardShell from "@/app/dashboard/DashboardShell";
-import { createClient } from "@/app/utils/supabase/server";
+import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -10,22 +10,29 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Use unified role resolver - single DB call for education + CRM + HRM roles
+  const roles = await getCurrentUserWithRoles();
 
-  if (!user) {
+  if (!roles) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  // Ensure user has access to at least one app
+  if (!roles.hasEducationAccess && !roles.hasCrmAccess && !roles.hasHrmAccess) {
+    redirect("/unauthorized");
+  }
 
-  const role = (profile?.role as Role) ?? "customer";
+  const educationRole = (roles.profileRole as Role) ?? "customer";
 
-  return <DashboardShell role={role}>{children}</DashboardShell>;
+  return (
+    <DashboardShell
+      role={educationRole}
+      crmRole={roles.crmRole}
+      hrmRole={roles.hrmRole}
+      userId={roles.userId}
+      hasEducationAccess={roles.hasEducationAccess}
+    >
+      {children}
+    </DashboardShell>
+  );
 }

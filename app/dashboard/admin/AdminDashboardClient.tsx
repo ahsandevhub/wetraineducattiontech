@@ -47,8 +47,10 @@ export default function AdminDashboardClient({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-sm text-gray-600">
+          <h1 className="text-3xl font-bold text-[var(--primary-yellow)]">
+            Admin Dashboard
+          </h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
             Overview of customers, payments, and orders.
           </p>
         </div>

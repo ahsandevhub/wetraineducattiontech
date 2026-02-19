@@ -1,7 +1,9 @@
+import { getSupabasePublicKey, getSupabaseUrl } from "@/lib/supabase/env";
 import { createBrowserClient } from "@supabase/ssr";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
+/**
+ * Create Supabase client for browser use
+ * Uses publishable/anon key (safe for client-side, respects RLS)
+ */
 export const createClient = () =>
-  createBrowserClient(supabaseUrl!, supabaseKey!);
+  createBrowserClient(getSupabaseUrl(), getSupabasePublicKey());
