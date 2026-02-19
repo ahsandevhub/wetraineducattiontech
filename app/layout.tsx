@@ -4,6 +4,8 @@ import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
+import { EnvironmentSticker } from "../components/EnvironmentSticker";
+
 export const metadata: Metadata = {
   title: "WeTrainEducation & Tech — Global IT and Marketing Solutions",
   description:
@@ -54,6 +56,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
+        <EnvironmentSticker />
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
         <NextTopLoader color="#facc15" height={3} showSpinner={false} />
         <main id="main-content">{children}</main>
