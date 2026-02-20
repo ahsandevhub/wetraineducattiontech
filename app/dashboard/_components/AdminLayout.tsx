@@ -536,9 +536,9 @@ export default function AdminLayout({
 
         {/* Main Content */}
         <div className="flex flex-1 flex-col gap-4 p-4 text-gray-900">
-          <div className="flex-1 rounded-xl border border-[var(--primary-yellow)] !bg-[var(--tertiary-yellow)]/20 p-4 shadow-sm shadow-[var(--primary-yellow)]/10">
-            {children}
-          </div>
+          {/* <div className="flex-1 rounded-xl border border-[var(--primary-yellow)] !bg-[var(--tertiary-yellow)]/20 p-4 shadow-sm shadow-[var(--primary-yellow)]/10"> */}
+          {children}
+          {/* </div> */}
         </div>
       </SidebarInset>
     </SidebarProvider>
