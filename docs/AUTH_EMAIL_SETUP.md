@@ -260,4 +260,4 @@ If you implement magic link login in your app:
 
 ---
 
-**All done!** Your email authentication flows are now properly configured. Users will have a seamless experience when clicking links from emails.
+**All done!** Your email authentication flows are now properly configured. Users will have a seamless experience when clicking links from emails!
