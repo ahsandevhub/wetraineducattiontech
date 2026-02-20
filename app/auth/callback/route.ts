@@ -1,6 +1,27 @@
 import { createClient } from "@/app/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
+/**
+ * Auth Callback Route Handler
+ *
+ * Handles OAuth and email confirmation callbacks from Supabase.
+ *
+ * Flow Types:
+ * 1. **OAuth/Signup Confirmation** (query params):
+ *    - URL: /auth/callback?code=...&next=/dashboard
+ *    - Exchanges code for session
+ *    - Creates user profile if needed
+ *    - Redirects to dashboard
+ *
+ * 2. **Hash-based flows** (handled client-side on dedicated pages):
+ *    - Invite: /auth/accept-invite#access_token=...&type=invite
+ *    - Magic Link: /auth/magic-link#access_token=...
+ *    - Email Change: /auth/verify-email-change#access_token=...&type=email_change
+ *    - Password Reset: /set-password#access_token=...&type=recovery
+ *
+ * Note: Hash fragments (#) are not sent to the server, so hash-based flows
+ * must be handled client-side. This route only handles code-based flows.
+ */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
