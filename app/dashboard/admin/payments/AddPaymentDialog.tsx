@@ -171,7 +171,7 @@ export default function AddPaymentDialog({
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-black hover:bg-gray-800">
+        <Button>
           <Plus className="mr-2 h-4 w-4" />
           Add Payment
         </Button>

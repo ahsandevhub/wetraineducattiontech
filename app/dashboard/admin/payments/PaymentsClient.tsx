@@ -285,7 +285,7 @@ export default function PaymentsClient({
         <CardContent>
           <div className="rounded-md border">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-primary-100">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Payment ID
@@ -325,7 +325,7 @@ export default function PaymentsClient({
                   </TableRow>
                 ) : (
                   paginated.map((payment) => (
-                    <TableRow key={payment.id} className="hover:bg-gray-50">
+                    <TableRow key={payment.id} className="hover:bg-primary-50">
                       <TableCell>
                         <CopyButton text={payment.id} />
                       </TableCell>

@@ -199,7 +199,7 @@ export default function OrdersClient({
 
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader className="bg-gray-50">
+              <TableHeader className="bg-primary-100">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Order ID
@@ -239,7 +239,7 @@ export default function OrdersClient({
                   </TableRow>
                 ) : (
                   paginated.map((order) => (
-                    <TableRow key={order.id} className="hover:bg-gray-50">
+                    <TableRow key={order.id} className="hover:bg-primary-50">
                       <TableCell>
                         <CopyButton text={order.id} />
                       </TableCell>

@@ -40,6 +40,11 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     return null;
   }
 
+  // Check if email is confirmed
+  if (!user.email_confirmed_at) {
+    return null;
+  }
+
   // Fetch education profile (optional - CRM/HRM-only users may not have this)
   const { data: profile } = await supabase
     .from("profiles")

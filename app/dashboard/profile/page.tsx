@@ -386,7 +386,7 @@ export default function ProfilePage() {
                     (e.target as HTMLImageElement).style.display = "none";
                   }}
                 />
-                <AvatarFallback className="bg-primary-yellow text-white text-2xl">
+                <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                   {initials}
                 </AvatarFallback>
               </Avatar>

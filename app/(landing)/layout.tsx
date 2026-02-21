@@ -3,6 +3,7 @@ import DisclaimerBanner from "@/app/components/DisclaimerBanner";
 import Footer from "@/app/components/Footer";
 import Header from "@/app/components/Header";
 import WhatsAppButton from "@/app/components/WhatsAppButton";
+import { HashAuthCatcher } from "@/components/HashAuthCatcher";
 
 export default function RootLayout({
   children,
@@ -11,6 +12,9 @@ export default function RootLayout({
 }) {
   return (
     <div className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
+      {/* Catch auth hash tokens and redirect before rendering */}
+      <HashAuthCatcher />
+
       {/* Optional top banner or announcement */}
       <DisclaimerBanner />
 

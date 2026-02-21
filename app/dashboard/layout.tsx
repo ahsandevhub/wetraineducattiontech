@@ -1,5 +1,6 @@
 import DashboardShell from "@/app/dashboard/DashboardShell";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import { DashboardReady } from "@/components/DashboardReady";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -25,14 +26,17 @@ export default async function DashboardLayout({
   const educationRole = (roles.profileRole as Role) ?? "customer";
 
   return (
-    <DashboardShell
-      role={educationRole}
-      crmRole={roles.crmRole}
-      hrmRole={roles.hrmRole}
-      userId={roles.userId}
-      hasEducationAccess={roles.hasEducationAccess}
-    >
-      {children}
-    </DashboardShell>
+    <>
+      <DashboardReady />
+      <DashboardShell
+        role={educationRole}
+        crmRole={roles.crmRole}
+        hrmRole={roles.hrmRole}
+        userId={roles.userId}
+        hasEducationAccess={roles.hasEducationAccess}
+      >
+        {children}
+      </DashboardShell>
+    </>
   );
 }

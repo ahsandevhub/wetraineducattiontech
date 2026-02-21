@@ -212,7 +212,7 @@ export default function CertificationsClient({
 
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader className="bg-gray-50">
+              <TableHeader className="bg-primary-100">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Title
@@ -230,7 +230,7 @@ export default function CertificationsClient({
               </TableHeader>
               <TableBody>
                 {paginated.map((cert) => (
-                  <TableRow key={cert.id} className="hover:bg-gray-50">
+                  <TableRow key={cert.id} className="hover:bg-primary-50">
                     <TableCell className="font-medium text-gray-900">
                       {cert.title}
                     </TableCell>

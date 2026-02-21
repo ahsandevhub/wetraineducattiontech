@@ -63,7 +63,6 @@ type UserRole = "ADMIN" | "MARKETER";
 
 interface CreateUserData {
   email: string;
-  password: string;
   fullName: string;
   crmRole: UserRole;
 }
@@ -95,7 +94,6 @@ export function UsersPageClient({
   // Create user form
   const [createForm, setCreateForm] = useState<CreateUserData>({
     email: "",
-    password: "",
     fullName: "",
     crmRole: "MARKETER",
   });
@@ -107,7 +105,7 @@ export function UsersPageClient({
   });
 
   const handleCreateUser = async () => {
-    if (!createForm.email || !createForm.password || !createForm.fullName) {
+    if (!createForm.email || !createForm.fullName) {
       toast.error("Please fill all fields");
       return;
     }
@@ -121,11 +119,12 @@ export function UsersPageClient({
         console.error("Create user error:", result.error);
         toast.error(result.error);
       } else {
-        toast.success("User created successfully");
+        toast.success(
+          "Invite sent successfully! User will receive an email to set their password.",
+        );
         setIsCreateDialogOpen(false);
         setCreateForm({
           email: "",
-          password: "",
           fullName: "",
           crmRole: "MARKETER",
         });
@@ -265,7 +264,7 @@ export function UsersPageClient({
         action={
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
-            Create User
+            Invite User
           </Button>
         }
       />
@@ -370,8 +369,11 @@ export function UsersPageClient({
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
-            <DialogDescription>Add a new user to the system</DialogDescription>
+            <DialogTitle>Invite New User</DialogTitle>
+            <DialogDescription>
+              Send an invitation email to a new user. They will set their own
+              password when they accept the invite.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -395,18 +397,6 @@ export function UsersPageClient({
                   setCreateForm({ ...createForm, email: e.target.value })
                 }
                 placeholder="john@wetrain.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={createForm.password}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, password: e.target.value })
-                }
-                placeholder="••••••••"
               />
             </div>
             <div className="space-y-2">
@@ -437,7 +427,7 @@ export function UsersPageClient({
             </Button>
             <Button onClick={handleCreateUser} disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create User
+              Send Invite
             </Button>
           </DialogFooter>
         </DialogContent>

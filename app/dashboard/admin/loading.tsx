@@ -1,26 +1,63 @@
+import { ChartSkeleton } from "@/components/skeletons/ChartSkeleton";
+import { StatCardSkeleton } from "@/components/skeletons/StatCardSkeleton";
+import { TableSkeleton } from "@/components/skeletons/TableSkeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-64" />
+        <div>
+          <Skeleton className="h-9 w-56 mb-2" />
+          <Skeleton className="h-4 w-80" />
         </div>
-        <Skeleton className="h-9 w-28" />
+        <Skeleton className="h-10 w-32" />
       </div>
 
+      {/* Stat Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-28 w-full" />
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+        <StatCardSkeleton />
+        <StatCardSkeleton />
       </div>
 
-      <div className="space-y-3">
-        <Skeleton className="h-6 w-40" />
-        <Skeleton className="h-64 w-full" />
+      {/* Sales Chart */}
+      <ChartSkeleton height="h-80" title={true} />
+
+      {/* Tables Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Recent Customers Table */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-36" />
+          </CardHeader>
+          <CardContent>
+            <TableSkeleton rows={5} columns={2} showHeader={false} />
+          </CardContent>
+        </Card>
+
+        {/* Recent Payments Table */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-36" />
+          </CardHeader>
+          <CardContent>
+            <TableSkeleton rows={5} columns={2} showHeader={false} />
+          </CardContent>
+        </Card>
+
+        {/* Recent Orders Table */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-36" />
+          </CardHeader>
+          <CardContent>
+            <TableSkeleton rows={5} columns={2} showHeader={false} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

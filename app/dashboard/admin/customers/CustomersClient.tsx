@@ -142,9 +142,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
           <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
           <p className="text-sm text-gray-600">Manage your customers list.</p>
         </div>
-        <Button variant="outline" onClick={() => setIsExportModalOpen(true)}>
-          Export
-        </Button>
+        <Button onClick={() => setIsExportModalOpen(true)}>Export</Button>
       </div>
 
       <Card>
@@ -165,7 +163,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
         <CardContent className="space-y-4">
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader className="bg-gray-50">
+              <TableHeader className="bg-primary-100">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Customer
@@ -199,7 +197,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
                   </TableRow>
                 ) : (
                   paginated.map((customer) => (
-                    <TableRow key={customer.id} className="hover:bg-gray-50">
+                    <TableRow key={customer.id} className="hover:bg-primary-50">
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">

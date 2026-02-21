@@ -42,7 +42,6 @@ export default function AuthConfirmation({
         setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
-            router.push(redirectUrl);
             return 0;
           }
           return prev - 1;
@@ -51,11 +50,18 @@ export default function AuthConfirmation({
 
       return () => clearInterval(timer);
     }
-  }, [type, redirectUrl, redirectDelay, router]);
+  }, [type, redirectUrl, redirectDelay]);
+
+  // Separate useEffect for navigation to avoid "setState during render" error
+  useEffect(() => {
+    if (type === "success" && redirectUrl && countdown === 0) {
+      router.replace(redirectUrl);
+    }
+  }, [countdown, type, redirectUrl, router]);
 
   const handleManualRedirect = () => {
     if (redirectUrl) {
-      router.push(redirectUrl);
+      router.replace(redirectUrl);
     }
   };
 
@@ -101,14 +107,17 @@ export default function AuthConfirmation({
           )}
 
           {/* Manual Redirect Button */}
-          {type === "success" && redirectUrl && showRedirectButton && (
-            <button
-              onClick={handleManualRedirect}
-              className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-all"
-            >
-              Continue Now
-            </button>
-          )}
+          {type === "success" &&
+            redirectUrl &&
+            showRedirectButton &&
+            countdown > 0 && (
+              <button
+                onClick={handleManualRedirect}
+                className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-all"
+              >
+                Continue Now
+              </button>
+            )}
 
           {/* Error - Back to Login */}
           {type === "error" && (

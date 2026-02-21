@@ -94,12 +94,12 @@ export default function Proposal() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 rounded-lg bg-tertiary-yellow border border-secondary-yellow p-4 text-gray-800"
+              className="mb-6 rounded-lg bg-primary-50 border border-primary-300 p-4 text-foreground"
             >
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg
-                    className="h-5 w-5 text-primary-yellow"
+                    className="h-5 w-5 text-primary"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >

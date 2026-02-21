@@ -2,10 +2,10 @@
 
 import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
-import { AlertCircle, Lock, Mail, X } from "lucide-react";
+import { AlertCircle, Loader2, Lock, Mail, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,12 +19,30 @@ export default function LoginPage() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [emailNotFound, setEmailNotFound] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Handle auth_error parameter from callback redirects
+  useEffect(() => {
+    const authError = searchParams.get("auth_error");
+    if (authError) {
+      const errorMessages: Record<string, string> = {
+        otp_expired:
+          "This authentication link has expired. Please request a new one.",
+        invalid_link: "This authentication link is invalid or has expired.",
+        user_not_found: "User account not found. Please sign up first.",
+        auth_failed: "Authentication failed. Please try again.",
+      };
+      setError(
+        errorMessages[authError] || "Authentication failed. Please try again.",
+      );
+    }
+  }, [searchParams]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setLoading(true); // Button loading state
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -34,13 +52,23 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message);
+        setLoading(false);
         return;
       }
 
       const userId = data.user?.id;
+      const emailConfirmed = data.user?.email_confirmed_at;
+
+      // Check if email is confirmed
+      if (!emailConfirmed) {
+        setError("Please verify your email address before logging in.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
 
       if (!userId) {
-        router.push("/dashboard");
+        router.replace("/dashboard");
         return;
       }
 
@@ -57,30 +85,46 @@ export default function LoginPage() {
         .eq("auth_user_id", userId)
         .maybeSingle();
 
+      const { data: hrmUser } = await supabase
+        .from("hrm_users")
+        .select("id, is_active")
+        .eq("profile_id", userId)
+        .maybeSingle();
+
       const hasEducationAccess = profile !== null;
       const hasCrmAccess = crmUser !== null;
+      const hasHrmAccess = hrmUser !== null && hrmUser.is_active;
 
-      // If user has neither education nor CRM access, block login
-      if (!hasEducationAccess && !hasCrmAccess) {
+      // If user has neither education nor CRM nor HRM access, block login
+      if (!hasEducationAccess && !hasCrmAccess && !hasHrmAccess) {
         setError(
           "Your account does not have access to any application. Please contact support.",
         );
         await supabase.auth.signOut();
+        setLoading(false);
         return;
       }
 
+      // Auth successful - show full-screen overlay and redirect
+
       // Determine redirect target based on access
-      // Priority: CRM users → /dashboard/crm, Education admin → /dashboard/admin, Customer → /dashboard/customer
-      if (hasCrmAccess) {
-        router.push("/dashboard/crm");
-      } else if (profile?.role === "admin") {
-        router.push("/dashboard/admin");
-      } else {
-        router.push("/dashboard/customer");
+      // Priority: Education > CRM > HRM
+      if (hasEducationAccess) {
+        // User has education access
+        if (profile?.role === "admin") {
+          router.replace("/dashboard/admin");
+        } else {
+          router.replace("/dashboard/customer");
+        }
+      } else if (hasCrmAccess) {
+        // User has CRM access but no education
+        router.replace("/dashboard/crm");
+      } else if (hasHrmAccess) {
+        // User has HRM access but no education or CRM
+        router.replace("/dashboard/hrm");
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
@@ -232,8 +276,9 @@ export default function LoginPage() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--primary-yellow)] text-gray-900 py-2 rounded-lg font-bold hover:bg-[var(--secondary-yellow)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-[var(--primary-yellow)] text-gray-900 py-2 rounded-lg font-bold hover:bg-[var(--secondary-yellow)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
+              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
               {loading ? "Signing in..." : "Sign In"}
             </motion.button>
           </form>

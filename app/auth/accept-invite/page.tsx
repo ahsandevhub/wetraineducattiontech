@@ -2,7 +2,12 @@
 
 import { createClient } from "@/app/utils/supabase/client";
 import AuthConfirmation from "@/components/AuthConfirmation";
-import { parseAuthHash, validateAuthData } from "@/lib/supabase/auth-handlers";
+import {
+  getAuthError,
+  getErrorMessage,
+  parseAuthHash,
+  validateAuthData,
+} from "@/lib/supabase/auth-handlers";
 import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -25,7 +30,33 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     async function verifyInvite() {
       try {
-        // Parse hash from URL
+        // Check for Supabase errors first
+        const authError = getAuthError();
+        if (authError.error) {
+          const message = getErrorMessage(
+            authError.error,
+            authError.code,
+            authError.description,
+          );
+          setError(message);
+          setLoading(false);
+          return;
+        }
+
+        // First, try to get existing session (may already be set by callback page)
+        const {
+          data: { session: existingSession },
+        } = await supabase.auth.getSession();
+
+        if (existingSession?.user) {
+          console.log("[AcceptInvite] Session already established by callback");
+          setUserEmail(existingSession.user.email || null);
+          setValidToken(true);
+          setLoading(false);
+          return;
+        }
+
+        // No existing session - check for tokens in hash
         const hash = window.location.hash;
         if (!hash) {
           setError("Invalid invitation link. Please request a new invite.");
@@ -49,21 +80,49 @@ export default function AcceptInvitePage() {
           return;
         }
 
-        // Session should already be created by Supabase
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session) {
-          setError(
-            "Session not found. Please click the invitation link again.",
+        // If we have access token + refresh token, establish session now
+        if (parsed.accessToken && parsed.refreshToken) {
+          console.log(
+            "[AcceptInvite] Establishing session from hash tokens...",
           );
+
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: parsed.accessToken,
+            refresh_token: parsed.refreshToken,
+          });
+
+          if (sessionError) {
+            console.error(
+              "[AcceptInvite] Failed to establish session:",
+              sessionError,
+            );
+            setError(
+              "Failed to verify invitation. Please try clicking the link from your email again.",
+            );
+            setLoading(false);
+            return;
+          }
+
+          // Verify the session was created
+          const {
+            data: { session },
+            error: verifyError,
+          } = await supabase.auth.getSession();
+
+          if (verifyError || !session) {
+            setError("Failed to establish session. Please try again.");
+            setLoading(false);
+            return;
+          }
+
+          setUserEmail(session.user.email || null);
+          setValidToken(true);
           setLoading(false);
           return;
         }
 
-        setUserEmail(session.user.email || null);
-        setValidToken(true);
+        // No valid tokens found
+        setError("Invalid invitation link. Please request a new one.");
         setLoading(false);
       } catch (err) {
         console.error("Error verifying invite:", err);
@@ -93,14 +152,20 @@ export default function AcceptInvitePage() {
     setError(null);
 
     try {
-      // Update user password
+      // Session should already be established by verifyInvite()
+      // Just update the password
+      console.log("[AcceptInvite] Updating user password...");
+
       const { error: updateError } = await supabase.auth.updateUser({
         password,
       });
 
       if (updateError) {
+        console.error("[AcceptInvite] Password update failed:", updateError);
         throw updateError;
       }
+
+      console.log("[AcceptInvite] Password updated successfully");
 
       // Password set successfully
       setSuccess(true);

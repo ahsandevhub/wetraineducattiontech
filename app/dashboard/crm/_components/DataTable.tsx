@@ -142,7 +142,7 @@ export function DataTable<TData, TValue>({
     <div className="space-y-4">
       {/* Search handled by page-level filters; DataTable no longer renders a search input */}
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border">
         <div className="w-full overflow-x-auto">
           <Table className="min-w-[900px] w-full">
             <TableHeader>
@@ -167,7 +167,7 @@ export function DataTable<TData, TValue>({
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    className="hover:bg-slate-50"
+                    className="hover:bg-primary-50"
                     onClick={() => onRowClick?.(row)}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -334,7 +334,7 @@ export function SortableHeader<TData, TValue>({
     <Button
       variant="ghost"
       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      className="-ml-4 h-8 data-[state=open]:bg-slate-100"
+      className="-ml-4 h-8 data-[state=open]:bg-primary-100"
     >
       {children}
       {sorted === "asc" ? (

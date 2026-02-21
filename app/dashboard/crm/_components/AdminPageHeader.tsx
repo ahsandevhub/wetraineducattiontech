@@ -76,7 +76,7 @@ export function AdminPageHeader({
               </Button>
             )}
             <div>
-              <h1 className="text-2xl font-semibold text-[var(--primary-yellow)]">
+              <h1 className="text-2xl font-semibold text-foreground">
                 {title}
               </h1>
               <p className="text-sm text-muted-foreground">{description}</p>

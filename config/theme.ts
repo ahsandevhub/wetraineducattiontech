@@ -19,9 +19,24 @@
 export const theme = {
   // ==================== COLORS ====================
   colors: {
-    // Core Colors
-    primary: "oklch(0.205 0 0)",
-    primaryForeground: "oklch(0.985 0 0)",
+    // Core Colors - Bright Yellow (#facc15) as Primary
+    primary: "oklch(0.85 0.2 96)",
+    primaryForeground: "oklch(0.145 0 0)",
+
+    // Primary Shades (light to dark)
+    primaryShades: {
+      "50": "oklch(0.97 0.05 96)",
+      "100": "oklch(0.93 0.08 96)",
+      "200": "oklch(0.88 0.12 96)",
+      "300": "oklch(0.80 0.16 96)",
+      "400": "oklch(0.80 0.18 96)",
+      "500": "oklch(0.85 0.2 96)",
+      "600": "oklch(0.75 0.21 96)",
+      "700": "oklch(0.65 0.22 96)",
+      "800": "oklch(0.50 0.20 96)",
+      "900": "oklch(0.35 0.18 96)",
+    },
+
     secondary: "oklch(0.97 0 0)",
     secondaryForeground: "oklch(0.205 0 0)",
 
@@ -36,14 +51,14 @@ export const theme = {
     mutedForeground: "oklch(0.556 0 0)",
 
     // Interactive Colors
-    accent: "oklch(0.97 0 0)",
-    accentForeground: "oklch(0.205 0 0)",
+    accent: "oklch(0.75 0.21 96)",
+    accentForeground: "oklch(0.145 0 0)",
     destructive: "oklch(0.577 0.245 27.325)",
 
     // UI Element Colors
-    border: "oklch(0.922 0 0)",
-    input: "oklch(0.922 0 0)",
-    ring: "oklch(0.708 0 0)",
+    border: "oklch(0.88 0.12 96)",
+    input: "oklch(0.88 0.12 96)",
+    ring: "oklch(0.75 0.21 96)",
 
     // Chart Colors (5-color palette)
     chart: {
@@ -64,13 +79,6 @@ export const theme = {
       accentForeground: "oklch(0.205 0 0)",
       border: "oklch(0.922 0 0)",
       ring: "oklch(0.708 0 0)",
-    },
-
-    // Custom Brand Colors (non-shadcn)
-    brandYellow: {
-      primary: "#facc15",
-      secondary: "#eccf4f",
-      tertiary: "#fbf8f0",
     },
   },
 
@@ -150,8 +158,24 @@ export const theme = {
   // ==================== DARK MODE OVERRIDES ====================
   dark: {
     colors: {
-      primary: "oklch(0.922 0 0)",
-      primaryForeground: "oklch(0.205 0 0)",
+      // Dark mode: Use lighter yellow shades for contrast
+      primary: "oklch(0.80 0.18 96)",
+      primaryForeground: "oklch(0.145 0 0)",
+
+      // Primary Shades (inverted for dark mode)
+      primaryShades: {
+        "50": "oklch(0.35 0.18 96)",
+        "100": "oklch(0.40 0.19 96)",
+        "200": "oklch(0.50 0.20 96)",
+        "300": "oklch(0.60 0.21 96)",
+        "400": "oklch(0.70 0.21 96)",
+        "500": "oklch(0.80 0.18 96)",
+        "600": "oklch(0.85 0.2 96)",
+        "700": "oklch(0.88 0.12 96)",
+        "800": "oklch(0.93 0.08 96)",
+        "900": "oklch(0.97 0.05 96)",
+      },
+
       secondary: "oklch(0.269 0 0)",
       secondaryForeground: "oklch(0.985 0 0)",
 
@@ -164,13 +188,13 @@ export const theme = {
       muted: "oklch(0.269 0 0)",
       mutedForeground: "oklch(0.708 0 0)",
 
-      accent: "oklch(0.269 0 0)",
-      accentForeground: "oklch(0.985 0 0)",
+      accent: "oklch(0.85 0.2 96)",
+      accentForeground: "oklch(0.145 0 0)",
       destructive: "oklch(0.704 0.191 22.216)",
 
-      border: "oklch(1 0 0 / 10%)",
-      input: "oklch(1 0 0 / 15%)",
-      ring: "oklch(0.556 0 0)",
+      border: "oklch(0.50 0.20 96 / 20%)",
+      input: "oklch(0.50 0.20 96 / 25%)",
+      ring: "oklch(0.80 0.18 96)",
 
       chart: {
         "1": "oklch(0.488 0.243 264.376)",
@@ -183,12 +207,12 @@ export const theme = {
       sidebar: {
         base: "oklch(0.205 0 0)",
         foreground: "oklch(0.985 0 0)",
-        primary: "oklch(0.488 0.243 264.376)",
-        primaryForeground: "oklch(0.985 0 0)",
-        accent: "oklch(0.269 0 0)",
-        accentForeground: "oklch(0.985 0 0)",
-        border: "oklch(1 0 0 / 10%)",
-        ring: "oklch(0.556 0 0)",
+        primary: "oklch(0.80 0.18 96)",
+        primaryForeground: "oklch(0.145 0 0)",
+        accent: "oklch(0.80 0.18 96)",
+        accentForeground: "oklch(0.145 0 0)",
+        border: "oklch(0.50 0.20 96 / 20%)",
+        ring: "oklch(0.85 0.2 96)",
       },
     },
   },
