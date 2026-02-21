@@ -6,8 +6,9 @@ import { AlertCircle, Loader2, Lock, Mail, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -480,5 +481,24 @@ export default function LoginPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+function LoginLoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[var(--tertiary-yellow)] to-white flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
+        <div className="h-10 bg-gray-200 rounded mb-4 animate-pulse"></div>
+        <div className="h-6 bg-gray-200 rounded w-3/4 mb-6 animate-pulse"></div>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoadingFallback />}>
+      <LoginContent />
+    </Suspense>
   );
 }
