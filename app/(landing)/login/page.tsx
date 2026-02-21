@@ -5,8 +5,7 @@ import { motion } from "framer-motion";
 import { AlertCircle, Loader2, Lock, Mail, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 function LoginContent() {
   const [email, setEmail] = useState("");
