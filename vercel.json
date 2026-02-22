@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/hrm/cron/ensure-week",
+      "schedule": "1 18 * * *"
+    },
+    {
+      "path": "/api/hrm/cron/compute-last-friday",
+      "schedule": "30 17 * * 5"
+    },
+    {
+      "path": "/api/hrm/cron/compute-month-if-ended",
+      "schedule": "0 19 * * *"
+    }
+  ]
+}

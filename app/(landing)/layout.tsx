@@ -1,0 +1,30 @@
+// app/layout.tsx
+import DisclaimerBanner from "@/app/components/DisclaimerBanner";
+import Footer from "@/app/components/Footer";
+import Header from "@/app/components/Header";
+import WhatsAppButton from "@/app/components/WhatsAppButton";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
+      {/* Optional top banner or announcement */}
+      <DisclaimerBanner />
+
+      {/* Global marketing header */}
+      <Header />
+
+      {/* Main content */}
+      <main id="main-content">{children}</main>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Fixed WhatsApp Button */}
+      <WhatsAppButton />
+    </div>
+  );
+}
