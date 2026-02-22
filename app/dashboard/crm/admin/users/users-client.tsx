@@ -63,6 +63,7 @@ type UserRole = "ADMIN" | "MARKETER";
 
 interface CreateUserData {
   email: string;
+  password: string;
   fullName: string;
   crmRole: UserRole;
 }
@@ -94,6 +95,7 @@ export function UsersPageClient({
   // Create user form
   const [createForm, setCreateForm] = useState<CreateUserData>({
     email: "",
+    password: "",
     fullName: "",
     crmRole: "MARKETER",
   });
@@ -105,7 +107,7 @@ export function UsersPageClient({
   });
 
   const handleCreateUser = async () => {
-    if (!createForm.email || !createForm.fullName) {
+    if (!createForm.email || !createForm.password || !createForm.fullName) {
       toast.error("Please fill all fields");
       return;
     }
@@ -119,12 +121,11 @@ export function UsersPageClient({
         console.error("Create user error:", result.error);
         toast.error(result.error);
       } else {
-        toast.success(
-          "Invite sent successfully! User will receive an email to set their password.",
-        );
+        toast.success("User created successfully");
         setIsCreateDialogOpen(false);
         setCreateForm({
           email: "",
+          password: "",
           fullName: "",
           crmRole: "MARKETER",
         });
@@ -264,7 +265,7 @@ export function UsersPageClient({
         action={
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
-            Invite User
+            Create User
           </Button>
         }
       />
@@ -274,94 +275,100 @@ export function UsersPageClient({
           <CardTitle>All Users ({users.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">
-                    {user.full_name}
-                  </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        user.crm_role === "ADMIN" ? "default" : "secondary"
-                      }
-                    >
-                      {user.crm_role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {user.is_active ? (
-                      <Badge variant="default" className="bg-green-600">
-                        Active
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive">Inactive</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(user.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(user)}
-                      disabled={loading}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleStatus(user.id)}
-                      disabled={loading}
-                    >
-                      {user.is_active ? (
-                        <UserX className="h-4 w-4" />
-                      ) : (
-                        <UserCheck className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteUser(user.id)}
-                      disabled={loading || user.auth_user_id === currentUserId}
-                      className={
-                        user.auth_user_id === currentUserId ? "opacity-50" : ""
-                      }
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedUser(user);
-                        setResetPasswordValue("");
-                        setIsResetDialogOpen(true);
-                      }}
-                      disabled={loading}
-                    >
-                      Reset
-                    </Button>
-                  </TableCell>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">
+                      {user.full_name}
+                    </TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.crm_role === "ADMIN" ? "default" : "secondary"
+                        }
+                      >
+                        {user.crm_role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.is_active ? (
+                        <Badge variant="default" className="bg-green-600">
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">Inactive</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(user)}
+                        disabled={loading}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleStatus(user.id)}
+                        disabled={loading}
+                      >
+                        {user.is_active ? (
+                          <UserX className="h-4 w-4" />
+                        ) : (
+                          <UserCheck className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id)}
+                        disabled={
+                          loading || user.auth_user_id === currentUserId
+                        }
+                        className={
+                          user.auth_user_id === currentUserId
+                            ? "opacity-50"
+                            : ""
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setResetPasswordValue("");
+                          setIsResetDialogOpen(true);
+                        }}
+                        disabled={loading}
+                      >
+                        Reset
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -369,11 +376,8 @@ export function UsersPageClient({
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite New User</DialogTitle>
-            <DialogDescription>
-              Send an invitation email to a new user. They will set their own
-              password when they accept the invite.
-            </DialogDescription>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>Add a new user to the system</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -397,6 +401,18 @@ export function UsersPageClient({
                   setCreateForm({ ...createForm, email: e.target.value })
                 }
                 placeholder="john@wetrain.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={createForm.password}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, password: e.target.value })
+                }
+                placeholder="••••••••"
               />
             </div>
             <div className="space-y-2">
@@ -427,7 +443,7 @@ export function UsersPageClient({
             </Button>
             <Button onClick={handleCreateUser} disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Send Invite
+              Create User
             </Button>
           </DialogFooter>
         </DialogContent>

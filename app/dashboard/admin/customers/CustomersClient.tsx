@@ -163,7 +163,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
         <CardContent className="space-y-4">
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader className="bg-primary-100">
+              <TableHeader className="bg-gray-50">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Customer
@@ -197,7 +197,7 @@ export default function CustomersClient({ customers }: CustomersClientProps) {
                   </TableRow>
                 ) : (
                   paginated.map((customer) => (
-                    <TableRow key={customer.id} className="hover:bg-primary-50">
+                    <TableRow key={customer.id} className="hover:bg-gray-50">
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">

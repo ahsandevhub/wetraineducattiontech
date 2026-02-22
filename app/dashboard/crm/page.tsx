@@ -80,6 +80,7 @@ export default async function CrmDashboardPage({
         <>
           {/* Fetch marketer metrics */}
           <MarketerDashboardContent
+            key={`marketer-${range.key}`}
             crmUserId={roles.crmUserId}
             dateRange={range}
           />
@@ -178,57 +179,41 @@ async function MarketerDashboardContent({
   );
 
   // Fetch chart data for assigned leads
-  const defaultFromISO =
-    dateRange?.fromISO ||
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const defaultToISO = dateRange?.toISO || new Date().toISOString();
+  const rangeFromISO = dateRange?.fromISO || new Date(2000, 0, 1).toISOString();
+  const rangeToISO = dateRange?.toISO || new Date().toISOString();
 
   const assignedChartData = await getMarketerAssignedChartData(
     crmUserId,
-    defaultFromISO,
-    defaultToISO,
+    rangeFromISO,
+    rangeToISO,
   );
 
   return (
     <>
       {/* PRIMARY: Assigned to Me (leads you own) */}
       <div>
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <span>📋</span> Assigned to Me
-            <span className="text-xs text-muted-foreground font-normal">
-              (Leads you own)
-            </span>
-          </h2>
-        </div>
         <CrmMarketerKpiCards
           metrics={assignedMetrics}
           rangeLabel={dateRange.label}
         />
 
-        {/* Consolidated Chart - All KPI Trends */}
-        <CrmConsolidatedAreaChart
-          data={assignedChartData}
-          title="Lead Trends Over Time"
-          description="All KPI status counts visualized in one consolidated view"
-          dateRangeLabel={dateRange.label}
-        />
+        {/* Charts Row - 2 columns on large screens, 1 column on small screens */}
+        <div className="grid gap-6 lg:grid-cols-2 mt-6">
+          {/* Consolidated Chart - All KPI Trends */}
+          <CrmConsolidatedAreaChart
+            data={assignedChartData}
+            title="Lead Trends Over Time"
+            description="All KPI status counts visualized in one consolidated view"
+            dateRangeLabel={dateRange.label}
+          />
 
-        <CrmStatusPieChart
-          breakdown={assignedStatusBreakdown}
-          title="Leads by Status"
-          description="Visual breakdown of your assigned leads by current status"
-        />
-      </div>
-
-      {/* Quick Links */}
-      <div className="flex gap-2 mt-6">
-        <Link
-          href="/dashboard/crm/leads"
-          className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          View All Leads
-        </Link>
+          {/* Status Pie Chart */}
+          <CrmStatusPieChart
+            breakdown={assignedStatusBreakdown}
+            title="Leads by Status"
+            description="Visual breakdown of your assigned leads by current status"
+          />
+        </div>
       </div>
     </>
   );

@@ -2,12 +2,12 @@
 
 import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, Lock, Mail, X } from "lucide-react";
+import { AlertCircle, Lock, Mail, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-function LoginContent() {
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,30 +19,12 @@ function LoginContent() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [emailNotFound, setEmailNotFound] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
-
-  // Handle auth_error parameter from callback redirects
-  useEffect(() => {
-    const authError = searchParams.get("auth_error");
-    if (authError) {
-      const errorMessages: Record<string, string> = {
-        otp_expired:
-          "This authentication link has expired. Please request a new one.",
-        invalid_link: "This authentication link is invalid or has expired.",
-        user_not_found: "User account not found. Please sign up first.",
-        auth_failed: "Authentication failed. Please try again.",
-      };
-      setError(
-        errorMessages[authError] || "Authentication failed. Please try again.",
-      );
-    }
-  }, [searchParams]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true); // Button loading state
+    setLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -52,27 +34,17 @@ function LoginContent() {
 
       if (error) {
         setError(error.message);
-        setLoading(false);
         return;
       }
 
       const userId = data.user?.id;
-      const emailConfirmed = data.user?.email_confirmed_at;
-
-      // Check if email is confirmed
-      if (!emailConfirmed) {
-        setError("Please verify your email address before logging in.");
-        await supabase.auth.signOut();
-        setLoading(false);
-        return;
-      }
 
       if (!userId) {
-        router.replace("/dashboard");
+        router.push("/dashboard");
         return;
       }
 
-      // Check both education profile and CRM access
+      // Check education profile, CRM access, and HRM access
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, role")
@@ -87,7 +59,7 @@ function LoginContent() {
 
       const { data: hrmUser } = await supabase
         .from("hrm_users")
-        .select("id, is_active")
+        .select("id, hrm_role, is_active")
         .eq("profile_id", userId)
         .maybeSingle();
 
@@ -95,36 +67,39 @@ function LoginContent() {
       const hasCrmAccess = crmUser !== null;
       const hasHrmAccess = hrmUser !== null && hrmUser.is_active;
 
-      // If user has neither education nor CRM nor HRM access, block login
+      // If user has no access to any application, block login
       if (!hasEducationAccess && !hasCrmAccess && !hasHrmAccess) {
         setError(
           "Your account does not have access to any application. Please contact support.",
         );
         await supabase.auth.signOut();
-        setLoading(false);
         return;
       }
 
-      // Auth successful - show full-screen overlay and redirect
-
-      // Determine redirect target based on access
-      // Priority: Education > CRM > HRM
+      // Determine redirect target based on priority: Education > CRM > HRM
       if (hasEducationAccess) {
-        // User has education access
-        if (profile?.role === "admin") {
-          router.replace("/dashboard/admin");
-        } else {
-          router.replace("/dashboard/customer");
-        }
+        // Education takes priority
+        router.push(
+          profile?.role === "admin"
+            ? "/dashboard/admin"
+            : "/dashboard/customer",
+        );
       } else if (hasCrmAccess) {
-        // User has CRM access but no education
-        router.replace("/dashboard/crm");
+        // CRM second priority
+        router.push("/dashboard/crm");
       } else if (hasHrmAccess) {
-        // User has HRM access but no education or CRM
-        router.replace("/dashboard/hrm");
+        // HRM third priority - let middleware handle role-specific redirect
+        router.push("/dashboard/hrm");
+      } else {
+        // Fallback (shouldn't reach here due to earlier check)
+        setError(
+          "Your account does not have access to any application. Please contact support.",
+        );
+        await supabase.auth.signOut();
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
@@ -276,9 +251,8 @@ function LoginContent() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--primary-yellow)] text-gray-900 py-2 rounded-lg font-bold hover:bg-[var(--secondary-yellow)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-[var(--primary-yellow)] text-gray-900 py-2 rounded-lg font-bold hover:bg-[var(--secondary-yellow)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
               {loading ? "Signing in..." : "Sign In"}
             </motion.button>
           </form>
@@ -480,24 +454,5 @@ function LoginContent() {
         )}
       </motion.div>
     </div>
-  );
-}
-
-function LoginLoadingFallback() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-[var(--tertiary-yellow)] to-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <div className="h-10 bg-gray-200 rounded mb-4 animate-pulse"></div>
-        <div className="h-6 bg-gray-200 rounded w-3/4 mb-6 animate-pulse"></div>
-      </div>
-    </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<LoginLoadingFallback />}>
-      <LoginContent />
-    </Suspense>
   );
 }

@@ -58,50 +58,52 @@ export function CrmStatusBreakdownTable({
         <CardTitle>Leads by Status</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Count</TableHead>
-              <TableHead className="text-right">Percentage</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {breakdown.map((item) => {
-              const color = getStatusColor(item.status);
-              return (
-                <TableRow key={item.status}>
-                  <TableCell>
-                    <Badge
-                      className={`${color.bg} ${color.text} border-0`}
-                      variant="secondary"
-                    >
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-bold">
-                    {item.count}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <div className="h-2 w-16 rounded-full bg-slate-200">
-                        <div
-                          className="h-2 rounded-full bg-slate-900"
-                          style={{
-                            width: `${item.percentage}%`,
-                          }}
-                        />
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Count</TableHead>
+                <TableHead className="text-right">Percentage</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {breakdown.map((item) => {
+                const color = getStatusColor(item.status);
+                return (
+                  <TableRow key={item.status}>
+                    <TableCell>
+                      <Badge
+                        className={`${color.bg} ${color.text} border-0`}
+                        variant="secondary"
+                      >
+                        {item.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-bold">
+                      {item.count}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <div className="h-2 w-16 rounded-full bg-slate-200">
+                          <div
+                            className="h-2 rounded-full bg-slate-900"
+                            style={{
+                              width: `${item.percentage}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-slate-600 w-10 text-right">
+                          {item.percentage}%
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-slate-600 w-10 text-right">
-                        {item.percentage}%
-                      </span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
         <div className="mt-4 pt-4 border-t">
           <div className="flex justify-between">
             <span className="font-medium text-slate-700">Total</span>

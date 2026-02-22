@@ -5,6 +5,7 @@
 
 "use client";
 
+import { NotificationCardSkeleton } from "@/components/shared/PageLoadingSkeletons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCheck, Inbox } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -228,11 +228,7 @@ export default function HrmNotificationsPage() {
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-20 w-full" />
-              </CardContent>
-            </Card>
+            <NotificationCardSkeleton key={i} />
           ))}
         </div>
       ) : notifications.length === 0 ? (

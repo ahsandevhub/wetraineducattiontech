@@ -216,9 +216,7 @@ export default function PaymentsClient({
             customers={customers}
             onPaymentAdded={() => router.refresh()}
           />
-          <Button variant="outline" onClick={() => setExportModalOpen(true)}>
-            Export
-          </Button>
+          <Button onClick={() => setExportModalOpen(true)}>Export</Button>
         </div>
       </div>
 
@@ -285,7 +283,7 @@ export default function PaymentsClient({
         <CardContent>
           <div className="rounded-md border">
             <Table>
-              <TableHeader className="bg-primary-100">
+              <TableHeader>
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Payment ID
@@ -325,7 +323,7 @@ export default function PaymentsClient({
                   </TableRow>
                 ) : (
                   paginated.map((payment) => (
-                    <TableRow key={payment.id} className="hover:bg-primary-50">
+                    <TableRow key={payment.id} className="hover:bg-gray-50">
                       <TableCell>
                         <CopyButton text={payment.id} />
                       </TableCell>

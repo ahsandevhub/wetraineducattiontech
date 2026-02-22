@@ -1,7 +1,6 @@
 "use client";
 
 import type { CrmRole, HrmRole } from "@/app/utils/auth/roles";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { NotificationBell } from "@/components/hrm/NotificationBell";
 import {
   Breadcrumb,
@@ -47,13 +46,14 @@ import {
   TrendingUp,
   User,
   Users,
+  Wallet,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
+import { ApplicationSwitcher } from "./ApplicationSwitcher";
 import { ProfileMenu } from "./ProfileMenu";
-import { TeamSwitcher } from "./TeamSwitcher";
 
 export type Role = "customer" | "admin";
 
@@ -139,6 +139,7 @@ export default function AdminLayout({
     "/dashboard/hrm/super/weeks": "Weeks",
     "/dashboard/hrm/super/submissions": "Submissions",
     "/dashboard/hrm/super/reports/monthly": "Monthly Report",
+    "/dashboard/hrm/super/funds": "Fund Management",
     "/dashboard/hrm/admin": "Admin Dashboard",
     "/dashboard/hrm/admin/marking": "Marking List",
     "/dashboard/hrm/employee": "My KPI",
@@ -226,6 +227,11 @@ export default function AdminLayout({
                       label: "Monthly Report",
                       icon: FileBarChart,
                       href: "/dashboard/hrm/super/reports/monthly",
+                    },
+                    {
+                      label: "Fund Management",
+                      icon: Wallet,
+                      href: "/dashboard/hrm/super/funds",
                     },
                   ]
                 : []),
@@ -418,9 +424,14 @@ export default function AdminLayout({
   })();
 
   const AppSidebar = ({ className }: { className?: string }) => (
-    <Sidebar className={cn("bg-sidebar text-sidebar-foreground", className)}>
+    <Sidebar
+      className={cn(
+        "!bg-[var(--tertiary-yellow)] text-gray-900 border-r border-[var(--primary-yellow)]",
+        className,
+      )}
+    >
       <SidebarHeader>
-        <TeamSwitcher
+        <ApplicationSwitcher
           educationRole={role}
           crmRole={crmRole}
           hrmRole={hrmRole}
@@ -471,7 +482,11 @@ export default function AdminLayout({
                     const Icon = item.icon;
                     return (
                       <SidebarMenuItem key={item.label}>
-                        <SidebarMenuButton asChild isActive={isActive}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive}
+                          className="text-gray-700 hover:bg-yellow-100 hover:text-gray-900 transition-colors data-[active=true]:!bg-[var(--primary-yellow)] data-[active=true]:border data-[active=true]:!text-gray-900 data-[active=true]:hover:!text-gray-900 hover:border hover:border-amber-300 border border-transparent"
+                        >
                           <Link href={item.href}>
                             <Icon className="h-4 w-4" />
                             {item.label}
@@ -487,11 +502,8 @@ export default function AdminLayout({
         })}
       </SidebarContent>
       <SidebarFooter>
-        <div className="space-y-2">
-          <ThemeSwitcher />
-          <div className="px-4 py-2 text-xs text-muted-foreground text-center">
-            Version 1.0.0
-          </div>
+        <div className="px-4 py-2 text-xs text-muted-foreground text-center">
+          Version 1.0.0
         </div>
       </SidebarFooter>
       <SidebarRail />
@@ -499,11 +511,11 @@ export default function AdminLayout({
   );
 
   return (
-    <SidebarProvider className="min-h-screen">
+    <SidebarProvider className="min-h-screen bg-white text-gray-900">
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="bg-white text-gray-900 h-svh overflow-y-auto">
         {/* Sticky Header */}
-        <header className="sticky px-4 top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-2 border-b bg-sidebar">
+        <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-[var(--primary-yellow)] !bg-[var(--tertiary-yellow)] backdrop-blur-sm px-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -530,7 +542,11 @@ export default function AdminLayout({
         </header>
 
         {/* Main Content */}
-        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
+        <div className="flex flex-1 flex-col gap-4 p-4 text-gray-900">
+          {/* <div className="flex-1 rounded-xl border border-[var(--primary-yellow)] !bg-[var(--tertiary-yellow)]/20 p-4 shadow-sm shadow-[var(--primary-yellow)]/10"> */}
+          {children}
+          {/* </div> */}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

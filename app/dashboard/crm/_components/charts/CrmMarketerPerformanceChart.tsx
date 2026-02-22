@@ -70,19 +70,33 @@ export function CrmMarketerPerformanceChart({
     );
   }
 
+  const normalizeName = (value?: string | null) => {
+    const trimmed = value?.trim();
+    if (!trimmed) return "Unknown";
+    const lower = trimmed.toLowerCase();
+    if (lower === "undefined" || lower === "null" || lower === "unknown") {
+      return "Unknown";
+    }
+    if (lower === "unassigned") return "Unassigned";
+    return trimmed;
+  };
+
   // Transform data for the chart (abbreviated names for x-axis)
-  const chartData = data.map((marketer) => ({
-    name: marketer.name.split(" ")[0], // First name only for cleaner display
-    fullName: marketer.name,
-    sold: marketer.sold,
-    active: marketer.active,
-    lost: marketer.lost,
-    total: marketer.total,
-    conversionRate:
-      marketer.total > 0
-        ? ((marketer.sold / marketer.total) * 100).toFixed(1)
-        : "0",
-  }));
+  const chartData = data.map((marketer) => {
+    const displayName = normalizeName(marketer.name);
+    return {
+      name: displayName.split(" ")[0],
+      fullName: displayName,
+      sold: marketer.sold,
+      active: marketer.active,
+      lost: marketer.lost,
+      total: marketer.total,
+      conversionRate:
+        marketer.total > 0
+          ? ((marketer.sold / marketer.total) * 100).toFixed(1)
+          : "0",
+    };
+  });
 
   return (
     <Card>

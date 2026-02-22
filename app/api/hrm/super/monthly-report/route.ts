@@ -75,8 +75,32 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
+    const monthlyResultIds = (results || []).map((result: any) => result.id);
+    const { data: fundLogs, error: fundError } = monthlyResultIds.length
+      ? await supabase
+          .from("hrm_fund_logs")
+          .select("monthly_result_id, entry_type, status, actual_amount")
+          .in("monthly_result_id", monthlyResultIds)
+      : { data: [], error: null };
+
+    if (fundError) throw fundError;
+
+    const fundMap = new Map<string, { fine?: string; bonus?: string }>();
+    (fundLogs || []).forEach((log: any) => {
+      const current = fundMap.get(log.monthly_result_id) || {};
+      if (log.entry_type === "FINE") {
+        current.fine = log.status;
+      }
+      if (log.entry_type === "BONUS") {
+        current.bonus = log.status;
+      }
+      fundMap.set(log.monthly_result_id, current);
+    });
+
     // Transform results
     const monthlyResults = (results || []).map((result: any) => ({
+      fundFineStatus: fundMap.get(result.id)?.fine || "DUE",
+      fundBonusStatus: fundMap.get(result.id)?.bonus || "DUE",
       id: result.id,
       subjectId: result.hrm_users.id,
       subjectName: result.hrm_users.full_name,

@@ -19,66 +19,59 @@
 export const theme = {
   // ==================== COLORS ====================
   colors: {
-    // Core Colors - Bright Yellow (#facc15) as Primary
-    primary: "oklch(0.85 0.2 96)",
-    primaryForeground: "oklch(0.145 0 0)",
+    // Premium SaaS Yellow-based Color System
+    // Primary: #facc15 (yellow-400) → oklch(0.782 0.281 98.3)
 
-    // Primary Shades (light to dark)
-    primaryShades: {
-      "50": "oklch(0.97 0.05 96)",
-      "100": "oklch(0.93 0.08 96)",
-      "200": "oklch(0.88 0.12 96)",
-      "300": "oklch(0.80 0.16 96)",
-      "400": "oklch(0.80 0.18 96)",
-      "500": "oklch(0.85 0.2 96)",
-      "600": "oklch(0.75 0.21 96)",
-      "700": "oklch(0.65 0.22 96)",
-      "800": "oklch(0.50 0.20 96)",
-      "900": "oklch(0.35 0.18 96)",
-    },
+    // Core Colors - Yellow as Primary Brand
+    primary: "oklch(0.782 0.281 98.3)", // #facc15 - vibrant yellow for CTAs
+    primaryForeground: "oklch(0.145 0 0)", // dark text on yellow
+    secondary: "oklch(0.97 0 0)", // light gray background
+    secondaryForeground: "oklch(0.205 0 0)", // dark text on light
 
-    secondary: "oklch(0.97 0 0)",
-    secondaryForeground: "oklch(0.205 0 0)",
+    // Neutral Colors - Clean SaaS aesthetic
+    background: "oklch(1 0 0)", // pure white
+    foreground: "oklch(0.145 0 0)", // near-black for text
+    card: "oklch(1 0 0)", // white cards
+    cardForeground: "oklch(0.145 0 0)", // dark text
+    popover: "oklch(1 0 0)", // white popovers
+    popoverForeground: "oklch(0.145 0 0)", // dark text
+    muted: "oklch(0.975 0 0)", // very light backgrounds
+    mutedForeground: "oklch(0.556 0 0)", // medium gray text
 
-    // Neutral Colors
-    background: "oklch(1 0 0)",
-    foreground: "oklch(0.145 0 0)",
-    card: "oklch(1 0 0)",
-    cardForeground: "oklch(0.145 0 0)",
-    popover: "oklch(1 0 0)",
-    popoverForeground: "oklch(0.145 0 0)",
-    muted: "oklch(0.97 0 0)",
-    mutedForeground: "oklch(0.556 0 0)",
+    // Interactive Colors - Soft yellow accents
+    accent: "oklch(0.945 0.095 97.5)", // soft yellow for hover/backgrounds
+    accentForeground: "oklch(0.205 0 0)", // dark text on light yellow
+    destructive: "oklch(0.577 0.245 27.325)", // red for danger
 
-    // Interactive Colors
-    accent: "oklch(0.75 0.21 96)",
-    accentForeground: "oklch(0.145 0 0)",
-    destructive: "oklch(0.577 0.245 27.325)",
+    // UI Element Colors - Premium minimalist
+    border: "oklch(0.92 0 0)", // subtle light gray border
+    input: "oklch(0.97 0 0)", // light input backgrounds
+    ring: "oklch(0.782 0.281 98.3)", // yellow focus ring (matches primary)
 
-    // UI Element Colors
-    border: "oklch(0.88 0.12 96)",
-    input: "oklch(0.88 0.12 96)",
-    ring: "oklch(0.75 0.21 96)",
-
-    // Chart Colors (5-color palette)
+    // Chart Colors (5-color palette optimized for dark backgrounds)
     chart: {
-      "1": "oklch(0.646 0.222 41.116)",
-      "2": "oklch(0.6 0.118 184.704)",
-      "3": "oklch(0.398 0.07 227.392)",
-      "4": "oklch(0.828 0.189 84.429)",
-      "5": "oklch(0.769 0.188 70.08)",
+      "1": "oklch(0.782 0.281 98.3)", // yellow (primary)
+      "2": "oklch(0.6 0.222 265.4)", // blue (complementary cool)
+      "3": "oklch(0.72 0.18 142.5)", // green (success)
+      "4": "oklch(0.72 0.245 70.1)", // amber (warning)
+      "5": "oklch(0.635 0.237 27.325)", // red (danger)
     },
 
-    // Sidebar Colors
+    // Sidebar Colors - Subtle yellow branding
     sidebar: {
-      base: "oklch(0.985 0 0)",
-      foreground: "oklch(0.145 0 0)",
-      primary: "oklch(0.205 0 0)",
-      primaryForeground: "oklch(0.985 0 0)",
-      accent: "oklch(0.97 0 0)",
-      accentForeground: "oklch(0.205 0 0)",
-      border: "oklch(0.922 0 0)",
-      ring: "oklch(0.708 0 0)",
+      base: "oklch(0.98 0.02 97.5)", // very soft warm white
+      foreground: "oklch(0.145 0 0)", // dark text
+      primary: "oklch(0.782 0.281 98.3)", // yellow highlight for active
+      primaryForeground: "oklch(0.145 0 0)", // dark text on yellow
+      accent: "oklch(0.945 0.095 97.5)", // soft yellow hover state
+      accentForeground: "oklch(0.205 0 0)", // dark text
+      border: "oklch(0.92 0 0)", // light border
+      ring: "oklch(0.782 0.281 98.3)", // yellow focus ring
+    },
+
+    // Custom Brand Colors (non-shadcn) - Removed redundant secondary/tertiary
+    brandYellow: {
+      primary: "#facc15", // oklch(0.782 0.281 98.3)
     },
   },
 
@@ -158,61 +151,51 @@ export const theme = {
   // ==================== DARK MODE OVERRIDES ====================
   dark: {
     colors: {
-      // Dark mode: Use lighter yellow shades for contrast
-      primary: "oklch(0.80 0.18 96)",
-      primaryForeground: "oklch(0.145 0 0)",
+      // Dark mode: Yellow remains vibrant for CTAs
+      primary: "oklch(0.782 0.281 98.3)", // bright yellow on dark
+      primaryForeground: "oklch(0.145 0 0)", // dark text keeps good contrast
+      secondary: "oklch(0.25 0 0)", // very dark gray
+      secondaryForeground: "oklch(0.985 0 0)", // light text
 
-      // Primary Shades (inverted for dark mode)
-      primaryShades: {
-        "50": "oklch(0.35 0.18 96)",
-        "100": "oklch(0.40 0.19 96)",
-        "200": "oklch(0.50 0.20 96)",
-        "300": "oklch(0.60 0.21 96)",
-        "400": "oklch(0.70 0.21 96)",
-        "500": "oklch(0.80 0.18 96)",
-        "600": "oklch(0.85 0.2 96)",
-        "700": "oklch(0.88 0.12 96)",
-        "800": "oklch(0.93 0.08 96)",
-        "900": "oklch(0.97 0.05 96)",
-      },
+      // Deep neutral backgrounds
+      background: "oklch(0.1 0 0)", // near-black background
+      foreground: "oklch(0.985 0 0)", // near-white text
+      card: "oklch(0.15 0 0)", // deep dark cards
+      cardForeground: "oklch(0.985 0 0)", // light text
+      popover: "oklch(0.15 0 0)", // deep dark popovers
+      popoverForeground: "oklch(0.985 0 0)", // light text
+      muted: "oklch(0.25 0 0)", // muted dark backgrounds
+      mutedForeground: "oklch(0.708 0 0)", // medium gray text
 
-      secondary: "oklch(0.269 0 0)",
-      secondaryForeground: "oklch(0.985 0 0)",
+      // Muted yellow accents in dark mode
+      accent: "oklch(0.35 0.1 97.5)", // toned-down yellow for dark backgrounds
+      accentForeground: "oklch(0.985 0 0)", // light text
+      destructive: "oklch(0.704 0.191 22.216)", // red adjusted for dark
 
-      background: "oklch(0.145 0 0)",
-      foreground: "oklch(0.985 0 0)",
-      card: "oklch(0.205 0 0)",
-      cardForeground: "oklch(0.985 0 0)",
-      popover: "oklch(0.205 0 0)",
-      popoverForeground: "oklch(0.985 0 0)",
-      muted: "oklch(0.269 0 0)",
-      mutedForeground: "oklch(0.708 0 0)",
+      // UI elements with subtle tones
+      border: "oklch(1 0 0 / 8%)", // very subtle white border on dark
+      input: "oklch(1 0 0 / 12%)", // subtle input background
+      ring: "oklch(0.782 0.281 98.3)", // yellow focus ring for visibility
 
-      accent: "oklch(0.85 0.2 96)",
-      accentForeground: "oklch(0.145 0 0)",
-      destructive: "oklch(0.704 0.191 22.216)",
-
-      border: "oklch(0.50 0.20 96 / 20%)",
-      input: "oklch(0.50 0.20 96 / 25%)",
-      ring: "oklch(0.80 0.18 96)",
-
+      // Chart Colors (optimized for dark mode)
       chart: {
-        "1": "oklch(0.488 0.243 264.376)",
-        "2": "oklch(0.696 0.17 162.48)",
-        "3": "oklch(0.769 0.188 70.08)",
-        "4": "oklch(0.627 0.265 303.9)",
-        "5": "oklch(0.645 0.246 16.439)",
+        "1": "oklch(0.782 0.281 98.3)", // yellow (bright for dark backgrounds)
+        "2": "oklch(0.6 0.222 265.4)", // blue (cool tone)
+        "3": "oklch(0.72 0.18 142.5)", // green (muted success)
+        "4": "oklch(0.72 0.245 70.1)", // amber (warning)
+        "5": "oklch(0.635 0.237 27.325)", // red (danger)
       },
 
+      // Sidebar Colors for dark mode
       sidebar: {
-        base: "oklch(0.205 0 0)",
-        foreground: "oklch(0.985 0 0)",
-        primary: "oklch(0.80 0.18 96)",
-        primaryForeground: "oklch(0.145 0 0)",
-        accent: "oklch(0.80 0.18 96)",
-        accentForeground: "oklch(0.145 0 0)",
-        border: "oklch(0.50 0.20 96 / 20%)",
-        ring: "oklch(0.85 0.2 96)",
+        base: "oklch(0.15 0 0)", // dark sidebar background
+        foreground: "oklch(0.985 0 0)", // light text
+        primary: "oklch(0.782 0.281 98.3)", // bright yellow for active items
+        primaryForeground: "oklch(0.145 0 0)", // dark text on yellow
+        accent: "oklch(0.35 0.1 97.5)", // subtle yellow hover
+        accentForeground: "oklch(0.985 0 0)", // light text
+        border: "oklch(1 0 0 / 8%)", // subtle border
+        ring: "oklch(0.782 0.281 98.3)", // yellow focus ring
       },
     },
   },

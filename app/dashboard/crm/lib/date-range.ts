@@ -89,9 +89,22 @@ function getLastSevenDaysRange(): CrmDateRange {
  * All Time: No date filters
  */
 function getAllTimeRange(): CrmDateRange {
+  const now = new Date();
+  const startDate = new Date(2000, 0, 1);
+
   return {
     key: "all",
     label: "All Time",
+    fromISO: startDate.toISOString(),
+    toISO: new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    ).toISOString(),
   };
 }
 

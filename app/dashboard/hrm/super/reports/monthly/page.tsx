@@ -1,13 +1,22 @@
 "use client";
 
+import { EmailHistoryDialog } from "@/components/hrm/EmailHistoryDialog";
 import { EmptyState } from "@/components/hrm/EmptyState";
+import { MonthlyReportDetailsDialog } from "@/components/hrm/MonthlyReportDetailsDialog";
 import { CompletenessChip } from "@/components/hrm/StatusChips";
 import { TableSkeleton } from "@/components/hrm/TableSkeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -27,8 +36,11 @@ import { formatMonthDisplay, getCurrentMonthKey } from "@/lib/hrm/week-utils";
 import {
   AlertCircle,
   BarChart3,
+  Coins,
   Download,
+  Eye,
   Lock,
+  Mail,
   RefreshCw,
   TrendingDown,
   TrendingUp,
@@ -39,6 +51,8 @@ import toast from "react-hot-toast";
 
 type MonthlyResult = {
   id: string;
+  fundFineStatus: "DUE" | "COLLECTED";
+  fundBonusStatus: "DUE" | "PAID";
   subjectId: string;
   subjectName: string;
   subjectEmail: string;
@@ -61,6 +75,14 @@ export default function MonthlyReportPage() {
   const [filteredResults, setFilteredResults] = useState<MonthlyResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [computing, setComputing] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<MonthlyResult | null>(
+    null,
+  );
+  const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
+  const [bonusTarget, setBonusTarget] = useState<MonthlyResult | null>(null);
+  const [bonusPaidAmount, setBonusPaidAmount] = useState("");
   const [summary, setSummary] = useState({
     totalSubjects: 0,
     bonusTier: 0,
@@ -264,6 +286,119 @@ export default function MonthlyReportPage() {
     a.click();
 
     toast.success("CSV exported successfully");
+  };
+
+  const hasBonusEntry = (result: MonthlyResult) => {
+    return (
+      result.actionType === "BONUS" ||
+      result.actionType === "GIFT" ||
+      (result.giftAmount ?? 0) > 0
+    );
+  };
+
+  const markFineStatus = async (
+    result: MonthlyResult,
+    status: "DUE" | "COLLECTED",
+  ) => {
+    try {
+      const res = await fetch("/api/hrm/super/funds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          monthlyResultId: result.id,
+          entryType: "FINE",
+          status,
+          note:
+            status === "COLLECTED"
+              ? `Fine collected for ${monthKey}`
+              : `Fine marked due for ${monthKey}`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "Failed to update fine status");
+
+      toast.success(
+        status === "COLLECTED" ? "Fine marked collected" : "Fine marked due",
+      );
+      fetchMonthlyReport();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update fine status";
+      toast.error(message);
+    }
+  };
+
+  const markBonusDue = async (result: MonthlyResult) => {
+    try {
+      const res = await fetch("/api/hrm/super/funds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          monthlyResultId: result.id,
+          entryType: "BONUS",
+          status: "DUE",
+          note: `Bonus marked due for ${monthKey}`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "Failed to update bonus status");
+
+      toast.success("Bonus marked due");
+      fetchMonthlyReport();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to update bonus status";
+      toast.error(message);
+    }
+  };
+
+  const openBonusPaidDialog = (result: MonthlyResult) => {
+    setBonusTarget(result);
+    setBonusPaidAmount(result.giftAmount ? String(result.giftAmount) : "");
+    setBonusDialogOpen(true);
+  };
+
+  const submitBonusPaid = async () => {
+    if (!bonusTarget) return;
+
+    const amount = Number(bonusPaidAmount);
+    if (!amount || amount <= 0) {
+      toast.error("Enter a valid paid amount");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/hrm/super/funds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          monthlyResultId: bonusTarget.id,
+          entryType: "BONUS",
+          status: "PAID",
+          actualAmount: amount,
+          note: `Bonus paid for ${monthKey}`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to mark bonus paid");
+
+      toast.success("Bonus marked paid");
+      setBonusDialogOpen(false);
+      setBonusTarget(null);
+      setBonusPaidAmount("");
+      fetchMonthlyReport();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to mark bonus paid";
+      toast.error(message);
+    }
   };
 
   const getTierBadge = (tier: string) => {
@@ -477,64 +612,195 @@ export default function MonthlyReportPage() {
           {loading ? (
             <TableSkeleton columns={8} rows={5} />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Fine</TableHead>
-                  <TableHead>Weeks</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredResults.length === 0 ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="h-48">
-                      <EmptyState
-                        icon={BarChart3}
-                        title="No monthly results"
-                        description="Compute the month to generate monthly results for all HRM users."
-                      />
-                    </TableCell>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Tier</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Fine</TableHead>
+                    <TableHead>Weeks</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  filteredResults.map((result) => (
-                    <TableRow key={result.id}>
-                      <TableCell className="font-medium">
-                        {result.subjectName}
-                      </TableCell>
-                      <TableCell>{result.subjectEmail}</TableCell>
-                      <TableCell>{result.subjectRole}</TableCell>
-                      <TableCell>{result.monthlyScore.toFixed(2)}</TableCell>
-                      <TableCell>{getTierBadge(result.tier)}</TableCell>
-                      <TableCell>{result.actionType}</TableCell>
-                      <TableCell>
-                        {result.finalFine > 0 ? (
-                          <span className="text-red-600 font-semibold">
-                            ৳{result.finalFine}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <CompletenessChip
-                          weeksUsed={result.weeksCountUsed}
-                          expectedWeeks={result.expectedWeeksCount}
+                </TableHeader>
+                <TableBody>
+                  {filteredResults.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="h-48">
+                        <EmptyState
+                          icon={BarChart3}
+                          title="No monthly results"
+                          description="Compute the month to generate monthly results for all HRM users."
                         />
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filteredResults.map((result) => (
+                      <TableRow key={result.id}>
+                        <TableCell className="font-medium">
+                          {result.subjectName}
+                        </TableCell>
+                        <TableCell>{result.subjectEmail}</TableCell>
+                        <TableCell>{result.subjectRole}</TableCell>
+                        <TableCell>{result.monthlyScore.toFixed(2)}</TableCell>
+                        <TableCell>{getTierBadge(result.tier)}</TableCell>
+                        <TableCell>{result.actionType}</TableCell>
+                        <TableCell>
+                          {result.finalFine > 0 ? (
+                            <span className="text-red-600 font-semibold">
+                              ৳{result.finalFine}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <CompletenessChip
+                            weeksUsed={result.weeksCountUsed}
+                            expectedWeeks={result.expectedWeeksCount}
+                          />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {result.finalFine > 0 && (
+                              <Button
+                                variant={
+                                  result.fundFineStatus === "COLLECTED"
+                                    ? "secondary"
+                                    : "outline"
+                                }
+                                size="sm"
+                                onClick={() =>
+                                  markFineStatus(
+                                    result,
+                                    result.fundFineStatus === "COLLECTED"
+                                      ? "DUE"
+                                      : "COLLECTED",
+                                  )
+                                }
+                                title="Toggle fine due/collected"
+                              >
+                                <Coins className="h-4 w-4 mr-1" />
+                                {result.fundFineStatus === "COLLECTED"
+                                  ? "Collected"
+                                  : "Mark Collected"}
+                              </Button>
+                            )}
+                            {hasBonusEntry(result) && (
+                              <Button
+                                variant={
+                                  result.fundBonusStatus === "PAID"
+                                    ? "secondary"
+                                    : "outline"
+                                }
+                                size="sm"
+                                onClick={() =>
+                                  result.fundBonusStatus === "PAID"
+                                    ? markBonusDue(result)
+                                    : openBonusPaidDialog(result)
+                                }
+                                title="Toggle bonus due/paid"
+                              >
+                                <Coins className="h-4 w-4 mr-1" />
+                                {result.fundBonusStatus === "PAID"
+                                  ? "Paid"
+                                  : "Mark Paid"}
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedResult(result);
+                                setDetailsDialogOpen(true);
+                              }}
+                              title="View weekly details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedResult(result);
+                                setEmailDialogOpen(true);
+                              }}
+                              title="View and send marksheet email"
+                            >
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Details Dialog */}
+      {selectedResult && (
+        <>
+          <MonthlyReportDetailsDialog
+            open={detailsDialogOpen}
+            onOpenChange={setDetailsDialogOpen}
+            subjectName={selectedResult.subjectName}
+            subjectEmail={selectedResult.subjectEmail}
+            monthKey={monthKey}
+            subjectUserId={selectedResult.subjectId}
+          />
+          <EmailHistoryDialog
+            open={emailDialogOpen}
+            onOpenChange={setEmailDialogOpen}
+            subjectName={selectedResult.subjectName}
+            subjectEmail={selectedResult.subjectEmail}
+            monthKey={monthKey}
+            subjectUserId={selectedResult.subjectId}
+          />
+        </>
+      )}
+
+      <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark Bonus as Paid</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              {bonusTarget?.subjectName || ""} • {formatMonthDisplay(monthKey)}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Paid Amount</Label>
+              <Input
+                type="number"
+                min={1}
+                value={bonusPaidAmount}
+                onChange={(e) => setBonusPaidAmount(e.target.value)}
+                placeholder="Enter amount paid"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setBonusDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={submitBonusPaid}>Save Payment</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

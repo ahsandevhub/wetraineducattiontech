@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
 type HrmCriteria = {
@@ -45,6 +45,22 @@ export function CriteriaDialog({
   );
   const [description, setDescription] = useState(criteria?.description || "");
   const [loading, setLoading] = useState(false);
+
+  // Update form fields when criteria or dialog opens
+  useEffect(() => {
+    if (open && criteria) {
+      setKey(criteria.key);
+      setName(criteria.name);
+      setDefaultScaleMax(criteria.default_scale_max);
+      setDescription(criteria.description || "");
+    } else if (open && mode === "create") {
+      // Reset form for create mode
+      setKey("");
+      setName("");
+      setDefaultScaleMax(10);
+      setDescription("");
+    }
+  }, [open, criteria, mode]);
 
   const handleSubmit = async () => {
     if (!name || !key) {

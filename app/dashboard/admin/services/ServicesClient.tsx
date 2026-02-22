@@ -273,7 +273,7 @@ export default function ServicesClient({ services }: ServicesClientProps) {
 
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader className="bg-primary-100">
+              <TableHeader className="bg-gray-50">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Service
@@ -297,7 +297,7 @@ export default function ServicesClient({ services }: ServicesClientProps) {
               </TableHeader>
               <TableBody>
                 {paginated.map((service) => (
-                  <TableRow key={service.id} className="hover:bg-primary-50">
+                  <TableRow key={service.id} className="hover:bg-gray-50">
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <div className="font-medium text-gray-900">

@@ -44,8 +44,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    console.log(
+      `[Compute Month] Starting computation for monthKey: ${monthKey}`,
+    );
+
     // Ensure month exists in database
     const { startDate, endDate } = getMonthDateRange(monthKey);
+    console.log(
+      `[Compute Month] Month range: ${startDate.toDateString()} to ${endDate.toDateString()}`,
+    );
 
     const { data: existingMonth } = await supabase
       .from("hrm_months")
@@ -70,6 +77,7 @@ export async function POST(request: NextRequest) {
 
       if (monthError) throw monthError;
       monthId = newMonth.id;
+      console.log(`[Compute Month] Created new month record: ${monthId}`);
     } else {
       // Check if locked
       if (existingMonth.status === "LOCKED") {
@@ -79,11 +87,19 @@ export async function POST(request: NextRequest) {
         );
       }
       monthId = existingMonth.id;
+      console.log(`[Compute Month] Using existing month record: ${monthId}`);
     }
 
     // Get all Friday week keys for this month
     const fridayWeekKeys = listFridayWeekKeysForMonth(monthKey);
     const expectedWeeksCount = fridayWeekKeys.length;
+
+    console.log(
+      `[Compute Month] Expected Fridays in ${monthKey}: ${expectedWeeksCount}`,
+    );
+    console.log(
+      `[Compute Month] Friday week keys: ${fridayWeekKeys.join(", ")}`,
+    );
 
     if (expectedWeeksCount === 0) {
       return NextResponse.json(
@@ -98,11 +114,16 @@ export async function POST(request: NextRequest) {
       .select("id, week_key")
       .in("week_key", fridayWeekKeys);
 
+    console.log(
+      `[Compute Month] Found ${weeks?.length || 0} week records in database for expected Fridays`,
+    );
+
     if (!weeks || weeks.length === 0) {
       return NextResponse.json(
         {
           error:
             "No weekly data found for this month. Please compute weeks first.",
+          expectedWeeks: fridayWeekKeys,
         },
         { status: 400 },
       );
@@ -110,17 +131,165 @@ export async function POST(request: NextRequest) {
 
     const weekIds = weeks.map((w) => w.id);
 
-    // Get all weekly results for these weeks
+    // First, ensure weekly results exist for all weeks in this month
+    // Check which weeks are missing results
+    const { data: existingResults } = await supabase
+      .from("hrm_weekly_results")
+      .select("week_id")
+      .in("week_id", weekIds);
+
+    const existingWeekIds = new Set(
+      (existingResults || []).map((r) => r.week_id),
+    );
+    const weeksMissingResults = weeks.filter((w) => !existingWeekIds.has(w.id));
+
+    console.log(
+      `[Compute Month] Existing weekly results: ${existingWeekIds.size}, Missing: ${weeksMissingResults.length}`,
+    );
+
+    // Compute weekly results for weeks that don't have them
+    if (weeksMissingResults.length > 0) {
+      console.log(
+        `[Compute Month] Auto-computing weekly results for ${weeksMissingResults.length} weeks...`,
+      );
+      let weeksComputedInMonth = 0;
+
+      for (const week of weeksMissingResults) {
+        try {
+          console.log(
+            `[Compute Month] Computing weekly results for week: ${week.week_key}`,
+          );
+
+          // Get all submissions for this week
+          const { data: submissions } = await supabase
+            .from("hrm_kpi_submissions")
+            .select("subject_user_id, marker_admin_id, total_score")
+            .eq("week_id", week.id);
+
+          console.log(
+            `[Compute Month] Week ${week.week_key}: Found ${submissions?.length || 0} submissions`,
+          );
+
+          // Group submissions by subject
+          const subjectSubmissions = new Map<
+            string,
+            Array<{ markerAdminId: string; totalScore: number }>
+          >();
+
+          for (const sub of submissions || []) {
+            if (!subjectSubmissions.has(sub.subject_user_id)) {
+              subjectSubmissions.set(sub.subject_user_id, []);
+            }
+            subjectSubmissions.get(sub.subject_user_id)!.push({
+              markerAdminId: sub.marker_admin_id,
+              totalScore: sub.total_score,
+            });
+          }
+
+          // Get all subjects with active assignments
+          const { data: assignments } = await supabase
+            .from("hrm_assignments")
+            .select("subject_user_id, marker_admin_id")
+            .eq("is_active", true);
+
+          // Group assignments by subject to get expected marker count
+          const subjectMarkers = new Map<string, Set<string>>();
+          for (const assignment of assignments || []) {
+            if (!subjectMarkers.has(assignment.subject_user_id)) {
+              subjectMarkers.set(assignment.subject_user_id, new Set());
+            }
+            subjectMarkers
+              .get(assignment.subject_user_id)!
+              .add(assignment.marker_admin_id);
+          }
+
+          // Compute weekly results for each subject
+          const weeklyResults = [];
+          const allSubjectIds = new Set([
+            ...subjectSubmissions.keys(),
+            ...subjectMarkers.keys(),
+          ]);
+
+          for (const subjectUserId of allSubjectIds) {
+            const subs = subjectSubmissions.get(subjectUserId) || [];
+            const expectedMarkers =
+              subjectMarkers.get(subjectUserId) || new Set();
+
+            const weeklyAvgScore =
+              subs.length > 0
+                ? subs.reduce((sum, s) => sum + s.totalScore, 0) / subs.length
+                : 0;
+
+            const expectedMarkersCount = expectedMarkers.size;
+            const submittedMarkersCount = subs.length;
+            const isComplete = submittedMarkersCount >= expectedMarkersCount;
+
+            weeklyResults.push({
+              week_id: week.id,
+              subject_user_id: subjectUserId,
+              weekly_avg_score: Math.round(weeklyAvgScore * 100) / 100,
+              expected_markers_count: expectedMarkersCount,
+              submitted_markers_count: submittedMarkersCount,
+              is_complete: isComplete,
+              computed_at: new Date().toISOString(),
+            });
+          }
+
+          // Upsert weekly results
+          if (weeklyResults.length > 0) {
+            const { error: resultsError } = await supabase
+              .from("hrm_weekly_results")
+              .upsert(weeklyResults, {
+                onConflict: "week_id,subject_user_id",
+              });
+
+            if (resultsError) {
+              console.error(
+                `[Compute Month] Error upserting weekly results for week ${week.week_key}:`,
+                resultsError,
+              );
+            } else {
+              weeksComputedInMonth++;
+              console.log(
+                `[Compute Month] Successfully computed ${weeklyResults.length} weekly results for week ${week.week_key}`,
+              );
+            }
+          }
+        } catch (weekError) {
+          console.error(
+            `[Compute Month] Error computing weekly results for week ${week.week_key}:`,
+            weekError,
+          );
+          // Continue with next week
+        }
+      }
+
+      console.log(
+        `[Compute Month] Auto-computed weekly results for ${weeksComputedInMonth}/${weeksMissingResults.length} weeks`,
+      );
+    }
+
+    // Get all weekly results for these weeks (now should have data)
     const { data: weeklyResults } = await supabase
       .from("hrm_weekly_results")
       .select("subject_user_id, weekly_avg_score")
       .in("week_id", weekIds);
 
+    console.log(
+      `[Compute Month] Total weekly results available: ${weeklyResults?.length || 0}`,
+    );
+
     if (!weeklyResults || weeklyResults.length === 0) {
       return NextResponse.json(
         {
           error:
-            "No weekly results found. Please compute weekly results first.",
+            "No weekly results found even after computing weeks. Please check if KPI submissions exist.",
+          debugInfo: {
+            monthKey,
+            weeksInDatabase: weeks.length,
+            expectedFridays: expectedWeeksCount,
+            submissionsCheckRequired: true,
+          },
         },
         { status: 400 },
       );
@@ -143,12 +312,20 @@ export async function POST(request: NextRequest) {
     // Compute monthly results for each subject
     let computedCount = 0;
 
+    console.log(
+      `[Compute Month] Processing ${Object.keys(subjectWeeklyScores).length} subjects for monthly aggregation`,
+    );
+
     for (const subjectId of Object.keys(subjectWeeklyScores)) {
       const { scores } = subjectWeeklyScores[subjectId];
       const weeksCountUsed = scores.length;
       const monthlyScore =
         scores.reduce((sum, score) => sum + score, 0) / weeksCountUsed;
       const isCompleteMonth = weeksCountUsed === expectedWeeksCount;
+
+      console.log(
+        `[Compute Month] Subject ${subjectId}: ${weeksCountUsed} weeks, score: ${monthlyScore.toFixed(2)}`,
+      );
 
       // Get previous month state
       const { data: monthState } = await supabase
@@ -202,19 +379,27 @@ export async function POST(request: NextRequest) {
       });
 
       computedCount++;
+      console.log(
+        `[Compute Month] Subject ${subjectId}: Tier=${result.tier}, Fine=${result.finalFine}`,
+      );
     }
+
+    console.log(
+      `[Compute Month] Completed computation for ${monthKey}: ${computedCount} subjects`,
+    );
 
     return NextResponse.json({
       success: true,
       monthKey,
       expectedWeeksCount,
       computedSubjectsCount: computedCount,
-      message: `Computed monthly results for ${computedCount} subjects`,
+      weeksInMonth: weeks.length,
+      message: `✓ Computed monthly results for ${computedCount} subjects from ${weeks.length} weeks`,
     });
   } catch (error) {
-    console.error("Error computing month:", error);
+    console.error(`[Compute Month] Error computing month ${monthKey}:`, error);
     const message =
       error instanceof Error ? error.message : "Failed to compute month";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, monthKey }, { status: 500 });
   }
 }

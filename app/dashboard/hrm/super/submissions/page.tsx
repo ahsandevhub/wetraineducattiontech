@@ -297,10 +297,15 @@ export default function SubmissionsPage() {
 
             <Select value={selectedSubject} onValueChange={setSelectedSubject}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Employees" />
+                <SelectValue placeholder="All Subjects" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Employees</SelectItem>
+                <SelectItem value="all">All Subjects</SelectItem>
+                {admins.map((admin) => (
+                  <SelectItem key={admin.id} value={admin.id}>
+                    {admin.full_name}
+                  </SelectItem>
+                ))}
                 {employees.map((employee) => (
                   <SelectItem key={employee.id} value={employee.id}>
                     {employee.full_name}

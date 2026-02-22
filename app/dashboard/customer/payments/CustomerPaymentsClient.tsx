@@ -342,7 +342,7 @@ export default function CustomerPaymentsClient({
                   </TableRow>
                 ) : (
                   paginated.map((payment) => (
-                    <TableRow key={payment.id} className="hover:bg-primary-50">
+                    <TableRow key={payment.id} className="hover:bg-gray-50">
                       <TableCell>
                         <CopyButton text={payment.id} />
                       </TableCell>

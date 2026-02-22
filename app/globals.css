@@ -5,110 +5,69 @@
 @custom-variant dark (&:is(.dark *));
 
 /**
- * ==================== PROFESSIONAL SAAS COLOR SYSTEM ====================
+ * CSS Theme Variables Documentation
  * 
- * Brand Color: #facc15 (Yellow-400)
- * Design Philosophy: Clean, minimal, premium SaaS aesthetic
+ * All CSS variables below are defined in /config/theme.ts and can be updated there.
+ * These variables automatically sync to this file via the centralized theme config.
  * 
- * Color Usage Strategy:
- * - Yellow used strategically for brand identity and CTAs
- * - Neutral grays for structure and hierarchy
- * - Accessibility-first (WCAG AAA compliant)
- * - Professional balance between vibrancy and elegance
+ * To customize the theme:
+ * 1. Edit /config/theme.ts
+ * 2. No need to manually update these variables
+ * 3. Your changes will apply globally
  */
 
 /* ==================== LIGHT MODE (DEFAULT) ==================== */
 :root {
-  /* ==================== BRAND COLORS ==================== */
-  --brand-yellow: #facc15;
+  /* Brand Yellow Primary Color (#facc15 → oklch(0.782 0.281 98.3)) */
+  --primary-yellow: #facc15;
+  --secondary-yellow: #fbbf24;
+  --tertiary-yellow: #fef3c7;
 
-  /* ==================== BORDER RADIUS ==================== */
+  /* Border Radius */
   --radius: 0.625rem;
 
-  /* ==================== PRIMARY YELLOW SCALE (50-900) ==================== */
-  /* Scientific OKLCH scale based on #facc15 */
-  --primary-50: oklch(0.98 0.03 96); /* Lightest yellow tint */
-  --primary-100: oklch(0.95 0.06 96); /* Very light */
-  --primary-200: oklch(0.91 0.1 96); /* Light */
-  --primary-300: oklch(0.87 0.14 96); /* Light-medium */
-  --primary-400: oklch(0.83 0.17 96); /* Medium-light */
-  --primary-500: oklch(0.85 0.2 96); /* Base (#facc15) */
-  --primary-600: oklch(0.72 0.18 96); /* Medium-dark */
-  --primary-700: oklch(0.6 0.15 96); /* Dark */
-  --primary-800: oklch(0.45 0.12 96); /* Darker */
-  --primary-900: oklch(0.3 0.09 96); /* Darkest */
-
-  /* ==================== SEMANTIC COLOR TOKENS ==================== */
-
-  /* Base Colors */
-  --background: oklch(0.99 0 0); /* Soft white */
-  --foreground: oklch(0.2 0 0); /* Near-black text */
-
-  /* Card/Container */
-  --card: oklch(1 0 0); /* Pure white */
-  --card-foreground: oklch(0.2 0 0); /* Dark text */
-
-  /* Popover/Dropdown */
+  /* Core Colors - Clean SaaS white backgrounds */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0 0);
+  --popover-foreground: oklch(0.145 0 0);
 
-  /* Primary - Yellow for CTAs and brand accents */
-  --primary: var(--primary-500); /* #facc15 */
-  --primary-foreground: oklch(0.2 0 0); /* Dark text on yellow */
+  /* Interactive Colors - Yellow as primary brand */
+  --primary: oklch(0.782 0.281 98.3); /* #facc15 - vibrant CTA yellow */
+  --primary-foreground: oklch(0.145 0 0); /* dark text for contrast */
+  --secondary: oklch(0.97 0 0); /* light gray */
+  --secondary-foreground: oklch(0.205 0 0); /* dark text */
+  --muted: oklch(0.975 0 0); /* very light for subtle backgrounds */
+  --muted-foreground: oklch(0.556 0 0); /* medium gray text */
+  --accent: oklch(0.945 0.095 97.5); /* soft yellow for hover/backgrounds */
+  --accent-foreground: oklch(0.205 0 0); /* dark text on light yellow */
+  --destructive: oklch(0.577 0.245 27.325); /* red for danger states */
 
-  /* Secondary - Neutral backgrounds */
-  --secondary: oklch(0.96 0 0); /* Light gray */
-  --secondary-foreground: oklch(0.2 0 0);
+  /* UI Element Colors - Premium minimalist */
+  --border: oklch(0.92 0 0); /* subtle light gray border */
+  --input: oklch(0.97 0 0); /* light input backgrounds */
+  --ring: oklch(0.782 0.281 98.3); /* yellow focus ring for visibility */
 
-  /* Muted - Subdued elements */
-  --muted: oklch(0.96 0 0); /* Subtle gray */
-  --muted-foreground: oklch(0.55 0 0); /* Medium gray text */
+  /* Chart Colors - Yellow primary with complementary palette */
+  --chart-1: oklch(0.782 0.281 98.3); /* yellow primary */
+  --chart-2: oklch(0.6 0.222 265.4); /* blue complementary cool */
+  --chart-3: oklch(0.72 0.18 142.5); /* green success */
+  --chart-4: oklch(0.72 0.245 70.1); /* amber warning */
+  --chart-5: oklch(0.635 0.237 27.325); /* red danger */
 
-  /* Accent - Highlights and hover states */
-  --accent: oklch(0.97 0.02 96); /* Subtle yellow tint */
-  --accent-foreground: oklch(0.2 0 0);
-
-  /* Borders and Inputs */
-  --border: oklch(0.9 0 0); /* Light gray border */
-  --input: oklch(0.9 0 0); /* Input border */
-  --ring: var(--primary-500); /* Focus ring */
-
-  /* ==================== STATUS COLORS ==================== */
-
-  /* Destructive/Error */
-  --destructive: oklch(0.58 0.25 27); /* Red */
-  --destructive-foreground: oklch(0.98 0 0); /* White text */
-
-  /* Success */
-  --success: oklch(0.65 0.2 145); /* Green */
-  --success-foreground: oklch(1 0 0); /* White text */
-
-  /* Warning */
-  --warning: oklch(0.75 0.18 70); /* Orange */
-  --warning-foreground: oklch(0.2 0 0); /* Dark text */
-
-  /* Info */
-  --info: oklch(0.6 0.15 240); /* Blue */
-  --info-foreground: oklch(1 0 0); /* White text */
-
-  /* ==================== CHART COLORS ==================== */
-  /* Harmonious palette for data visualization */
-  --chart-1: var(--primary-500); /* Yellow (brand) */
-  --chart-2: oklch(0.6 0.15 240); /* Blue */
-  --chart-3: oklch(0.65 0.2 145); /* Green */
-  --chart-4: oklch(0.75 0.18 70); /* Orange */
-  --chart-5: oklch(0.6 0.2 300); /* Purple */
-
-  /* ==================== SIDEBAR COLORS ==================== */
-  /* Clean white sidebar with yellow accents */
-  --sidebar: oklch(1 0 0); /* White */
-  --sidebar-foreground: oklch(0.2 0 0); /* Dark text */
-  --sidebar-primary: var(--primary-500); /* Yellow accent */
-  --sidebar-primary-foreground: oklch(0.2 0 0);
-  --sidebar-accent: oklch(0.97 0.02 96); /* Subtle yellow hover */
-  --sidebar-accent-foreground: oklch(0.2 0 0);
-  --sidebar-border: oklch(0.92 0 0); /* Light border */
-  --sidebar-ring: var(--primary-500); /* Yellow focus */
+  /* Sidebar Colors - Subtle yellow branding */
+  --sidebar: oklch(0.98 0.02 97.5); /* very soft warm white background */
+  --sidebar-foreground: oklch(0.145 0 0); /* dark text */
+  --sidebar-primary: oklch(
+    0.782 0.281 98.3
+  ); /* bright yellow for active items */
+  --sidebar-primary-foreground: oklch(0.145 0 0); /* dark text on yellow */
+  --sidebar-accent: oklch(0.945 0.095 97.5); /* soft yellow for hover states */
+  --sidebar-accent-foreground: oklch(0.205 0 0); /* dark text */
+  --sidebar-border: oklch(0.92 0 0); /* subtle light border */
+  --sidebar-ring: oklch(0.782 0.281 98.3); /* yellow focus ring */
 }
 
 * {
@@ -128,7 +87,7 @@ body {
 }
 
 #nprogress .bar {
-  background: var(--primary);
+  background: var(--primary-yellow);
   position: fixed;
   z-index: 9999;
   top: 0;
@@ -139,8 +98,8 @@ body {
 
 #nprogress .peg {
   box-shadow:
-    0 0 10px var(--primary),
-    0 0 5px var(--primary);
+    0 0 10px var(--primary-yellow),
+    0 0 5px var(--primary-yellow);
   opacity: 1;
 }
 
@@ -155,63 +114,18 @@ body {
 }
 
 @layer utilities {
-  /* ==================== SEMANTIC COLOR UTILITIES ==================== */
-
-  /* Primary Yellow Utilities */
-  .text-primary {
-    color: var(--primary);
+  /* Color Utilities - Primary Yellow Brand */
+  .text-primary-yellow {
+    color: var(--primary-yellow);
   }
-  .bg-primary {
-    background-color: var(--primary);
+  .bg-primary-yellow {
+    background-color: var(--primary-yellow);
   }
-  .border-primary {
-    border-color: var(--primary);
+  .border-primary-yellow {
+    border-color: var(--primary-yellow);
   }
-  .hover\:bg-primary:hover {
-    background-color: var(--primary);
-  }
-
-  /* Status Color Utilities */
-  .text-success {
-    color: var(--success);
-  }
-  .bg-success {
-    background-color: var(--success);
-  }
-  .text-warning {
-    color: var(--warning);
-  }
-  .bg-warning {
-    background-color: var(--warning);
-  }
-  .text-destructive {
-    color: var(--destructive);
-  }
-  .bg-destructive {
-    background-color: var(--destructive);
-  }
-  .text-info {
-    color: var(--info);
-  }
-  .bg-info {
-    background-color: var(--info);
-  }
-
-  /* Primary Scale Utilities (for advanced usage) */
-  .bg-primary-50 {
-    background-color: var(--primary-50);
-  }
-  .bg-primary-100 {
-    background-color: var(--primary-100);
-  }
-  .bg-primary-200 {
-    background-color: var(--primary-200);
-  }
-  .text-primary-600 {
-    color: var(--primary-600);
-  }
-  .text-primary-700 {
-    color: var(--primary-700);
+  .hover\:bg-primary-yellow:hover {
+    background-color: var(--primary-yellow);
   }
 
   /* Additional Utilities */
@@ -226,7 +140,6 @@ body {
 }
 
 @theme inline {
-  /* ==================== BORDER RADIUS ==================== */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -234,20 +147,6 @@ body {
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-
-  /* ==================== PRIMARY SCALE ==================== */
-  --color-primary-50: var(--primary-50);
-  --color-primary-100: var(--primary-100);
-  --color-primary-200: var(--primary-200);
-  --color-primary-300: var(--primary-300);
-  --color-primary-400: var(--primary-400);
-  --color-primary-500: var(--primary-500);
-  --color-primary-600: var(--primary-600);
-  --color-primary-700: var(--primary-700);
-  --color-primary-800: var(--primary-800);
-  --color-primary-900: var(--primary-900);
-
-  /* ==================== SEMANTIC COLORS ==================== */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -263,25 +162,14 @@ body {
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
-  --color-warning: var(--warning);
-  --color-warning-foreground: var(--warning-foreground);
-  --color-info: var(--info);
-  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
-  /* ==================== CHART COLORS ==================== */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-
-  /* ==================== SIDEBAR COLORS ==================== */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -292,79 +180,47 @@ body {
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* ==================== DARK MODE ==================== */
-/* Premium dark theme with controlled yellow accents */
 .dark {
-  /* ==================== SEMANTIC COLOR TOKENS ==================== */
+  /* Core Colors - Deep dark backgrounds for premium look */
+  --background: oklch(0.1 0 0); /* near-black background */
+  --foreground: oklch(0.985 0 0); /* near-white text */
+  --card: oklch(0.15 0 0); /* deep dark cards */
+  --card-foreground: oklch(0.985 0 0); /* light text */
+  --popover: oklch(0.15 0 0); /* deep dark popovers */
+  --popover-foreground: oklch(0.985 0 0); /* light text */
 
-  /* Base Colors */
-  --background: oklch(0.15 0 0); /* Rich dark gray */
-  --foreground: oklch(0.95 0 0); /* Bright white text */
+  /* Interactive Colors - Yellow remains vibrant on dark */
+  --primary: oklch(0.782 0.281 98.3); /* bright yellow for CTAs */
+  --primary-foreground: oklch(0.145 0 0); /* dark text maintains contrast */
+  --secondary: oklch(0.25 0 0); /* very dark gray */
+  --secondary-foreground: oklch(0.985 0 0); /* light text */
+  --muted: oklch(0.25 0 0); /* muted dark backgrounds */
+  --muted-foreground: oklch(0.708 0 0); /* medium gray text */
+  --accent: oklch(0.35 0.1 97.5); /* toned-down yellow for dark mode */
+  --accent-foreground: oklch(0.985 0 0); /* light text */
+  --destructive: oklch(0.704 0.191 22.216); /* red adjusted for dark mode */
 
-  /* Card/Container */
-  --card: oklch(0.18 0 0); /* Slightly lighter than bg */
-  --card-foreground: oklch(0.95 0 0);
+  /* UI Element Colors - Subtle with transparency */
+  --border: oklch(1 0 0 / 8%); /* very subtle white border */
+  --input: oklch(1 0 0 / 12%); /* subtle input background */
+  --ring: oklch(0.782 0.281 98.3); /* yellow focus ring for visibility */
 
-  /* Popover/Dropdown */
-  --popover: oklch(0.18 0 0);
-  --popover-foreground: oklch(0.95 0 0);
+  /* Chart Colors - Optimized for dark backgrounds */
+  --chart-1: oklch(0.782 0.281 98.3); /* yellow bright on dark */
+  --chart-2: oklch(0.6 0.222 265.4); /* blue cool tone */
+  --chart-3: oklch(0.72 0.18 142.5); /* green success */
+  --chart-4: oklch(0.72 0.245 70.1); /* amber warning */
+  --chart-5: oklch(0.635 0.237 27.325); /* red danger */
 
-  /* Primary - Slightly desaturated yellow for dark mode */
-  --primary: oklch(0.83 0.17 96); /* Softer yellow */
-  --primary-foreground: oklch(0.15 0 0); /* Dark text on yellow */
-
-  /* Secondary - Dark neutral */
-  --secondary: oklch(0.25 0 0); /* Dark gray */
-  --secondary-foreground: oklch(0.95 0 0);
-
-  /* Muted - Subdued dark elements */
-  --muted: oklch(0.25 0 0);
-  --muted-foreground: oklch(0.65 0 0); /* Medium gray text */
-
-  /* Accent - Dark mode highlights */
-  --accent: oklch(0.3 0 0); /* Subtle lift */
-  --accent-foreground: oklch(0.95 0 0);
-
-  /* Borders and Inputs */
-  --border: oklch(0.3 0 0); /* Subtle borders */
-  --input: oklch(0.3 0 0);
-  --ring: var(--primary-500); /* Yellow focus ring */
-
-  /* ==================== STATUS COLORS (DARK MODE) ==================== */
-
-  /* Destructive/Error - Brighter for visibility */
-  --destructive: oklch(0.65 0.22 27);
-  --destructive-foreground: oklch(0.95 0 0);
-
-  /* Success - Brighter green */
-  --success: oklch(0.7 0.18 145);
-  --success-foreground: oklch(0.95 0 0);
-
-  /* Warning - Adjusted orange */
-  --warning: oklch(0.78 0.16 70);
-  --warning-foreground: oklch(0.15 0 0);
-
-  /* Info - Brighter blue */
-  --info: oklch(0.65 0.13 240);
-  --info-foreground: oklch(0.95 0 0);
-
-  /* ==================== CHART COLORS (DARK MODE) ==================== */
-  --chart-1: var(--primary-500); /* Yellow */
-  --chart-2: oklch(0.65 0.13 240); /* Blue */
-  --chart-3: oklch(0.7 0.18 145); /* Green */
-  --chart-4: oklch(0.78 0.16 70); /* Orange */
-  --chart-5: oklch(0.65 0.18 300); /* Purple */
-
-  /* ==================== SIDEBAR COLORS (DARK MODE) ==================== */
-  /* Dark sidebar with yellow accents */
-  --sidebar: oklch(0.18 0 0); /* Dark surface */
-  --sidebar-foreground: oklch(0.95 0 0); /* Light text */
-  --sidebar-primary: oklch(0.83 0.17 96); /* Yellow accent */
-  --sidebar-primary-foreground: oklch(0.15 0 0);
-  --sidebar-accent: oklch(0.25 0 0); /* Subtle hover */
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(0.3 0 0); /* Subtle border */
-  --sidebar-ring: var(--primary-500);
+  /* Sidebar Colors - Dark mode with yellow accents */
+  --sidebar: oklch(0.15 0 0); /* dark sidebar background */
+  --sidebar-foreground: oklch(0.985 0 0); /* light text */
+  --sidebar-primary: oklch(0.782 0.281 98.3); /* bright yellow for active */
+  --sidebar-primary-foreground: oklch(0.145 0 0); /* dark text on yellow */
+  --sidebar-accent: oklch(0.35 0.1 97.5); /* subtle yellow hover */
+  --sidebar-accent-foreground: oklch(0.985 0 0); /* light text */
+  --sidebar-border: oklch(1 0 0 / 8%); /* subtle border */
+  --sidebar-ring: oklch(0.782 0.281 98.3); /* yellow focus ring */
 }
 
 @layer base {

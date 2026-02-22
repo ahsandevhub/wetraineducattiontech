@@ -2,12 +2,7 @@
 
 import { createClient } from "@/app/utils/supabase/client";
 import AuthConfirmation from "@/components/AuthConfirmation";
-import {
-  getAuthError,
-  getErrorMessage,
-  parseAuthHash,
-  validateAuthData,
-} from "@/lib/supabase/auth-handlers";
+import { parseAuthHash, validateAuthData } from "@/lib/supabase/auth-handlers";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -25,20 +20,6 @@ export default function VerifyEmailChangePage() {
   useEffect(() => {
     async function handleEmailChange() {
       try {
-        // Check for Supabase errors first
-        const authError = getAuthError();
-        if (authError.error) {
-          setStatus("error");
-          setError(
-            getErrorMessage(
-              authError.error,
-              authError.code,
-              authError.description,
-            ),
-          );
-          return;
-        }
-
         // Parse hash from URL
         const hash = window.location.hash;
         if (!hash) {

@@ -102,8 +102,8 @@ export default function SalesChart({ payments }: SalesChartProps) {
               <AreaChart data={salesByDate}>
                 <defs>
                   <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#efd777" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#efd777" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -122,7 +122,7 @@ export default function SalesChart({ payments }: SalesChartProps) {
                 <Area
                   type="monotone"
                   dataKey="sales"
-                  stroke="#f5cb00"
+                  stroke="#3b82f6"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorSales)"

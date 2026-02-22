@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
         expected_markers_count: expectedMarkersCount,
         submitted_markers_count: submittedMarkersCount,
         is_complete: isComplete,
+        computed_at: new Date().toISOString(),
       });
     }
 

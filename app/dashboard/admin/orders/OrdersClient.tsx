@@ -153,9 +153,7 @@ export default function OrdersClient({
           <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
           <p className="text-sm text-gray-600">Manage orders and status.</p>
         </div>
-        <Button variant="outline" onClick={() => setExportModalOpen(true)}>
-          Export
-        </Button>
+        <Button onClick={() => setExportModalOpen(true)}>Export</Button>
       </div>
 
       <Card>
@@ -199,7 +197,7 @@ export default function OrdersClient({
 
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader className="bg-primary-100">
+              <TableHeader className="bg-gray-50">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Order ID
@@ -239,7 +237,7 @@ export default function OrdersClient({
                   </TableRow>
                 ) : (
                   paginated.map((order) => (
-                    <TableRow key={order.id} className="hover:bg-primary-50">
+                    <TableRow key={order.id} className="hover:bg-gray-50">
                       <TableCell>
                         <CopyButton text={order.id} />
                       </TableCell>

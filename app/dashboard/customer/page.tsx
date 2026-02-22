@@ -121,19 +121,11 @@ export default async function CustomerDashboardPage() {
       .map((order) => order.package_name),
   );
 
-  // Get last 3 payments for preview
-  const lastPayments = payments.slice(0, 3);
-  // Get active services preview (completed orders)
-  const activeServicesPreview = services
-    .filter((s) => s.status === "completed")
-    .slice(0, 3);
-
   return (
     <CustomerDashboardClient
       stats={stats}
       profile={profileData}
-      lastPayments={lastPayments}
-      activeServices={activeServicesPreview}
+      activeServices={services.filter((s) => s.status === "completed")}
       availableServices={availableServices}
       purchasedPackages={Array.from(purchasedPackages)}
     />

@@ -53,6 +53,10 @@ const STATUS_CHART_COLORS: Record<
     color: "hsl(15, 80%, 50%)", // orange
     displayName: "Invalid Number",
   },
+  UNKNOWN: {
+    color: "hsl(0, 0%, 63%)", // gray
+    displayName: "Unknown",
+  },
 };
 
 export function CrmStatusPieChart({
@@ -78,32 +82,63 @@ export function CrmStatusPieChart({
     );
   }
 
-  const totalLeads = breakdown.reduce((sum, item) => sum + item.count, 0);
+  const normalizeStatusKey = (value?: string | null) => {
+    const trimmed = value?.trim();
+    if (!trimmed) return "UNKNOWN";
+    const lower = trimmed.toLowerCase();
+    if (lower === "undefined" || lower === "null") return "UNKNOWN";
+    return trimmed.toUpperCase();
+  };
+
+  const formatStatusLabel = (value: string) => {
+    if (value === "UNKNOWN") return "Unknown";
+    return value
+      .toLowerCase()
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
+  const normalizedCounts = breakdown.reduce<Record<string, number>>(
+    (acc, item) => {
+      const statusKey = normalizeStatusKey(item.status);
+      acc[statusKey] = (acc[statusKey] || 0) + item.count;
+      return acc;
+    },
+    {},
+  );
+
+  const totalLeads = Object.values(normalizedCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
 
   // Transform breakdown to chart data
-  const chartData = breakdown.map((item) => ({
-    status: item.status,
-    count: item.count,
-    percentage: item.percentage,
-    fill:
-      STATUS_CHART_COLORS[item.status]?.color || "hsl(var(--muted-foreground))",
+  const chartData = Object.entries(normalizedCounts).map(([status, count]) => ({
+    status,
+    count,
+    percentage: totalLeads > 0 ? ((count / totalLeads) * 100).toFixed(1) : "0",
+    fill: STATUS_CHART_COLORS[status]?.color || "hsl(var(--muted-foreground))",
   }));
 
   // Create chart config
-  const chartConfig: ChartConfig = breakdown.reduce((config, item) => {
-    const statusInfo = STATUS_CHART_COLORS[item.status] || {
-      displayName: item.status,
-      color: "hsl(var(--muted-foreground))",
-    };
-    config[item.status] = {
-      label: statusInfo.displayName,
-      color: statusInfo.color,
-    };
-    return config;
-  }, {} as ChartConfig);
+  const chartConfig: ChartConfig = Object.keys(normalizedCounts).reduce(
+    (config, status) => {
+      const statusInfo = STATUS_CHART_COLORS[status] || {
+        displayName: formatStatusLabel(status),
+        color: "hsl(var(--muted-foreground))",
+      };
+      config[status] = {
+        label: statusInfo.displayName,
+        color: statusInfo.color,
+      };
+      return config;
+    },
+    {} as ChartConfig,
+  );
 
   return (
-    <Card className="mt-6">
+    <Card>
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         {description && (
@@ -118,7 +153,7 @@ export function CrmStatusPieChart({
           <PieChart>
             <ChartTooltip
               formatter={(value: number, name: string) => {
-                const item = breakdown.find((b) => b.status === name);
+                const item = chartData.find((d) => d.status === name);
                 return (
                   <span>
                     {value} ({item?.percentage}%)

@@ -93,7 +93,7 @@ export function ProfileMenu() {
               className="w-10 h-10 rounded-full object-cover"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary-yellow text-white font-bold text-sm flex items-center justify-center">
               {initials || "U"}
             </div>
           )}
@@ -110,7 +110,7 @@ export function ProfileMenu() {
               className="w-10 h-10 rounded-full object-cover"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-primary-yellow text-white font-bold flex items-center justify-center">
               {initials || "U"}
             </div>
           )}

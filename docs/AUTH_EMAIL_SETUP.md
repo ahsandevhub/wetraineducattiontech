@@ -33,7 +33,6 @@ https://www.wetraineducation.com/auth/callback
 https://www.wetraineducation.com/auth/accept-invite
 https://www.wetraineducation.com/auth/magic-link
 https://www.wetraineducation.com/auth/verify-email-change
-https://www.wetraineducation.com/auth/error
 https://www.wetraineducation.com/set-password
 https://www.wetraineducation.com/auth/reauthenticate
 ```
@@ -45,7 +44,6 @@ http://localhost:3000/auth/callback
 http://localhost:3000/auth/accept-invite
 http://localhost:3000/auth/magic-link
 http://localhost:3000/auth/verify-email-change
-http://localhost:3000/auth/error
 http://localhost:3000/set-password
 http://localhost:3000/auth/reauthenticate
 ```
@@ -141,41 +139,17 @@ Copy the **HTML template** from [SUPABASE_EMAIL_TEMPLATES.md](./SUPABASE_EMAIL_T
 
 ## 🧪 Step 3: Test Each Flow
 
-### Test Invite User (Primary Admin Function)
+### Test Invite User
 
-**How It Works:**
-When an admin creates a new user from `/dashboard/crm/admin/users`:
-
-1. The app calls `supabase.auth.admin.inviteUserByEmail(email, { redirectTo: '/auth/accept-invite' })`
-2. Supabase creates an unconfirmed user and sends an invite email
-3. The email contains a link with the redirect URL: `/auth/accept-invite`
-4. User clicks the link and lands on the invite acceptance page
-5. User sets their password (this confirms their account)
-6. User is redirected to `/dashboard`
-
-**Testing Steps:**
-
-1. Go to **Dashboard → CRM → Admin → Users**
-2. Click **Invite User** button
-3. Fill in:
-   - Full Name: `Test User`
-   - Email: `test@example.com`
-   - Role: `Marketer`
+1. Go to **Authentication → Users** in Supabase Dashboard
+2. Click **Invite User**
+3. Enter test email: `test@example.com`
 4. Click **Send Invite**
 5. **Expected Result**:
-   - Success toast: "Invite sent successfully! User will receive an email to set their password."
-   - Check email inbox for branded invite
-   - Click **Accept Invitation** button in email
-   - Should land on `/auth/accept-invite`
-   - Shows password setup form
-   - After setting password → redirected to `/dashboard`
-
-**Common Issues:**
-
-- **Lands on homepage with token in URL**: Redirect URL not in Supabase allowlist (see Step 1)
-- **Error: "This link has expired"**: Invite links expire after 24 hours by default
-- **Error: "This link has already been used"**: User already accepted the invite
-- **No email received**: Check spam folder, verify SMTP settings in Supabase
+   - Email received with branded template
+   - Clicking button/link redirects to `/auth/accept-invite`
+   - User can set password
+   - Redirected to `/dashboard` after success
 
 ### Test Magic Link (Optional)
 
@@ -237,32 +211,9 @@ If you implement magic link login in your app:
 
 ### Issue: "Token expired" error
 
-**Cause**: User clicked the link after expiration time (default 1 hour for most flows, 24 hours for confirmation).
+**Cause**: User clicked the link after expiration time (default 1 hour).
 
-**Error shown**:
-
-```
-This link has expired. Please request a new one.
-```
-
-**Solution**: Request a new link. Tokens expire for security. Each email flow has built-in error handling:
-
-- **Invite**: Click "Back to Login" and request a new invite
-- **Magic Link**: Click "Request New Magic Link"
-- **Password Reset**: Click "Back to Login" and use "Forgot Password" again
-- **Email Change**: Go back to profile settings and request email change again
-
-### Issue: "This email link has already been used"
-
-**Cause**: The token can only be used once for security.
-
-**Error shown**:
-
-```
-This link has already been used. Please request a new one.
-```
-
-**Solution**: Request a new link. Email links are single-use for security.
+**Solution**: Request a new link. Tokens expire for security.
 
 ### Issue: User lands on correct page but sees error
 
@@ -271,46 +222,14 @@ This link has already been used. Please request a new one.
 - Token already used (can only be used once)
 - Session not created properly
 - Network/firewall blocking Supabase requests
-- Link expired before user clicked it
 
-**Solution**:
-
-1. Check browser console (F12 → Console tab) for detailed errors
-2. Verify Supabase credentials are correct in `.env.local`
-3. Try requesting a new link
-4. Check that Supabase project is active and accessible
+**Solution**: Check browser console for errors, verify Supabase credentials are correct.
 
 ### Issue: Email template variables not working
 
 **Cause**: Using incorrect variable names.
 
 **Solution**: All email links should use `{{ .ConfirmationURL }}` (not `{{ .InviteLink }}` or `{{ .MagicLink }}`).
-
-### Issue: Errors redirecting to homepage instead of error page
-
-**Possible Causes**:
-
-- Redirect URL not in allowlist - Supabase defaults to Site URL (homepage)
-- Link generated before redirect URLs were configured
-
-**Solution**:
-
-1. Verify all 6 redirect URLs are in Supabase Dashboard → Authentication → URL Configuration
-2. Regenerate the email link (for invites, request a new invite)
-3. If you see `#error=access_denied&error_code=otp_expired`, you can manually navigate to `/auth/error` to see the error message
-
-### Error Codes Reference
-
-These error codes appear in the URL hash (e.g., `#error_code=otp_expired`):
-
-| Code               | Meaning                   | Action                  |
-| ------------------ | ------------------------- | ----------------------- |
-| `otp_expired`      | Email link expired        | Request a new link      |
-| `otp_already_used` | Link already used         | Request a new link      |
-| `invalid_otp`      | Invalid or malformed link | Check URL and try again |
-| `user_not_found`   | Email not registered      | Sign up first           |
-| `access_denied`    | General access error      | Contact support         |
-| `server_error`     | Supabase server error     | Try again later         |
 
 ---
 
@@ -325,7 +244,7 @@ These error codes appear in the URL hash (e.g., `#error_code=otp_expired`):
 
 ## 🎯 Summary Checklist
 
-- [ ] Added all 7 redirect URLs to Supabase Dashboard (including `/auth/error`)
+- [ ] Added all 6 redirect URLs to Supabase Dashboard
 - [ ] Set Site URL to production domain
 - [ ] Updated Invite User email template
 - [ ] Updated Magic Link email template (if using)
@@ -336,11 +255,9 @@ These error codes appear in the URL hash (e.g., `#error_code=otp_expired`):
 - [ ] Tested invite flow end-to-end
 - [ ] Tested password reset flow
 - [ ] Tested signup confirmation
-- [ ] Tested error handling (expired link, etc.)
 - [ ] Verified all templates use `{{ .ConfirmationURL }}`
 - [ ] No errors in browser console during auth flows
-- [ ] Error messages display properly on expired links
 
 ---
 
-**All done!** Your email authentication flows are now properly configured with error handling. Users will have a seamless experience when clicking links from emails, and clear error messages if something goes wrong.
+**All done!** Your email authentication flows are now properly configured. Users will have a seamless experience when clicking links from emails!

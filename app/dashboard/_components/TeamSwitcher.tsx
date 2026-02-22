@@ -178,7 +178,7 @@ export function TeamSwitcher({
               return (
                 <Link key={app.name} href={app.href}>
                   <button
-                    className={`w-full !mb-1.5 !last:mb-0 flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer transition-colors ${
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer transition-colors ${
                       isActive
                         ? "bg-accent text-accent-foreground"
                         : "hover:bg-accent hover:text-accent-foreground"

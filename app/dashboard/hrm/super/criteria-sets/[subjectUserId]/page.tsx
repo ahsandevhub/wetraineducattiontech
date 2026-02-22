@@ -1,8 +1,8 @@
 "use client";
 
 import { CriteriaSetBuilder } from "@/components/hrm/CriteriaSetBuilder";
+import { CriteriaSetDetailLoadingSkeleton } from "@/components/shared/PageLoadingSkeletons";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -138,7 +138,7 @@ export default function CriteriaSetDetailPage() {
   };
 
   if (loading) {
-    return <Skeleton className="h-96 w-full" />;
+    return <CriteriaSetDetailLoadingSkeleton />;
   }
 
   return (

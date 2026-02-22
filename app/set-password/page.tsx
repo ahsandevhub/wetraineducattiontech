@@ -1,7 +1,6 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
-import { getAuthError, getErrorMessage } from "@/lib/supabase/auth-handlers";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -15,22 +14,6 @@ export default function SetPasswordPage() {
 
   useEffect(() => {
     const handleMagicLink = async () => {
-      // Check for Supabase errors first
-      const authError = getAuthError();
-      if (authError.error) {
-        const message = getErrorMessage(
-          authError.error,
-          authError.code,
-          authError.description,
-        );
-        setError(message);
-        // Redirect to login after showing error for 3 seconds
-        setTimeout(() => {
-          router.replace("/login");
-        }, 3000);
-        return;
-      }
-
       const supabase = createClient();
 
       // Supabase client auto-processes magic link tokens in URL hash

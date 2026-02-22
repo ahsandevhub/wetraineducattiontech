@@ -35,6 +35,7 @@ const SOURCE_COLORS: Record<string, string> = {
   PHONE: "hsl(15, 80%, 50%)", // orange
   REASSIGNED: "hsl(0, 72%, 51%)", // red
   OTHER: "hsl(0, 0%, 63%)", // gray
+  UNKNOWN: "hsl(0, 0%, 63%)", // gray
 };
 
 export function CrmLeadSourcesPieChart({
@@ -59,19 +60,45 @@ export function CrmLeadSourcesPieChart({
     );
   }
 
+  const normalizeSourceKey = (value: string) => {
+    const trimmed = value?.trim();
+    if (!trimmed || trimmed === "undefined" || trimmed === "null") {
+      return "UNKNOWN";
+    }
+    return trimmed.toUpperCase();
+  };
+
+  const formatSourceLabel = (value: string) => {
+    if (value === "UNKNOWN") return "Unknown";
+    return value
+      .toLowerCase()
+      .split("_")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  };
+
+  const normalizedCounts = Object.entries(data).reduce<Record<string, number>>(
+    (acc, [rawSource, count]) => {
+      const key = normalizeSourceKey(rawSource);
+      acc[key] = (acc[key] || 0) + count;
+      return acc;
+    },
+    {},
+  );
+
   // Transform data for chart
-  const chartData = Object.entries(data).map(([source, count]) => ({
+  const chartData = Object.entries(normalizedCounts).map(([source, count]) => ({
     source,
     count,
-    percentage: ((count / totalLeads) * 100).toFixed(1),
+    percentage: totalLeads > 0 ? ((count / totalLeads) * 100).toFixed(1) : "0",
     fill: SOURCE_COLORS[source] || "hsl(var(--muted-foreground))",
   }));
 
   // Create chart config
-  const chartConfig: ChartConfig = Object.keys(data).reduce(
+  const chartConfig: ChartConfig = Object.keys(normalizedCounts).reduce(
     (config, source) => {
       config[source] = {
-        label: source.replace(/_/g, " "),
+        label: formatSourceLabel(source),
         color: SOURCE_COLORS[source] || "hsl(var(--muted-foreground))",
       };
       return config;

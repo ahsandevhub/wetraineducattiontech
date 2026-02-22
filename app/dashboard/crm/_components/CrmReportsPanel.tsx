@@ -102,14 +102,36 @@ export async function CrmReportsPanel({
     lost: number;
     active: number;
   }
+  const normalizeLabel = (
+    value: string | null | undefined,
+    fallback: string,
+  ) => {
+    const trimmed = value?.trim();
+    if (!trimmed) return fallback;
+    const lower = trimmed.toLowerCase();
+    if (lower === "undefined" || lower === "null") return fallback;
+    return trimmed;
+  };
+
+  const normalizeSourceKey = (value: string | null | undefined) => {
+    const trimmed = value?.trim();
+    if (!trimmed) return "UNKNOWN";
+    const lower = trimmed.toLowerCase();
+    if (lower === "undefined" || lower === "null") return "UNKNOWN";
+    return trimmed.toUpperCase();
+  };
   const marketerStats = leads?.reduce(
     (acc: Record<string, MarketerStat>, lead) => {
       const ownerId = lead.owner_id;
+      const ownerKey = ownerId || "unassigned";
       const ownerArray = lead.owner as { id: string; full_name: string }[];
-      const ownerName = (ownerArray && ownerArray[0]?.full_name) || "Unknown";
+      const ownerName = normalizeLabel(
+        ownerArray && ownerArray[0]?.full_name,
+        ownerId ? "Unknown" : "Unassigned",
+      );
 
-      if (!acc[ownerId]) {
-        acc[ownerId] = {
+      if (!acc[ownerKey]) {
+        acc[ownerKey] = {
           name: ownerName,
           total: 0,
           sold: 0,
@@ -118,17 +140,17 @@ export async function CrmReportsPanel({
         };
       }
 
-      acc[ownerId].total++;
+      acc[ownerKey].total++;
       // NEW STATUS LOGIC: SOLD instead of WON
-      if (lead.status === "SOLD") acc[ownerId].sold++;
+      if (lead.status === "SOLD") acc[ownerKey].sold++;
       // NEW STATUS LOGIC: NOT_INTERESTED, NO_RESPONSE, INVALID_NUMBER instead of LOST
       else if (
         lead.status === "NOT_INTERESTED" ||
         lead.status === "NO_RESPONSE" ||
         lead.status === "INVALID_NUMBER"
       )
-        acc[ownerId].lost++;
-      else acc[ownerId].active++;
+        acc[ownerKey].lost++;
+      else acc[ownerKey].active++;
 
       return acc;
     },
@@ -141,16 +163,16 @@ export async function CrmReportsPanel({
 
   // Lead sources breakdown
   const sourceStats = leads?.reduce<Record<string, number>>((acc, lead) => {
-    acc[lead.source] = (acc[lead.source] || 0) + 1;
+    const sourceKey = normalizeSourceKey(lead.source);
+    acc[sourceKey] = (acc[sourceKey] || 0) + 1;
     return acc;
   }, {});
 
   // Fetch chart data for trends
-  const chartData = await getAdminChartData(
-    dateRange?.fromISO ||
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    dateRange?.toISO || new Date().toISOString(),
-  );
+  const chartFromISO = dateRange?.fromISO || new Date(2000, 0, 1).toISOString();
+  const chartToISO = dateRange?.toISO || new Date().toISOString();
+
+  const chartData = await getAdminChartData(chartFromISO, chartToISO);
 
   return (
     <div className="space-y-6">
@@ -220,20 +242,21 @@ export async function CrmReportsPanel({
         />
       </div>
 
-      {/* Marketer Performance */}
-      <CrmMarketerPerformanceChart
-        data={marketerPerformance}
-        title="Marketer Performance"
-        description="Lead conversion by team member (stacked bar chart)"
-      />
+      {/* Secondary Charts */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CrmMarketerPerformanceChart
+          data={marketerPerformance}
+          title="Marketer Performance"
+          description="Lead conversion by team member (stacked bar chart)"
+        />
 
-      {/* Lead Sources */}
-      <CrmLeadSourcesPieChart
-        data={sourceStats || {}}
-        totalLeads={totalLeads}
-        title="Lead Sources"
-        description="Where your leads are coming from"
-      />
+        <CrmLeadSourcesPieChart
+          data={sourceStats || {}}
+          totalLeads={totalLeads}
+          title="Lead Sources"
+          description="Where your leads are coming from"
+        />
+      </div>
     </div>
   );
 }

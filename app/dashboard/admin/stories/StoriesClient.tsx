@@ -203,7 +203,7 @@ export default function StoriesClient({ stories }: StoriesClientProps) {
 
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader className="bg-primary-100">
+              <TableHeader className="bg-gray-50">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Client
@@ -221,7 +221,7 @@ export default function StoriesClient({ stories }: StoriesClientProps) {
               </TableHeader>
               <TableBody>
                 {paginated.map((story) => (
-                  <TableRow key={story.id} className="hover:bg-primary-50">
+                  <TableRow key={story.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium text-gray-900">
                       {story.name}
                     </TableCell>

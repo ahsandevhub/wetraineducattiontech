@@ -47,7 +47,9 @@ export default function AdminDashboardClient({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-[var(--primary-yellow)]">
+            Admin Dashboard
+          </h1>
           <p className="text-sm text-[var(--muted-foreground)]">
             Overview of customers, payments, and orders.
           </p>
@@ -87,7 +89,7 @@ export default function AdminDashboardClient({
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Latest Customers</CardTitle>
-              <Button size="sm" asChild>
+              <Button variant="outline" size="sm" asChild>
                 <Link href="/dashboard/admin/customers">View all</Link>
               </Button>
             </div>
@@ -95,7 +97,7 @@ export default function AdminDashboardClient({
           <CardContent>
             <div className="border rounded-lg overflow-hidden">
               <Table>
-                <TableHeader className="bg-primary-100">
+                <TableHeader className="bg-gray-50">
                   <TableRow>
                     <TableHead className="font-semibold text-gray-900">
                       ID
@@ -120,10 +122,7 @@ export default function AdminDashboardClient({
                     </TableRow>
                   ) : (
                     latestCustomers.map((customer) => (
-                      <TableRow
-                        key={customer.id}
-                        className="hover:bg-primary-50"
-                      >
+                      <TableRow key={customer.id} className="hover:bg-gray-50">
                         <TableCell>
                           <CopyButton text={customer.id} />
                         </TableCell>
@@ -149,7 +148,7 @@ export default function AdminDashboardClient({
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Latest Payments</CardTitle>
-              <Button size="sm" asChild>
+              <Button variant="outline" size="sm" asChild>
                 <Link href="/dashboard/admin/payments">View all</Link>
               </Button>
             </div>
@@ -157,7 +156,7 @@ export default function AdminDashboardClient({
           <CardContent>
             <div className="border rounded-lg overflow-hidden">
               <Table>
-                <TableHeader className="bg-primary-100">
+                <TableHeader className="bg-gray-50">
                   <TableRow>
                     <TableHead className="font-semibold text-gray-900">
                       Payment ID
@@ -185,10 +184,7 @@ export default function AdminDashboardClient({
                     </TableRow>
                   ) : (
                     latestPayments.map((payment) => (
-                      <TableRow
-                        key={payment.id}
-                        className="hover:bg-primary-50"
-                      >
+                      <TableRow key={payment.id} className="hover:bg-gray-50">
                         <TableCell>
                           <CopyButton text={payment.id} />
                         </TableCell>
@@ -219,7 +215,7 @@ export default function AdminDashboardClient({
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Latest Orders</CardTitle>
-              <Button size="sm" asChild>
+              <Button variant="outline" size="sm" asChild>
                 <Link href="/dashboard/admin/orders">View all</Link>
               </Button>
             </div>
@@ -227,7 +223,7 @@ export default function AdminDashboardClient({
           <CardContent>
             <div className="border rounded-lg overflow-hidden">
               <Table>
-                <TableHeader className="bg-primary-100">
+                <TableHeader className="bg-gray-50">
                   <TableRow>
                     <TableHead className="font-semibold text-gray-900">
                       Order ID
@@ -255,7 +251,7 @@ export default function AdminDashboardClient({
                     </TableRow>
                   ) : (
                     latestOrders.map((order) => (
-                      <TableRow key={order.id} className="hover:bg-primary-50">
+                      <TableRow key={order.id} className="hover:bg-gray-50">
                         <TableCell>
                           <CopyButton text={order.id} />
                         </TableCell>
@@ -304,7 +300,7 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <Card className="bg-gradient-to-br from-primary-200 to-primary-50">
+    <Card className="border-gray-200">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <CardTitle className="text-sm font-medium text-gray-600">

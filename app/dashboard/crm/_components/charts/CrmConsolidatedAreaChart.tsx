@@ -97,7 +97,7 @@ export function CrmConsolidatedAreaChart({
   }));
 
   return (
-    <Card className="mt-6">
+    <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center justify-between">
           <span>{title}</span>

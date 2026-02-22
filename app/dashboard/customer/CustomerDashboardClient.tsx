@@ -4,14 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   AlertCircle,
   Check,
   CreditCard,
@@ -23,7 +15,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
-  CustomerPaymentRow,
   CustomerProfile,
   CustomerServiceRow,
   CustomerStats,
@@ -33,7 +24,6 @@ import type {
 type CustomerDashboardClientProps = {
   stats: CustomerStats;
   profile: CustomerProfile;
-  lastPayments: CustomerPaymentRow[];
   activeServices: CustomerServiceRow[];
   availableServices: Service[];
   purchasedPackages: string[];
@@ -78,7 +68,6 @@ const calculateFinalPrice = (price: number, discount: number | null) => {
 export default function CustomerDashboardClient({
   stats,
   profile,
-  lastPayments,
   activeServices,
   availableServices,
   purchasedPackages,
@@ -181,66 +170,6 @@ export default function CustomerDashboardClient({
           </CardContent>
         </Card>
       </div>
-
-      {/* Last 3 Payments Preview */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Payments</CardTitle>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/customer/payments">View all</Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {lastPayments.length > 0 ? (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lastPayments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-mono text-xs">
-                        {payment.reference.substring(0, 12)}...
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {formatCurrency(payment.amount)}
-                      </TableCell>
-                      <TableCell className="capitalize">
-                        {payment.method}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={`capitalize ${getStatusColor(payment.status)}`}
-                        >
-                          {payment.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {payment.createdAt
-                          ? new Date(payment.createdAt).toLocaleDateString()
-                          : "—"}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              No payments yet
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Active Services Preview */}
       <Card>

@@ -1,10 +1,10 @@
 "use client";
 
 import { MarkingForm } from "@/components/hrm/admin/MarkingForm";
+import { MarkingFormPageLoadingSkeleton } from "@/components/shared/PageLoadingSkeletons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { formatWeekDisplay } from "@/lib/hrm/week-utils";
 import { AlertCircle, ArrowLeft, Lock } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -130,7 +130,7 @@ export default function MarkingFormPage() {
   };
 
   if (loading) {
-    return <Skeleton className="h-96 w-full" />;
+    return <MarkingFormPageLoadingSkeleton />;
   }
 
   if (!data || !data.criteriaSet) {

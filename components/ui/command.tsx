@@ -115,7 +115,7 @@ const CommandItem = React.forwardRef<
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground aria-selected:bg-accent aria-selected:text-accent-foreground",
+      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 aria-selected:bg-slate-100 aria-selected:text-slate-900 dark:hover:bg-slate-800 dark:aria-selected:bg-slate-800 dark:aria-selected:text-slate-50",
       className,
     )}
     {...props}

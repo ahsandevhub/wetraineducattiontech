@@ -4,7 +4,6 @@ import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
-import { AuthRedirectHandler } from "../components/AuthRedirectHandler";
 import { EnvironmentSticker } from "../components/EnvironmentSticker";
 
 export const metadata: Metadata = {
@@ -57,7 +56,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
-        <AuthRedirectHandler />
         <EnvironmentSticker />
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
         <NextTopLoader color="#facc15" height={3} showSpinner={false} />

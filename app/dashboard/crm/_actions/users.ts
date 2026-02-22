@@ -3,11 +3,11 @@
 import { requireCrmAccess, requireCrmAdmin } from "@/app/utils/auth/require";
 import { createClient } from "@/app/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { AUTH_REDIRECT_URLS } from "@/lib/supabase/auth-config";
 import { revalidatePath } from "next/cache";
 
 interface CreateUserData {
   email: string;
+  password: string;
   fullName: string;
   crmRole: "ADMIN" | "MARKETER";
 }
@@ -53,34 +53,35 @@ export async function createUser(userData: CreateUserData) {
   const supabaseAdmin = createAdminClient();
 
   try {
-    console.log("Inviting user:", userData.email);
+    console.log("Creating user:", userData.email);
 
-    // Send invite email with redirect to accept-invite page
-    const { data: inviteData, error: inviteError } =
-      await supabaseAdmin.auth.admin.inviteUserByEmail(userData.email, {
-        redirectTo: AUTH_REDIRECT_URLS.INVITE,
-        data: {
+    // Create auth user
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: userData.email,
+        password: userData.password,
+        email_confirm: true,
+        user_metadata: {
           full_name: userData.fullName,
-          crm_role: userData.crmRole,
         },
       });
 
-    if (inviteError) {
-      console.error("Invite failed:", inviteError.message);
-      return { data: null, error: inviteError.message };
+    if (authError) {
+      console.error("Auth creation failed:", authError.message);
+      return { data: null, error: authError.message };
     }
 
-    if (!inviteData.user) {
+    if (!authData.user) {
       return { data: null, error: "Failed to create user" };
     }
 
-    console.log("Invite sent successfully to:", inviteData.user.id);
+    console.log("Auth user created successfully:", authData.user.id);
 
     // Create CRM user profile
     const { error: crmUserError } = await supabaseAdmin
       .from("crm_users")
       .insert({
-        auth_user_id: inviteData.user.id,
+        auth_user_id: authData.user.id,
         email: userData.email,
         full_name: userData.fullName,
         crm_role: userData.crmRole,
@@ -89,18 +90,15 @@ export async function createUser(userData: CreateUserData) {
 
     if (crmUserError) {
       console.error("Failed to create CRM user profile:", crmUserError.message);
-      // Note: User invite email was already sent, so we can't fully rollback
-      // The user will still receive the invite but won't have CRM profile
-      return {
-        data: null,
-        error: "Failed to create user profile. Please contact support.",
-      };
+      // Rollback auth user creation
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      return { data: null, error: crmUserError.message };
     }
 
     console.log("CRM user profile created successfully");
 
     revalidatePath("/dashboard/crm/admin/users");
-    return { data: inviteData.user, error: null };
+    return { data: authData.user, error: null };
   } catch (error) {
     console.error("Error creating user:", error);
     return {

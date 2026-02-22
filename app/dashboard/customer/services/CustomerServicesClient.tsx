@@ -209,7 +209,7 @@ export default function CustomerServicesClient({
 
           <div className="border rounded-lg overflow-hidden">
             <Table>
-              <TableHeader className="bg-primary-100">
+              <TableHeader className="bg-gray-50">
                 <TableRow>
                   <TableHead className="font-semibold text-gray-900">
                     Order ID
@@ -240,7 +240,7 @@ export default function CustomerServicesClient({
                   </TableRow>
                 ) : (
                   paginated.map((service) => (
-                    <TableRow key={service.id} className="hover:bg-primary-50">
+                    <TableRow key={service.id} className="hover:bg-gray-50">
                       <TableCell>
                         <CopyButton text={service.id} />
                       </TableCell>

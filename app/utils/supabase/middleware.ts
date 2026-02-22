@@ -7,51 +7,11 @@ import { type NextRequest, NextResponse } from "next/server";
  * Uses publishable/anon key (respects RLS policies)
  */
 export async function updateSession(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
-  const searchParams = request.nextUrl.searchParams;
-
-  // ========================================
-  // SUPABASE AUTH CALLBACK DETECTION
-  // ========================================
-  // GUARD 1: Never redirect if already at /auth routes
-  if (pathname.startsWith("/auth")) {
-    // Skip all auth route processing - let them handle themselves
-    // This prevents loops from /auth/callback → /login with errors → middleware catching again
-  }
-  // GUARD 2: Never redirect if at /login (even with error params)
-  // Error params should stay on /login to display friendly messages
-  else if (pathname === "/login" || pathname === "/(landing)/login") {
-    // Skip - let login page handle error display
-  }
-  // GUARD 3: Never redirect if already marked as handled
-  else if (searchParams.has("cb")) {
-    // This request came from a callback redirect, don't loop
-  }
-  // GUARD 4: Only route to /auth/callback if this is a VALID auth param combo
-  else {
-    const hasCode = searchParams.has("code");
-    const hasTokenHash = searchParams.has("token_hash");
-    const hasAccessToken = searchParams.has("access_token");
-    const hasRefreshToken = searchParams.has("refresh_token");
-    const hasTokenPair = hasAccessToken && hasRefreshToken;
-
-    // Only redirect if we have actual auth credentials to process
-    // Do NOT treat error params alone as auth callbacks
-    const isValidAuthCallback = hasCode || hasTokenHash || hasTokenPair;
-
-    if (isValidAuthCallback && !pathname.startsWith("/auth/callback")) {
-      const callbackUrl = new URL("/auth/callback", request.url);
-      // Preserve all query params
-      searchParams.forEach((value, key) => {
-        callbackUrl.searchParams.set(key, value);
-      });
-      return NextResponse.redirect(callbackUrl);
-    }
-  }
-
   const supabaseResponse = NextResponse.next({
     request,
   });
+
+  const pathname = request.nextUrl.pathname;
 
   const supabase = createServerClient(
     getSupabaseUrl(),
@@ -90,14 +50,6 @@ export async function updateSession(request: NextRequest) {
     return response;
   };
 
-  // Check if user exists but hasn't confirmed email
-  if (user && !user.email_confirmed_at && isDashboardRoute) {
-    // Redirect unconfirmed emails away from dashboard
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/verify-email";
-    return applyCookies(NextResponse.redirect(redirectUrl));
-  }
-
   if (!user && isDashboardRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
@@ -111,24 +63,22 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && isDashboardRoute) {
-    // Fetch education profile (optional - CRM/HRM-only users may not have this)
+    // Fetch education profile, CRM access, and HRM access
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .maybeSingle();
 
-    // Fetch CRM profile (optional - education/HRM-only users may not have this)
     const { data: crmUser } = await supabase
       .from("crm_users")
-      .select("id")
+      .select("id, crm_role")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
-    // Fetch HRM profile (optional - education/CRM-only users may not have this)
     const { data: hrmUser } = await supabase
       .from("hrm_users")
-      .select("id, is_active")
+      .select("id, hrm_role, is_active")
       .eq("profile_id", user.id)
       .maybeSingle();
 
@@ -136,24 +86,35 @@ export async function updateSession(request: NextRequest) {
     const hasCrmAccess = crmUser !== null;
     const hasHrmAccess = hrmUser !== null && hrmUser.is_active;
     const role = profile?.role ?? null;
+    const hrmRole = hrmUser?.hrm_role ?? null;
 
     // Redirect /dashboard based on user access
     // Priority: Education > CRM > HRM
+    // This ONLY applies at initial entry point (/dashboard)
     if (pathname === "/dashboard") {
       const redirectUrl = request.nextUrl.clone();
       if (hasEducationAccess) {
-        // User has education access
-        if (role === "admin") {
-          redirectUrl.pathname = "/dashboard/admin";
-        } else {
-          redirectUrl.pathname = "/dashboard/customer";
-        }
+        // Education takes priority
+        redirectUrl.pathname =
+          role === "admin" ? "/dashboard/admin" : "/dashboard/customer";
       } else if (hasCrmAccess) {
-        // User has CRM access but no education
+        // CRM second priority
         redirectUrl.pathname = "/dashboard/crm";
       } else if (hasHrmAccess) {
-        // User has HRM access but no education or CRM
-        redirectUrl.pathname = "/dashboard/hrm";
+        // HRM third priority - redirect to role-specific dashboard
+        switch (hrmRole) {
+          case "SUPER_ADMIN":
+            redirectUrl.pathname = "/dashboard/hrm/super";
+            break;
+          case "ADMIN":
+            redirectUrl.pathname = "/dashboard/hrm/admin";
+            break;
+          case "EMPLOYEE":
+            redirectUrl.pathname = "/dashboard/hrm/employee";
+            break;
+          default:
+            redirectUrl.pathname = "/unauthorized";
+        }
       } else {
         // User has no access to any application
         redirectUrl.pathname = "/unauthorized";
@@ -164,37 +125,88 @@ export async function updateSession(request: NextRequest) {
     // Prevent non-admin users from accessing /dashboard/admin
     if (pathname.startsWith("/dashboard/admin") && role !== "admin") {
       const redirectUrl = request.nextUrl.clone();
-      // Redirect based on priority: CRM > HRM
+      // Priority: CRM > HRM > Customer
       if (hasCrmAccess) {
         redirectUrl.pathname = "/dashboard/crm";
       } else if (hasHrmAccess) {
-        redirectUrl.pathname = "/dashboard/hrm";
+        // Redirect to role-specific HRM dashboard
+        redirectUrl.pathname =
+          hrmRole === "SUPER_ADMIN"
+            ? "/dashboard/hrm/super"
+            : hrmRole === "ADMIN"
+              ? "/dashboard/hrm/admin"
+              : "/dashboard/hrm/employee";
       } else {
         redirectUrl.pathname = "/dashboard/customer";
       }
       return applyCookies(NextResponse.redirect(redirectUrl));
     }
 
-    // Prevent admin users from accessing /dashboard/customer
-    // CRM/HRM-only users without profiles should also be redirected appropriately
+    // Prevent invalid access to /dashboard/customer
     if (pathname.startsWith("/dashboard/customer")) {
+      // Admin users should go to admin dashboard
       if (role === "admin") {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = "/dashboard/admin";
         return applyCookies(NextResponse.redirect(redirectUrl));
       }
-      // Users without education access trying to access customer dashboard
-      if (!hasEducationAccess && (hasCrmAccess || hasHrmAccess)) {
+      // Users without education access should be redirected to available app
+      if (!hasEducationAccess) {
         const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = hasCrmAccess
-          ? "/dashboard/crm"
-          : "/dashboard/hrm";
+        if (hasCrmAccess) {
+          redirectUrl.pathname = "/dashboard/crm";
+        } else if (hasHrmAccess) {
+          redirectUrl.pathname =
+            hrmRole === "SUPER_ADMIN"
+              ? "/dashboard/hrm/super"
+              : hrmRole === "ADMIN"
+                ? "/dashboard/hrm/admin"
+                : "/dashboard/hrm/employee";
+        } else {
+          redirectUrl.pathname = "/unauthorized";
+        }
         return applyCookies(NextResponse.redirect(redirectUrl));
       }
     }
 
     // Note: /dashboard/crm access control is handled by requireCrmAccess() in the layout
     // Middleware allows it through, layout enforces security
+
+    // Prevent non-HRM users from accessing /dashboard/hrm
+    if (pathname.startsWith("/dashboard/hrm")) {
+      if (!hasHrmAccess) {
+        const redirectUrl = request.nextUrl.clone();
+        // Route to appropriate app based on priority: Education > CRM > HRM
+        if (hasEducationAccess) {
+          redirectUrl.pathname =
+            role === "admin" ? "/dashboard/admin" : "/dashboard/customer";
+        } else if (hasCrmAccess) {
+          redirectUrl.pathname = "/dashboard/crm";
+        } else {
+          redirectUrl.pathname = "/unauthorized";
+        }
+        return applyCookies(NextResponse.redirect(redirectUrl));
+      }
+
+      // For /dashboard/hrm base path, redirect to role-specific dashboard
+      if (pathname === "/dashboard/hrm") {
+        const redirectUrl = request.nextUrl.clone();
+        switch (hrmRole) {
+          case "SUPER_ADMIN":
+            redirectUrl.pathname = "/dashboard/hrm/super";
+            break;
+          case "ADMIN":
+            redirectUrl.pathname = "/dashboard/hrm/admin";
+            break;
+          case "EMPLOYEE":
+            redirectUrl.pathname = "/dashboard/hrm/employee";
+            break;
+          default:
+            redirectUrl.pathname = "/unauthorized";
+        }
+        return applyCookies(NextResponse.redirect(redirectUrl));
+      }
+    }
   }
 
   return supabaseResponse;
