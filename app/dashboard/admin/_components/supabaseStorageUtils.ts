@@ -1,3 +1,5 @@
+import { getServiceSupabase } from "@/lib/supabase/server";
+
 /**
  * Upload file to Supabase storage via API route
  * Uses server-side service role (bypasses RLS issues)
@@ -37,7 +39,7 @@ export async function deleteFromSupabase(
   filepath: string,
   bucket: string = "avatars",
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = getServiceSupabase();
 
   const { error } = await supabase.storage.from(bucket).remove([filepath]);
 
