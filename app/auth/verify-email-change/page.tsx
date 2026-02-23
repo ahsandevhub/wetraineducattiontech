@@ -19,7 +19,6 @@ export default function VerifyEmailChangePage() {
   );
   const [message, setMessage] = useState("Verifying your new email address...");
   const [error, setError] = useState<string | null>(null);
-  const [newEmail, setNewEmail] = useState<string | null>(null);
 
   useEffect(() => {
     async function handleEmailChange() {
@@ -37,11 +36,7 @@ export default function VerifyEmailChangePage() {
         }
 
         // Verify email change token type
-        if (
-          parsed.type &&
-          parsed.type !== "email_change" &&
-          parsed.type !== "email"
-        ) {
+        if (parsed.type && parsed.type !== "email_change") {
           setStatus("error");
           setError("This link is not for email change verification.");
           return;
@@ -93,7 +88,6 @@ export default function VerifyEmailChangePage() {
 
         // Email change successful - session now has new email
         const updatedEmail = session.user.email || null;
-        setNewEmail(updatedEmail);
         setStatus("success");
         setMessage(
           `Your email address has been successfully updated${updatedEmail ? ` to ${updatedEmail}` : ""}!`,

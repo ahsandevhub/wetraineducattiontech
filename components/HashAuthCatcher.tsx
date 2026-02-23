@@ -55,7 +55,6 @@ export function HashAuthCatcher() {
             redirectPath = "/auth/magic-link";
             break;
           case "email_change":
-          case "email":
             redirectPath = "/auth/verify-email-change";
             break;
           case "signup":

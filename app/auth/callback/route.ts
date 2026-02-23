@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
       case "magiclink":
         return "/auth/magic-link";
       case "email_change":
-      case "email":
         return "/auth/verify-email-change";
       case "signup":
         return next;
