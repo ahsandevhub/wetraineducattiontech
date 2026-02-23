@@ -1,4 +1,5 @@
 import { createClient } from "@/app/utils/supabase/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -25,21 +26,67 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") ?? "/dashboard";
+  const tokenHash = requestUrl.searchParams.get("token_hash");
+  const type = requestUrl.searchParams.get("type");
+  const nextParam = requestUrl.searchParams.get("next");
+  const next = nextParam?.startsWith("/") ? nextParam : "/dashboard";
   const error = requestUrl.searchParams.get("error");
+  const errorDescription = requestUrl.searchParams.get("error_description");
+
+  const resolveRedirect = (flowType: string | null) => {
+    switch (flowType) {
+      case "invite":
+      case "recovery":
+        return "/set-password";
+      case "magiclink":
+        return "/auth/magic-link";
+      case "email_change":
+      case "email":
+        return "/auth/verify-email-change";
+      case "signup":
+        return next;
+      default:
+        return next;
+    }
+  };
 
   // Handle auth errors from Supabase
   if (error) {
     console.error("Auth callback error:", error);
     return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent(error)}`, requestUrl.origin),
+      new URL(
+        `/auth/error?error=${encodeURIComponent(error)}${errorDescription ? `&error_description=${encodeURIComponent(errorDescription)}` : ""}`,
+        requestUrl.origin,
+      ),
+    );
+  }
+
+  const supabase = await createClient();
+
+  // Handle email OTP/token_hash based flows from Supabase email templates
+  if (tokenHash && type) {
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      type: type as EmailOtpType,
+      token_hash: tokenHash,
+    });
+
+    if (verifyError) {
+      console.error("OTP verification error:", verifyError.message);
+      return NextResponse.redirect(
+        new URL(
+          `/auth/error?error=${encodeURIComponent(verifyError.code || "invalid_otp")}&error_description=${encodeURIComponent(verifyError.message)}`,
+          requestUrl.origin,
+        ),
+      );
+    }
+
+    return NextResponse.redirect(
+      new URL(resolveRedirect(type), requestUrl.origin),
     );
   }
 
   // Exchange authorization code for session
   if (code) {
-    const supabase = await createClient();
-
     const { error: exchangeError } =
       await supabase.auth.exchangeCodeForSession(code);
 
@@ -95,8 +142,11 @@ export async function GET(request: NextRequest) {
   }
 
   // No code provided - invalid callback
-  console.error("Auth callback: no code parameter");
+  console.error("Auth callback: missing required auth params");
   return NextResponse.redirect(
-    new URL("/login?error=invalid_callback", requestUrl.origin),
+    new URL(
+      "/auth/error?error=invalid_callback&error_description=Missing+auth+parameters",
+      requestUrl.origin,
+    ),
   );
 }

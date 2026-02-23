@@ -13,7 +13,11 @@ export function HashAuthCatcher() {
     if (typeof window === "undefined") return;
 
     const pathname = window.location.pathname;
-    if (pathname.startsWith("/auth") || pathname.startsWith("/login")) {
+    if (
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/set-password")
+    ) {
       return;
     }
 
@@ -23,9 +27,31 @@ export function HashAuthCatcher() {
       const params = new URLSearchParams(hash.slice(1));
       const hasAccessToken = params.has("access_token");
       const hasRefreshToken = params.has("refresh_token");
+      const type = params.get("type");
 
       if (hasAccessToken || hasRefreshToken) {
-        window.location.replace(`/auth/callback?from_hash=1${hash}`);
+        let redirectPath = "/auth/magic-link";
+
+        switch (type) {
+          case "invite":
+          case "recovery":
+            redirectPath = "/set-password";
+            break;
+          case "magiclink":
+            redirectPath = "/auth/magic-link";
+            break;
+          case "email_change":
+          case "email":
+            redirectPath = "/auth/verify-email-change";
+            break;
+          case "signup":
+            redirectPath = "/auth/magic-link";
+            break;
+          default:
+            redirectPath = "/auth/magic-link";
+        }
+
+        window.location.replace(`${redirectPath}${hash}`);
         return;
       }
     }
