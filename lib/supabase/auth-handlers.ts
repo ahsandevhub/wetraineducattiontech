@@ -16,6 +16,7 @@ export interface ParsedAuthHash {
   tokenHash: string | null;
   type: AuthFlowType | null;
   error: string | null;
+  errorCode: string | null;
   errorDescription: string | null;
 }
 
@@ -47,7 +48,38 @@ export function parseAuthHash(hash: string): ParsedAuthHash {
     tokenHash: params.get("token_hash"),
     type: params.get("type") as AuthFlowType | null,
     error: params.get("error"),
+    errorCode: params.get("error_code"),
     errorDescription: params.get("error_description"),
+  };
+}
+
+/**
+ * Parse authentication params from both URL query and hash fragments.
+ * Hash values take precedence when both are present.
+ */
+export function parseAuthParams(search: string, hash: string): ParsedAuthHash {
+  const cleanHash = hash.startsWith("#") ? hash.slice(1) : hash;
+  const cleanSearch = search.startsWith("?") ? search.slice(1) : search;
+
+  const queryParams = new URLSearchParams(cleanSearch);
+  const hashParams = new URLSearchParams(cleanHash);
+
+  const getValue = (key: string) => hashParams.get(key) ?? queryParams.get(key);
+
+  return {
+    accessToken: getValue("access_token"),
+    refreshToken: getValue("refresh_token"),
+    expiresAt: getValue("expires_at")
+      ? parseInt(getValue("expires_at")!, 10)
+      : null,
+    expiresIn: getValue("expires_in")
+      ? parseInt(getValue("expires_in")!, 10)
+      : null,
+    tokenHash: getValue("token_hash"),
+    type: getValue("type") as AuthFlowType | null,
+    error: getValue("error"),
+    errorCode: getValue("error_code"),
+    errorDescription: getValue("error_description"),
   };
 }
 
@@ -93,6 +125,12 @@ export function formatAuthError(error: string | null): string {
   if (!error) return "An unknown error occurred";
 
   switch (error) {
+    case "otp_expired":
+      return "This email link has expired. Please request a new one.";
+    case "otp_already_used":
+      return "This email link has already been used. Please request a new one.";
+    case "invalid_otp":
+      return "This email link is invalid. Please request a new one.";
     case "access_denied":
       return "Access was denied. Please try again.";
     case "server_error":
@@ -112,6 +150,25 @@ export function formatAuthError(error: string | null): string {
     default:
       return `Authentication error: ${error}`;
   }
+}
+
+/**
+ * Resolve a user-friendly auth error message from parsed params.
+ */
+export function getAuthErrorMessage(parsed: ParsedAuthHash): string | null {
+  if (parsed.errorDescription) {
+    return decodeURIComponent(parsed.errorDescription.replace(/\+/g, " "));
+  }
+
+  if (parsed.errorCode) {
+    return formatAuthError(parsed.errorCode);
+  }
+
+  if (parsed.error) {
+    return formatAuthError(parsed.error);
+  }
+
+  return null;
 }
 
 /**

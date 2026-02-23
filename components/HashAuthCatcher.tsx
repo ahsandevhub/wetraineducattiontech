@@ -27,7 +27,21 @@ export function HashAuthCatcher() {
       const params = new URLSearchParams(hash.slice(1));
       const hasAccessToken = params.has("access_token");
       const hasRefreshToken = params.has("refresh_token");
+      const error = params.get("error");
+      const errorCode = params.get("error_code");
+      const errorDescription = params.get("error_description");
       const type = params.get("type");
+
+      if (error || errorCode || errorDescription) {
+        const errorParams = new URLSearchParams();
+        errorParams.set("error", errorCode || error || "auth_error");
+        if (errorDescription) {
+          errorParams.set("error_description", errorDescription);
+        }
+
+        window.location.replace(`/auth/error?${errorParams.toString()}`);
+        return;
+      }
 
       if (hasAccessToken || hasRefreshToken) {
         let redirectPath = "/auth/magic-link";

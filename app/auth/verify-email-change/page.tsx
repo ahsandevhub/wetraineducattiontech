@@ -2,7 +2,11 @@
 
 import { createClient } from "@/app/utils/supabase/client";
 import AuthConfirmation from "@/components/AuthConfirmation";
-import { parseAuthHash, validateAuthData } from "@/lib/supabase/auth-handlers";
+import {
+  getAuthErrorMessage,
+  parseAuthParams,
+} from "@/lib/supabase/auth-handlers";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -20,30 +24,59 @@ export default function VerifyEmailChangePage() {
   useEffect(() => {
     async function handleEmailChange() {
       try {
-        // Parse hash from URL
-        const hash = window.location.hash;
-        if (!hash) {
-          setStatus("error");
-          setError(
-            "Invalid email change link. Please try again from your profile settings.",
-          );
-          return;
-        }
+        const parsed = parseAuthParams(
+          window.location.search,
+          window.location.hash,
+        );
 
-        const parsed = parseAuthHash(hash);
-        const validation = validateAuthData(parsed);
-
-        if (!validation.valid) {
+        const parsedError = getAuthErrorMessage(parsed);
+        if (parsedError) {
           setStatus("error");
-          setError(validation.error || "Invalid email change link");
+          setError(parsedError);
           return;
         }
 
         // Verify email change token type
-        if (parsed.type && parsed.type !== "email_change") {
+        if (
+          parsed.type &&
+          parsed.type !== "email_change" &&
+          parsed.type !== "email"
+        ) {
           setStatus("error");
           setError("This link is not for email change verification.");
           return;
+        }
+
+        if (parsed.tokenHash && parsed.type) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: parsed.type as EmailOtpType,
+            token_hash: parsed.tokenHash,
+          });
+
+          if (verifyError) {
+            setStatus("error");
+            setError(
+              verifyError.message ||
+                "Invalid or expired email verification link.",
+            );
+            return;
+          }
+        }
+
+        if (parsed.accessToken && parsed.refreshToken) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: parsed.accessToken,
+            refresh_token: parsed.refreshToken,
+          });
+
+          if (setSessionError) {
+            setStatus("error");
+            setError(
+              setSessionError.message ||
+                "Unable to verify email change. Please try again.",
+            );
+            return;
+          }
         }
 
         // Get current session to verify email change
@@ -59,10 +92,11 @@ export default function VerifyEmailChangePage() {
         }
 
         // Email change successful - session now has new email
-        setNewEmail(session.user.email || null);
+        const updatedEmail = session.user.email || null;
+        setNewEmail(updatedEmail);
         setStatus("success");
         setMessage(
-          `Your email address has been successfully updated${newEmail ? ` to ${newEmail}` : ""}!`,
+          `Your email address has been successfully updated${updatedEmail ? ` to ${updatedEmail}` : ""}!`,
         );
       } catch (err: any) {
         console.error("Error handling email change:", err);
@@ -72,7 +106,7 @@ export default function VerifyEmailChangePage() {
     }
 
     handleEmailChange();
-  }, [supabase, newEmail]);
+  }, [supabase]);
 
   if (status === "loading") {
     return (

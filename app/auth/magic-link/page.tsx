@@ -2,7 +2,11 @@
 
 import { createClient } from "@/app/utils/supabase/client";
 import AuthConfirmation from "@/components/AuthConfirmation";
-import { parseAuthHash, validateAuthData } from "@/lib/supabase/auth-handlers";
+import {
+  getAuthErrorMessage,
+  parseAuthParams,
+} from "@/lib/supabase/auth-handlers";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -19,21 +23,55 @@ export default function MagicLinkPage() {
   useEffect(() => {
     async function handleMagicLink() {
       try {
-        // Parse hash from URL
-        const hash = window.location.hash;
-        if (!hash) {
+        const parsed = parseAuthParams(
+          window.location.search,
+          window.location.hash,
+        );
+
+        const parsedError = getAuthErrorMessage(parsed);
+        if (parsedError) {
           setStatus("error");
-          setError("Invalid magic link. Please request a new one.");
+          setError(parsedError);
           return;
         }
 
-        const parsed = parseAuthHash(hash);
-        const validation = validateAuthData(parsed);
-
-        if (!validation.valid) {
+        if (
+          parsed.type &&
+          parsed.type !== "magiclink" &&
+          parsed.type !== "signup"
+        ) {
           setStatus("error");
-          setError(validation.error || "Invalid magic link");
+          setError("This link is not a valid magic sign-in link.");
           return;
+        }
+
+        if (parsed.tokenHash && parsed.type) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: parsed.type as EmailOtpType,
+            token_hash: parsed.tokenHash,
+          });
+
+          if (verifyError) {
+            setStatus("error");
+            setError(verifyError.message || "Invalid or expired sign-in link.");
+            return;
+          }
+        }
+
+        if (parsed.accessToken && parsed.refreshToken) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: parsed.accessToken,
+            refresh_token: parsed.refreshToken,
+          });
+
+          if (setSessionError) {
+            setStatus("error");
+            setError(
+              setSessionError.message ||
+                "Failed to establish session. Please request a new link.",
+            );
+            return;
+          }
         }
 
         // Verify session was created by Supabase

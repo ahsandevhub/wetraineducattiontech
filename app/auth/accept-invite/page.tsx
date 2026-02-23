@@ -2,7 +2,12 @@
 
 import { createClient } from "@/app/utils/supabase/client";
 import AuthConfirmation from "@/components/AuthConfirmation";
-import { parseAuthHash, validateAuthData } from "@/lib/supabase/auth-handlers";
+import {
+  getAuthErrorMessage,
+  parseAuthParams,
+  validateAuthData,
+} from "@/lib/supabase/auth-handlers";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { Eye, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -25,18 +30,21 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     async function verifyInvite() {
       try {
-        // Parse hash from URL
-        const hash = window.location.hash;
-        if (!hash) {
-          setError("Invalid invitation link. Please request a new invite.");
+        const parsed = parseAuthParams(
+          window.location.search,
+          window.location.hash,
+        );
+
+        const parsedError = getAuthErrorMessage(parsed);
+        if (parsedError) {
+          setError(parsedError);
           setLoading(false);
           return;
         }
 
-        const parsed = parseAuthHash(hash);
         const validation = validateAuthData(parsed);
 
-        if (!validation.valid) {
+        if (!validation.valid && !parsed.tokenHash) {
           setError(validation.error || "Invalid invitation link");
           setLoading(false);
           return;
@@ -47,6 +55,37 @@ export default function AcceptInvitePage() {
           setError("This link is not an invitation link.");
           setLoading(false);
           return;
+        }
+
+        if (parsed.tokenHash && parsed.type) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: parsed.type as EmailOtpType,
+            token_hash: parsed.tokenHash,
+          });
+
+          if (verifyError) {
+            setError(
+              verifyError.message || "Invalid or expired invitation link.",
+            );
+            setLoading(false);
+            return;
+          }
+        }
+
+        if (parsed.accessToken && parsed.refreshToken) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: parsed.accessToken,
+            refresh_token: parsed.refreshToken,
+          });
+
+          if (setSessionError) {
+            setError(
+              setSessionError.message ||
+                "Unable to verify invitation. Please request a new invite.",
+            );
+            setLoading(false);
+            return;
+          }
         }
 
         // Session should already be created by Supabase

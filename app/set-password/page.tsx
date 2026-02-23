@@ -1,39 +1,89 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
+import AuthConfirmation from "@/components/AuthConfirmation";
+import {
+  getAuthErrorMessage,
+  parseAuthParams,
+} from "@/lib/supabase/auth-handlers";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function SetPasswordPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleMagicLink = async () => {
-      const supabase = createClient();
+    const initializeAuth = async () => {
+      try {
+        const parsed = parseAuthParams(
+          window.location.search,
+          window.location.hash,
+        );
 
-      // Supabase client auto-processes magic link tokens in URL hash
-      // Check for session
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        return; // Session ready, allow password set
-      }
-
-      // If no session after a moment, the link might have failed
-      setTimeout(async () => {
-        const { data: sessionCheck } = await supabase.auth.getSession();
-        if (!sessionCheck.session) {
-          router.replace("/login?error=session_required");
+        const parsedError = getAuthErrorMessage(parsed);
+        if (parsedError) {
+          setAuthError(parsedError);
+          return;
         }
-      }, 1000);
+
+        if (parsed.tokenHash && parsed.type) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            type: parsed.type as EmailOtpType,
+            token_hash: parsed.tokenHash,
+          });
+
+          if (verifyError) {
+            setAuthError(
+              verifyError.message || "Invalid or expired password reset link.",
+            );
+            return;
+          }
+        }
+
+        if (parsed.accessToken && parsed.refreshToken) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: parsed.accessToken,
+            refresh_token: parsed.refreshToken,
+          });
+
+          if (setSessionError) {
+            setAuthError(
+              setSessionError.message ||
+                "Unable to validate your reset link. Please request a new one.",
+            );
+            return;
+          }
+        }
+
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session) {
+          setAuthError(
+            "Session not found. Please request a new password reset link.",
+          );
+          return;
+        }
+
+        setAuthReady(true);
+      } catch {
+        setAuthError("Failed to verify your link. Please request a new one.");
+      }
     };
 
-    handleMagicLink();
-  }, [router]);
+    initializeAuth();
+  }, [supabase]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,7 +101,6 @@ export default function SetPasswordPage() {
     }
 
     setLoading(true);
-    const supabase = createClient();
     const { error: updateError } = await supabase.auth.updateUser({
       password,
     });
@@ -67,6 +116,30 @@ export default function SetPasswordPage() {
 
     setLoading(false);
   };
+
+  if (!authReady && !authError) {
+    return (
+      <AuthConfirmation
+        type="loading"
+        title="Verifying Reset Link"
+        message="Please wait while we validate your password reset link..."
+      />
+    );
+  }
+
+  if (authError) {
+    return (
+      <AuthConfirmation
+        type="error"
+        title="Invalid Reset Link"
+        message={authError}
+        actionButton={{
+          text: "Back to Login",
+          onClick: () => router.push("/login"),
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[var(--tertiary-yellow)] to-white flex items-center justify-center px-4">
