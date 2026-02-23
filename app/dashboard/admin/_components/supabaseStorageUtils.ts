@@ -1,7 +1,6 @@
-import { createClient } from "@/app/utils/supabase/client";
-
 /**
- * Upload file to Supabase storage
+ * Upload file to Supabase storage via API route
+ * Uses server-side service role (bypasses RLS issues)
  * @param file - File to upload
  * @param bucket - Storage bucket name
  * @param folder - Optional folder path within bucket
@@ -12,31 +11,23 @@ export async function uploadToSupabase(
   bucket: string = "avatars",
   folder: string = "avatars",
 ): Promise<string> {
-  const supabase = await createClient();
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("bucket", bucket);
+  formData.append("folder", folder);
 
-  // Generate unique filename
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 10);
-  const ext = file.name.split(".").pop();
-  const filename = `${timestamp}-${random}.${ext}`;
-  const filepath = folder ? `${folder}/${filename}` : filename;
-
-  // Upload file
-  const { error } = await supabase.storage.from(bucket).upload(filepath, file, {
-    cacheControl: "3600",
-    upsert: false,
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
   });
 
-  if (error) {
-    throw new Error(`Upload failed: ${error.message}`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
   }
 
-  // Get public URL
-  const { data: urlData } = supabase.storage
-    .from(bucket)
-    .getPublicUrl(filepath);
-
-  return urlData.publicUrl;
+  const data = await response.json();
+  return data.url;
 }
 
 /**
