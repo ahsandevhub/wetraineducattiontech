@@ -131,145 +131,133 @@ export async function POST(request: NextRequest) {
 
     const weekIds = weeks.map((w) => w.id);
 
-    // First, ensure weekly results exist for all weeks in this month
-    // Check which weeks are missing results
-    const { data: existingResults } = await supabase
-      .from("hrm_weekly_results")
-      .select("week_id")
-      .in("week_id", weekIds);
-
-    const existingWeekIds = new Set(
-      (existingResults || []).map((r) => r.week_id),
-    );
-    const weeksMissingResults = weeks.filter((w) => !existingWeekIds.has(w.id));
-
+    // ALWAYS recompute ALL weekly results from fresh submission data
     console.log(
-      `[Compute Month] Existing weekly results: ${existingWeekIds.size}, Missing: ${weeksMissingResults.length}`,
+      `[Compute Month] Recomputing weekly results for ALL ${weeks.length} weeks from fresh submission data...`,
     );
 
-    // Compute weekly results for weeks that don't have them
-    if (weeksMissingResults.length > 0) {
-      console.log(
-        `[Compute Month] Auto-computing weekly results for ${weeksMissingResults.length} weeks...`,
-      );
-      let weeksComputedInMonth = 0;
+    // Get all subjects with active assignments (for expected marker count)
+    const { data: assignments } = await supabase
+      .from("hrm_assignments")
+      .select("subject_user_id, marker_admin_id")
+      .eq("is_active", true);
 
-      for (const week of weeksMissingResults) {
-        try {
-          console.log(
-            `[Compute Month] Computing weekly results for week: ${week.week_key}`,
-          );
-
-          // Get all submissions for this week
-          const { data: submissions } = await supabase
-            .from("hrm_kpi_submissions")
-            .select("subject_user_id, marker_admin_id, total_score")
-            .eq("week_id", week.id);
-
-          console.log(
-            `[Compute Month] Week ${week.week_key}: Found ${submissions?.length || 0} submissions`,
-          );
-
-          // Group submissions by subject
-          const subjectSubmissions = new Map<
-            string,
-            Array<{ markerAdminId: string; totalScore: number }>
-          >();
-
-          for (const sub of submissions || []) {
-            if (!subjectSubmissions.has(sub.subject_user_id)) {
-              subjectSubmissions.set(sub.subject_user_id, []);
-            }
-            subjectSubmissions.get(sub.subject_user_id)!.push({
-              markerAdminId: sub.marker_admin_id,
-              totalScore: sub.total_score,
-            });
-          }
-
-          // Get all subjects with active assignments
-          const { data: assignments } = await supabase
-            .from("hrm_assignments")
-            .select("subject_user_id, marker_admin_id")
-            .eq("is_active", true);
-
-          // Group assignments by subject to get expected marker count
-          const subjectMarkers = new Map<string, Set<string>>();
-          for (const assignment of assignments || []) {
-            if (!subjectMarkers.has(assignment.subject_user_id)) {
-              subjectMarkers.set(assignment.subject_user_id, new Set());
-            }
-            subjectMarkers
-              .get(assignment.subject_user_id)!
-              .add(assignment.marker_admin_id);
-          }
-
-          // Compute weekly results for each subject
-          const weeklyResults = [];
-          const allSubjectIds = new Set([
-            ...subjectSubmissions.keys(),
-            ...subjectMarkers.keys(),
-          ]);
-
-          for (const subjectUserId of allSubjectIds) {
-            const subs = subjectSubmissions.get(subjectUserId) || [];
-            const expectedMarkers =
-              subjectMarkers.get(subjectUserId) || new Set();
-
-            const weeklyAvgScore =
-              subs.length > 0
-                ? subs.reduce((sum, s) => sum + s.totalScore, 0) / subs.length
-                : 0;
-
-            const expectedMarkersCount = expectedMarkers.size;
-            const submittedMarkersCount = subs.length;
-            const isComplete = submittedMarkersCount >= expectedMarkersCount;
-
-            weeklyResults.push({
-              week_id: week.id,
-              subject_user_id: subjectUserId,
-              weekly_avg_score: Math.round(weeklyAvgScore * 100) / 100,
-              expected_markers_count: expectedMarkersCount,
-              submitted_markers_count: submittedMarkersCount,
-              is_complete: isComplete,
-              computed_at: new Date().toISOString(),
-            });
-          }
-
-          // Upsert weekly results
-          if (weeklyResults.length > 0) {
-            const { error: resultsError } = await supabase
-              .from("hrm_weekly_results")
-              .upsert(weeklyResults, {
-                onConflict: "week_id,subject_user_id",
-              });
-
-            if (resultsError) {
-              console.error(
-                `[Compute Month] Error upserting weekly results for week ${week.week_key}:`,
-                resultsError,
-              );
-            } else {
-              weeksComputedInMonth++;
-              console.log(
-                `[Compute Month] Successfully computed ${weeklyResults.length} weekly results for week ${week.week_key}`,
-              );
-            }
-          }
-        } catch (weekError) {
-          console.error(
-            `[Compute Month] Error computing weekly results for week ${week.week_key}:`,
-            weekError,
-          );
-          // Continue with next week
-        }
+    // Group assignments by subject to get expected marker count
+    const subjectMarkers = new Map<string, Set<string>>();
+    for (const assignment of assignments || []) {
+      if (!subjectMarkers.has(assignment.subject_user_id)) {
+        subjectMarkers.set(assignment.subject_user_id, new Set());
       }
-
-      console.log(
-        `[Compute Month] Auto-computed weekly results for ${weeksComputedInMonth}/${weeksMissingResults.length} weeks`,
-      );
+      subjectMarkers
+        .get(assignment.subject_user_id)!
+        .add(assignment.marker_admin_id);
     }
 
-    // Get all weekly results for these weeks (now should have data)
+    let weeksComputedInMonth = 0;
+    const allSubjectsInMonth = new Set<string>();
+
+    for (const week of weeks) {
+      try {
+        console.log(
+          `[Compute Month] Computing weekly results for week: ${week.week_key}`,
+        );
+
+        // Get all submissions for this week
+        const { data: submissions } = await supabase
+          .from("hrm_kpi_submissions")
+          .select("subject_user_id, marker_admin_id, total_score")
+          .eq("week_id", week.id);
+
+        console.log(
+          `[Compute Month] Week ${week.week_key}: Found ${submissions?.length || 0} submissions`,
+        );
+
+        // Group submissions by subject
+        const subjectSubmissions = new Map<
+          string,
+          Array<{ markerAdminId: string; totalScore: number }>
+        >();
+
+        for (const sub of submissions || []) {
+          if (!subjectSubmissions.has(sub.subject_user_id)) {
+            subjectSubmissions.set(sub.subject_user_id, []);
+          }
+          subjectSubmissions.get(sub.subject_user_id)!.push({
+            markerAdminId: sub.marker_admin_id,
+            totalScore: sub.total_score,
+          });
+        }
+
+        // Compute weekly results for each subject
+        const weeklyResults = [];
+        const allSubjectIds = new Set([
+          ...subjectSubmissions.keys(),
+          ...subjectMarkers.keys(),
+        ]);
+
+        for (const subjectUserId of allSubjectIds) {
+          allSubjectsInMonth.add(subjectUserId); // Track all subjects
+          const subs = subjectSubmissions.get(subjectUserId) || [];
+          const expectedMarkers =
+            subjectMarkers.get(subjectUserId) || new Set();
+
+          const weeklyAvgScore =
+            subs.length > 0
+              ? subs.reduce((sum, s) => sum + s.totalScore, 0) / subs.length
+              : 0;
+
+          const expectedMarkersCount = expectedMarkers.size;
+          const submittedMarkersCount = subs.length;
+          const isComplete = submittedMarkersCount >= expectedMarkersCount;
+
+          weeklyResults.push({
+            week_id: week.id,
+            subject_user_id: subjectUserId,
+            weekly_avg_score: Math.round(weeklyAvgScore * 100) / 100,
+            expected_markers_count: expectedMarkersCount,
+            submitted_markers_count: submittedMarkersCount,
+            is_complete: isComplete,
+            computed_at: new Date().toISOString(),
+          });
+        }
+
+        // Upsert weekly results
+        if (weeklyResults.length > 0) {
+          const { error: resultsError } = await supabase
+            .from("hrm_weekly_results")
+            .upsert(weeklyResults, {
+              onConflict: "week_id,subject_user_id",
+            });
+
+          if (resultsError) {
+            console.error(
+              `[Compute Month] Error upserting weekly results for week ${week.week_key}:`,
+              resultsError,
+            );
+          } else {
+            weeksComputedInMonth++;
+            console.log(
+              `[Compute Month] Successfully computed ${weeklyResults.length} weekly results for week ${week.week_key}`,
+            );
+          }
+        }
+      } catch (weekError) {
+        console.error(
+          `[Compute Month] Error computing weekly results for week ${week.week_key}:`,
+          weekError,
+        );
+        // Continue with next week
+      }
+    }
+
+    console.log(
+      `[Compute Month] Computed weekly results for ${weeksComputedInMonth}/${weeks.length} weeks`,
+    );
+    console.log(
+      `[Compute Month] Total unique subjects found: ${allSubjectsInMonth.size}`,
+    );
+
+    // Get all weekly results for these weeks (freshly computed)
     const { data: weeklyResults } = await supabase
       .from("hrm_weekly_results")
       .select("subject_user_id, weekly_avg_score")
@@ -283,12 +271,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "No weekly results found even after computing weeks. Please check if KPI submissions exist.",
+            "No submissions found for this month. Please ensure KPI submissions exist for at least one week.",
           debugInfo: {
             monthKey,
             weeksInDatabase: weeks.length,
             expectedFridays: expectedWeeksCount,
-            submissionsCheckRequired: true,
+            weeksProcessed: weeksComputedInMonth,
           },
         },
         { status: 400 },
