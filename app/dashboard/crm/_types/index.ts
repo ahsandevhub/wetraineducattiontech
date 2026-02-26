@@ -34,7 +34,7 @@ export interface LeadWithOwner extends Lead {
   owner: {
     id: string;
     full_name: string | null;
-    email: string;
+    email: string | null;
   };
 }
 
@@ -68,11 +68,9 @@ export type CrmRole = "ADMIN" | "MARKETER";
 
 export interface CrmUser {
   id: string;
-  auth_user_id: string;
-  email: string;
-  full_name: string | null;
   crm_role: CrmRole;
-  is_active: boolean;
+  full_name: string | null;
+  email: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -87,7 +85,6 @@ export interface CreateCrmUserData {
 export interface UpdateCrmUserData {
   full_name?: string;
   crm_role?: CrmRole;
-  is_active?: boolean;
 }
 
 /**
@@ -140,7 +137,7 @@ export interface LeadRequestWithRequester extends LeadRequest {
   requester: {
     id: string;
     full_name: string | null;
-    email: string;
+    email: string | null;
   };
 }
 

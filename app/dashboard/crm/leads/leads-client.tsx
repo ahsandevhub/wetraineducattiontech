@@ -108,11 +108,11 @@ function copyToClipboard(
 
 interface LeadsPageClientProps {
   leads: (Lead & {
-    owner?: { full_name: string; email: string };
+    owner?: { id: string; full_name: string | null; email: string | null };
     contact_logs?: {
       notes: string | null;
       created_at: string;
-      user?: { full_name: string };
+      user?: { id: string; full_name: string | null };
     }[];
   })[];
   marketers: CrmUser[];
@@ -175,7 +175,9 @@ export function LeadsPageClient({
     setDeletingLeadId(null);
   };
 
-  const columns: ColumnDef<Lead & { owner?: { full_name: string } }>[] = [
+  const columns: ColumnDef<
+    Lead & { owner?: { id: string; full_name: string | null } }
+  >[] = [
     {
       accessorKey: "phone",
       header: "Phone",
@@ -312,7 +314,7 @@ export function LeadsPageClient({
           contact_logs?: {
             notes: string | null;
             created_at: string;
-            user?: { full_name: string };
+            user?: { id: string; full_name: string | null };
           }[];
         };
         const latest =
@@ -358,10 +360,12 @@ export function LeadsPageClient({
             cell: ({
               row,
             }: {
-              row: Row<Lead & { owner?: { full_name: string } }>;
+              row: Row<
+                Lead & { owner?: { id: string; full_name: string | null } }
+              >;
             }) => {
               const owner = row.getValue("owner") as
-                | { full_name: string }
+                | { id: string; full_name: string | null }
                 | undefined;
               return owner?.full_name ? (
                 owner.full_name

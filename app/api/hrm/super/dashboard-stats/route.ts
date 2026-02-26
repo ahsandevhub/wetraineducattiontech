@@ -5,6 +5,7 @@
  */
 
 import { requireHrmSuperAdmin } from "@/app/utils/auth/require";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getServiceSupabase } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
@@ -26,13 +27,6 @@ export async function GET() {
       .from("hrm_users")
       .select("*", { count: "exact", head: true })
       .in("hrm_role", ["ADMIN", "SUPER_ADMIN"]);
-
-    // Get pending profiles count (active only)
-    const { count: pendingCount } = await supabase
-      .from("hrm_pending_profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true)
-      .is("linked_auth_id", null);
 
     // Get active weeks count (OPEN status)
     const { count: activeWeeksCount } = await supabase
@@ -68,17 +62,17 @@ export async function GET() {
     }> = [];
 
     if (latestMonth) {
+      // New schema: hrm_users only has id, hrm_role - join just to filter by EMPLOYEE role
       const { data: monthlyResults } = await supabase
         .from("hrm_monthly_results")
         .select(
           `
           id,
+          subject_user_id,
           monthly_score,
           tier,
           hrm_users!inner(
             id,
-            full_name,
-            email,
             hrm_role
           )
         `,
@@ -87,7 +81,7 @@ export async function GET() {
         .eq("hrm_users.hrm_role", "EMPLOYEE")
         .order("monthly_score", { ascending: false });
 
-      if (monthlyResults) {
+      if (monthlyResults && monthlyResults.length > 0) {
         // Count tier distribution
         monthlyResults.forEach((result: any) => {
           const tier = result.tier as keyof typeof tierDistribution;
@@ -96,13 +90,30 @@ export async function GET() {
           }
         });
 
-        // Map subject performances
-        subjectPerformances = monthlyResults.map((result: any) => ({
-          subjectId: result.hrm_users.id,
-          subjectName: result.hrm_users.full_name,
-          monthlyScore: result.monthly_score,
-          tier: result.tier,
-        }));
+        // Get user names from auth for subject performances
+        const adminClient = createAdminClient();
+        const { data: authData } = await adminClient.auth.admin.listUsers({
+          perPage: 1000,
+        });
+        const authUserMap = new Map(
+          authData?.users.map((u) => [u.id, u]) ?? [],
+        );
+
+        // Map subject performances with names from auth
+        subjectPerformances = monthlyResults.map((result: any) => {
+          const userId = result.subject_user_id ?? result.hrm_users?.id;
+          const authUser = authUserMap.get(userId);
+          const name =
+            (authUser?.user_metadata?.name as string) ||
+            authUser?.email?.split("@")[0] ||
+            "Unknown";
+          return {
+            subjectId: userId,
+            subjectName: name,
+            monthlyScore: result.monthly_score,
+            tier: result.tier,
+          };
+        });
       }
     }
 
@@ -110,7 +121,6 @@ export async function GET() {
       stats: {
         employeesCount: employeesCount || 0,
         adminsCount: adminsCount || 0,
-        pendingCount: pendingCount || 0,
         activeWeeksCount: activeWeeksCount || 0,
       },
       latestMonth: latestMonth

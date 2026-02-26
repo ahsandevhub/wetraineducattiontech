@@ -20,7 +20,7 @@ export async function GET(
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (hrmUser?.hrm_role !== "SUPER_ADMIN") {
@@ -30,14 +30,28 @@ export async function GET(
   const { subjectUserId } = await params;
 
   try {
-    // Get subject user info
-    const { data: subject, error: subjectError } = await supabase
+    // Get subject user's HRM info
+    const { data: hrmSubject, error: subjectError } = await supabase
       .from("hrm_users")
-      .select("id, full_name, email, hrm_role")
+      .select("id, hrm_role")
       .eq("id", subjectUserId)
       .single();
 
     if (subjectError) throw subjectError;
+
+    // Get subject's profile (name/email)
+    const { data: subjectProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", subjectUserId)
+      .maybeSingle();
+
+    const subject = {
+      id: hrmSubject.id,
+      hrm_role: hrmSubject.hrm_role,
+      full_name: subjectProfile?.full_name || null,
+      email: subjectProfile?.email || null,
+    };
 
     // Get active criteria set
     const { data: activeSet, error: setError } = await supabase
@@ -139,7 +153,7 @@ export async function POST(
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id, hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (hrmUser?.hrm_role !== "SUPER_ADMIN") {

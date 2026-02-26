@@ -32,14 +32,19 @@ export async function GET() {
     const { data: crmData, error: crmError } = await supabase
       .from("crm_users")
       .select("*")
-      .eq("auth_user_id", user.id)
+      .eq("id", user.id)
       .maybeSingle();
 
     const { data: hrmData, error: hrmError } = await supabase
       .from("hrm_users")
       .select("*")
-      .eq("profile_id", user.id)
+      .eq("id", user.id)
       .maybeSingle();
+
+    // Log errors to console for debugging
+    if (profileError) console.error("Profile query error:", profileError);
+    if (crmError) console.error("CRM query error:", crmError);
+    if (hrmError) console.error("HRM query error:", hrmError);
 
     return NextResponse.json({
       auth: {
@@ -48,9 +53,22 @@ export async function GET() {
       },
       roles,
       rawData: {
-        profile: { data: profileData, error: profileError },
-        crm: { data: crmData, error: crmError },
-        hrm: { data: hrmData, error: hrmError },
+        profile: { data: profileData, error: profileError?.message },
+        crm: { data: crmData, error: crmError?.message },
+        hrm: { data: hrmData, error: hrmError?.message },
+      },
+      diagnostics: {
+        hasProfileData: !!profileData,
+        hasCrmData: !!crmData,
+        hasHrmData: !!hrmData,
+        rolesObject: {
+          hasEducationAccess: roles?.hasEducationAccess,
+          hasCrmAccess: roles?.hasCrmAccess,
+          hasHrmAccess: roles?.hasHrmAccess,
+          profileRole: roles?.profileRole,
+          crmRole: roles?.crmRole,
+          hrmRole: roles?.hrmRole,
+        },
       },
       timestamp: new Date().toISOString(),
     });

@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
 import { Check, ShoppingCart, Tag } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -37,6 +38,7 @@ export default function PackagesClient({
   purchasedPackages,
 }: PackagesClientProps) {
   const router = useRouter();
+  const { handleImageError, hasError } = useImageError();
 
   const handleCheckout = (serviceId: string) => {
     router.push(`/checkout?id=${serviceId}`);
@@ -140,12 +142,22 @@ export default function PackagesClient({
                   >
                     <CardHeader className="p-0">
                       <div className="relative w-full h-48 rounded-t-lg overflow-hidden">
-                        <Image
-                          src={service.featured_image_url}
-                          alt={service.title}
-                          fill
-                          className="object-cover"
-                        />
+                        {service.featured_image_url && !hasError(service.id) ? (
+                          <Image
+                            src={service.featured_image_url}
+                            alt={service.title}
+                            fill
+                            className="object-cover"
+                            onError={() => handleImageError(service.id)}
+                          />
+                        ) : (
+                          <Image
+                            src={getPlaceholderImage("service")}
+                            alt="Placeholder"
+                            fill
+                            className="object-cover"
+                          />
+                        )}
                         {purchased && (
                           <div className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
                             <Check className="w-3 h-3" />

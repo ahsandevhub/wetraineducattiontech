@@ -121,7 +121,13 @@ export function ApplicationSwitcher({
   }, [isHrmRoute, isCrmRoute, availableApps]);
 
   // Only show switcher if multiple apps available
-  if (availableApps.length <= 1 || !currentApp) {
+  if (availableApps.length <= 1) {
+    // Don't render anything if no apps available (shouldn't happen due to dashboard layout guard)
+    if (!currentApp) {
+      return null;
+    }
+
+    // Show single app (non-interactive)
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -131,9 +137,9 @@ export function ApplicationSwitcher({
                 <currentApp.icon className="h-4 w-4" />
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium text-sm">{currentApp?.name}</span>
+                <span className="font-medium text-sm">{currentApp.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {currentApp?.description}
+                  {currentApp.description}
                 </span>
               </div>
             </div>

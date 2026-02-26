@@ -23,11 +23,11 @@ export default async function LeadsPage({
 
   const isAdmin = crmRole === "ADMIN";
 
-  // Get CRM user ID
+  // Get CRM user ID (crm_users.id = auth.users.id)
   const { data: crmUser } = await supabase
     .from("crm_users")
     .select("id")
-    .eq("auth_user_id", userId)
+    .eq("id", userId)
     .single();
 
   if (!crmUser) {
@@ -53,22 +53,21 @@ export default async function LeadsPage({
   );
   const offset = (pageNumber - 1) * pageSize;
 
-  // Build initial query
+  // Build initial query (only get id from crm_users FK joins, enrich names from profiles)
   let q = supabase
     .from("crm_leads")
     .select(
       `
     *,
     owner:crm_users!crm_leads_owner_id_fkey (
-      full_name,
-      email
+      id
     ),
     contact_logs:crm_contact_logs (
       notes,
       created_at,
       contact_type,
       user:crm_users!crm_contact_logs_user_id_fkey (
-        full_name
+        id
       )
     )
   `,
@@ -121,24 +120,105 @@ export default async function LeadsPage({
   }
 
   const totalCount = count ?? 0;
-  const leads = leadData as (Lead & {
-    owner?: { full_name: string; email: string };
-    contact_logs?: { notes: string | null; created_at: string }[];
+
+  // Collect user IDs to enrich with profiles
+  type RawLead = typeof leadData extends (infer T)[] | null ? T : never;
+  const ownerIds = new Set<string>();
+  const logUserIds = new Set<string>();
+  for (const lead of (leadData || []) as RawLead[]) {
+    const l = lead as {
+      owner?: { id: string } | null;
+      contact_logs?: { user?: { id: string } | null }[] | null;
+    };
+    if (l.owner?.id) ownerIds.add(l.owner.id);
+    for (const log of l.contact_logs || []) {
+      if (log.user?.id) logUserIds.add(log.user.id);
+    }
+  }
+  const allUserIds = [...new Set([...ownerIds, ...logUserIds])];
+  const profileMap = new Map<
+    string,
+    { full_name: string | null; email: string | null }
+  >();
+  if (allUserIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", allUserIds);
+    if (profs) {
+      for (const p of profs) profileMap.set(p.id, p);
+    }
+  }
+
+  const leads = ((leadData || []) as RawLead[]).map((lead) => {
+    const l = lead as {
+      owner?: { id: string } | null;
+      contact_logs?:
+        | {
+            user?: { id: string } | null;
+            notes: string | null;
+            created_at: string;
+            contact_type: string;
+          }[]
+        | null;
+      [key: string]: unknown;
+    };
+    return {
+      ...l,
+      owner: l.owner
+        ? { id: l.owner.id, ...profileMap.get(l.owner.id) }
+        : undefined,
+      contact_logs: (l.contact_logs || []).map((log) => ({
+        ...log,
+        user: log.user
+          ? { id: log.user.id, ...profileMap.get(log.user.id) }
+          : undefined,
+      })),
+    };
+  }) as (Lead & {
+    owner?: { id: string; full_name: string | null; email: string | null };
+    contact_logs?: {
+      notes: string | null;
+      created_at: string;
+      contact_type: string;
+      user?: { id: string; full_name: string | null; email: string | null };
+    }[];
   })[];
 
-  // Fetch all marketers for admin and marketer reassignment
-  let marketers = null;
-  const { data } = await supabase
+  // Fetch all marketers for admin and marketer reassignment, enriched from profiles
+  const { data: marketerUsers } = await supabase
     .from("crm_users")
-    .select("*")
-    .eq("crm_role", "MARKETER")
-    .order("full_name");
-  marketers = data;
+    .select("id, crm_role, created_at, updated_at")
+    .eq("crm_role", "MARKETER");
+  const marketerIds = (marketerUsers || []).map((u) => u.id);
+  const marketerProfileMap = new Map<
+    string,
+    { full_name: string | null; email: string | null }
+  >();
+  if (marketerIds.length > 0) {
+    const { data: mProfs } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", marketerIds);
+    if (mProfs) {
+      for (const p of mProfs) marketerProfileMap.set(p.id, p);
+    }
+  }
+  const marketers = (marketerUsers || [])
+    .map((u) => ({
+      id: u.id,
+      crm_role: u.crm_role as "ADMIN" | "MARKETER",
+      full_name: marketerProfileMap.get(u.id)?.full_name ?? null,
+      email: marketerProfileMap.get(u.id)?.email ?? null,
+      created_at: u.created_at,
+      updated_at: u.updated_at,
+    }))
+    .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
 
   return (
     <LeadsPageClient
       leads={leads || []}
-      marketers={marketers || []}
+      marketers={marketers}
       isAdmin={isAdmin}
       currentPage={pageNumber}
       pageSize={pageSize}

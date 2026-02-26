@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (hrmUser?.hrm_role !== "SUPER_ADMIN") {
@@ -40,8 +40,8 @@ export async function GET(request: NextRequest) {
         subject_user_id,
         is_active,
         created_at,
-        markerAdmin:hrm_users!hrm_assignments_marker_admin_id_fkey(id, full_name, email, hrm_role),
-        subjectUser:hrm_users!hrm_assignments_subject_user_id_fkey(id, full_name, email, hrm_role)
+        markerAdmin:hrm_users!hrm_assignments_marker_admin_id_fkey(id, hrm_role),
+        subjectUser:hrm_users!hrm_assignments_subject_user_id_fkey(id, hrm_role)
       `,
       )
       .order("created_at", { ascending: false });
@@ -62,6 +62,23 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
+    // Enrich with profile data (names/emails from profiles table)
+    const allUserIds = [
+      ...new Set(
+        (data || []).flatMap((a: any) => [
+          a.marker_admin_id,
+          a.subject_user_id,
+        ]),
+      ),
+    ];
+    const { data: profiles } = allUserIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", allUserIds)
+      : { data: [] };
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
     // Transform data to match expected format
     const transformed = data?.map((assignment: any) => ({
       id: assignment.id,
@@ -69,8 +86,20 @@ export async function GET(request: NextRequest) {
       subject_user_id: assignment.subject_user_id,
       is_active: assignment.is_active,
       created_at: assignment.created_at,
-      marker: assignment.markerAdmin,
-      subject: assignment.subjectUser,
+      marker: {
+        id: assignment.markerAdmin?.id,
+        hrm_role: assignment.markerAdmin?.hrm_role,
+        full_name:
+          profileMap.get(assignment.marker_admin_id)?.full_name || null,
+        email: profileMap.get(assignment.marker_admin_id)?.email || null,
+      },
+      subject: {
+        id: assignment.subjectUser?.id,
+        hrm_role: assignment.subjectUser?.hrm_role,
+        full_name:
+          profileMap.get(assignment.subject_user_id)?.full_name || null,
+        email: profileMap.get(assignment.subject_user_id)?.email || null,
+      },
     }));
 
     return NextResponse.json({ assignments: transformed });
@@ -99,7 +128,7 @@ export async function POST(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id, hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (hrmUser?.hrm_role !== "SUPER_ADMIN") {

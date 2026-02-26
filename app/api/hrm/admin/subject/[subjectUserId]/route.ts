@@ -20,7 +20,7 @@ export async function GET(
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id, hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "ADMIN") {
@@ -52,14 +52,28 @@ export async function GET(
       );
     }
 
-    // Get subject info
-    const { data: subject, error: subjectError } = await supabase
+    // Get subject's HRM role
+    const { data: subjectHrm, error: subjectError } = await supabase
       .from("hrm_users")
-      .select("id, full_name, email, hrm_role")
+      .select("id, hrm_role")
       .eq("id", subjectUserId)
       .single();
 
     if (subjectError) throw subjectError;
+
+    // Get subject's profile (name/email)
+    const { data: subjectProfile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("id", subjectUserId)
+      .maybeSingle();
+
+    const subject = {
+      id: subjectHrm.id,
+      hrm_role: subjectHrm.hrm_role,
+      full_name: subjectProfile?.full_name || null,
+      email: subjectProfile?.email || null,
+    };
 
     // Get active criteria set
     const { data: criteriaSet } = await supabase

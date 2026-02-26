@@ -1,7 +1,6 @@
 "use client";
 
 import { SuperAdminDashboardLoadingSkeleton } from "@/components/hrm/DashboardLoadingSkeletons";
-import { PendingProfilesTable } from "@/components/hrm/PendingProfilesTable";
 import { TierDistributionChart } from "@/components/hrm/TierDistributionChart";
 import {
   Card,
@@ -17,7 +16,6 @@ import {
   Settings,
   UserCheck,
   UserCog,
-  UserPlus,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -27,7 +25,6 @@ import toast from "react-hot-toast";
 type DashboardStats = {
   employeesCount: number;
   adminsCount: number;
-  pendingCount: number;
   activeWeeksCount: number;
 };
 
@@ -43,25 +40,11 @@ type TierDistribution = {
   FINE: number;
 };
 
-type PendingProfile = {
-  id: string;
-  email: string;
-  full_name: string;
-  desired_role: "ADMIN" | "EMPLOYEE";
-  is_active: boolean;
-  linked_auth_id: string | null;
-  linked_at: string | null;
-  created_at: string;
-  created_by: string;
-  updated_at: string;
-};
-
 export default function HrmSuperAdminPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     employeesCount: 0,
     adminsCount: 0,
-    pendingCount: 0,
     activeWeeksCount: 0,
   });
   const [latestMonth, setLatestMonth] = useState<LatestMonth | null>(null);
@@ -71,12 +54,9 @@ export default function HrmSuperAdminPage() {
     IMPROVEMENT: 0,
     FINE: 0,
   });
-  const [pendingProfiles, setPendingProfiles] = useState<PendingProfile[]>([]);
-  const [pendingLoading, setPendingLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardStats();
-    fetchPendingProfiles();
   }, []);
 
   const fetchDashboardStats = async () => {
@@ -98,28 +78,6 @@ export default function HrmSuperAdminPage() {
       toast.error(message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchPendingProfiles = async () => {
-    setPendingLoading(true);
-    try {
-      const res = await fetch("/api/hrm/super/pending-profiles?active=true");
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || "Failed to load pending profiles");
-      }
-
-      setPendingProfiles(result.data || []);
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to load pending profiles";
-      toast.error(message);
-    } finally {
-      setPendingLoading(false);
     }
   };
 
@@ -190,7 +148,7 @@ export default function HrmSuperAdminPage() {
       </div>
 
       {/* Quick Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -221,21 +179,6 @@ export default function HrmSuperAdminPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Profiles
-            </CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Awaiting registration
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Weeks</CardTitle>
             <CalendarCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -247,23 +190,6 @@ export default function HrmSuperAdminPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Pending Profiles Table */}
-      {stats.pendingCount > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Pending Profiles</h2>
-          {pendingLoading ? (
-            <div className="border rounded-lg p-8 text-center text-muted-foreground">
-              Loading pending profiles...
-            </div>
-          ) : (
-            <PendingProfilesTable
-              profiles={pendingProfiles}
-              onRefresh={fetchPendingProfiles}
-            />
-          )}
-        </div>
-      )}
 
       {/* Performance Distribution Chart */}
       {latestMonth && (

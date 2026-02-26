@@ -45,6 +45,7 @@ export default function LoginPage() {
       }
 
       // Check education profile, CRM access, and HRM access
+      // New schema: crm_users.id = auth.users.id, hrm_users.id = auth.users.id
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, role")
@@ -54,25 +55,37 @@ export default function LoginPage() {
       const { data: crmUser } = await supabase
         .from("crm_users")
         .select("id, crm_role")
-        .eq("auth_user_id", userId)
+        .eq("id", userId)
         .maybeSingle();
 
       const { data: hrmUser } = await supabase
         .from("hrm_users")
-        .select("id, hrm_role, is_active")
-        .eq("profile_id", userId)
+        .select("id, hrm_role")
+        .eq("id", userId)
         .maybeSingle();
 
       const hasEducationAccess = profile !== null;
       const hasCrmAccess = crmUser !== null;
-      const hasHrmAccess = hrmUser !== null && hrmUser.is_active;
+      const hasHrmAccess = hrmUser !== null;
 
-      // If user has no access to any application, block login
+      // If user has no access to any application, auto-provision a customer profile
+      // so they can access the education dashboard as a customer.
       if (!hasEducationAccess && !hasCrmAccess && !hasHrmAccess) {
-        setError(
-          "Your account does not have access to any application. Please contact support.",
-        );
-        await supabase.auth.signOut();
+        const { error: insertError } = await supabase.from("profiles").insert({
+          id: userId,
+          email: email.trim().toLowerCase(),
+          role: "customer",
+        });
+
+        if (insertError) {
+          setError(
+            "Failed to set up your account. Please try again or contact support.",
+          );
+          await supabase.auth.signOut();
+          return;
+        }
+
+        router.push("/dashboard/customer");
         return;
       }
 
@@ -92,10 +105,7 @@ export default function LoginPage() {
         router.push("/dashboard/hrm");
       } else {
         // Fallback (shouldn't reach here due to earlier check)
-        setError(
-          "Your account does not have access to any application. Please contact support.",
-        );
-        await supabase.auth.signOut();
+        router.push("/dashboard");
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");

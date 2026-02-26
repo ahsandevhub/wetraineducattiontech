@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "SUPER_ADMIN") {
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
       .select(
         `
         id,
+        subject_user_id,
         monthly_score,
         tier,
         action_type,
@@ -64,8 +65,6 @@ export async function GET(request: NextRequest) {
         computed_at,
         hrm_users!inner(
           id,
-          full_name,
-          email,
           hrm_role
         )
       `,
@@ -74,6 +73,20 @@ export async function GET(request: NextRequest) {
       .order("monthly_score", { ascending: false });
 
     if (error) throw error;
+
+    // Enrich with profile data
+    const subjectUserIds = [
+      ...new Set((results || []).map((r: any) => r.subject_user_id)),
+    ];
+    const { data: subjectProfiles } = subjectUserIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", subjectUserIds)
+      : { data: [] };
+    const profileMap = new Map(
+      (subjectProfiles || []).map((p: any) => [p.id, p]),
+    );
 
     const monthlyResultIds = (results || []).map((result: any) => result.id);
     const { data: fundLogs, error: fundError } = monthlyResultIds.length
@@ -102,10 +115,10 @@ export async function GET(request: NextRequest) {
       fundFineStatus: fundMap.get(result.id)?.fine || "DUE",
       fundBonusStatus: fundMap.get(result.id)?.bonus || "DUE",
       id: result.id,
-      subjectId: result.hrm_users.id,
-      subjectName: result.hrm_users.full_name,
-      subjectEmail: result.hrm_users.email,
-      subjectRole: result.hrm_users.hrm_role,
+      subjectId: result.subject_user_id,
+      subjectName: profileMap.get(result.subject_user_id)?.full_name || null,
+      subjectEmail: profileMap.get(result.subject_user_id)?.email || null,
+      subjectRole: result.hrm_users?.hrm_role || null,
       monthlyScore: result.monthly_score,
       tier: result.tier,
       actionType: result.action_type,

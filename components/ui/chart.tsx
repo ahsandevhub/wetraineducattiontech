@@ -131,7 +131,6 @@ const ChartContainer = React.forwardRef<
 ChartContainer.displayName = "ChartContainer";
 
 type ChartStyleWithCustomProps = React.CSSProperties & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 };
 
@@ -143,19 +142,13 @@ const ChartTooltip = React.forwardRef<
     indicator?: "line" | "dot" | "none";
     contentStyle?: ChartStyleWithCustomProps;
     formatter?: (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       value: any,
       name: string,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       item: any,
     ) => React.ReactNode;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     active?: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payload?: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     label?: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     labelStyle?: any;
     labelClassName?: string;
   }
@@ -215,7 +208,6 @@ const ChartTooltip = React.forwardRef<
         <div className="space-y-1">
           {payload.map(
             (
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               item: any,
               index: number,
             ) => {

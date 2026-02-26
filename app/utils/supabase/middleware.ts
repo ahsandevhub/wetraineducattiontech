@@ -72,19 +72,19 @@ export async function updateSession(request: NextRequest) {
 
     const { data: crmUser } = await supabase
       .from("crm_users")
-      .select("id, crm_role")
-      .eq("auth_user_id", user.id)
+      .select("crm_role")
+      .eq("id", user.id)
       .maybeSingle();
 
     const { data: hrmUser } = await supabase
       .from("hrm_users")
-      .select("id, hrm_role, is_active")
-      .eq("profile_id", user.id)
+      .select("hrm_role")
+      .eq("id", user.id)
       .maybeSingle();
 
     const hasEducationAccess = profile !== null;
     const hasCrmAccess = crmUser !== null;
-    const hasHrmAccess = hrmUser !== null && hrmUser.is_active;
+    const hasHrmAccess = hrmUser !== null;
     const role = profile?.role ?? null;
     const hrmRole = hrmUser?.hrm_role ?? null;
 

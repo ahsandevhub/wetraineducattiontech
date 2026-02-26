@@ -1,5 +1,11 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import { resolve } from "path";
 import { Client } from "pg";
+import { fileURLToPath } from "url";
+
+// Load .env.local explicitly
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+dotenv.config({ path: resolve(__dirname, "../.env.local") });
 
 const databaseUrl = (process.env.DATABASE_URL || "").trim();
 
@@ -18,25 +24,31 @@ const client = new Client({ connectionString: databaseUrl });
 async function resetDatabase() {
   await client.query("BEGIN");
   try {
-    // Drop all tables in public schema
-    await client.query(`
-      DROP SCHEMA IF EXISTS public CASCADE;
-      CREATE SCHEMA public;
-      
-      -- Re-apply default grants expected by Supabase
-      GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
-      GRANT ALL ON SCHEMA public TO postgres, service_role;
-      
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, service_role;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres, service_role;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres, service_role;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon, authenticated;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO anon, authenticated;
+    // Disable FK constraints temporarily
+    await client.query("SET session_replication_role = replica;");
+
+    // Get all tables in public schema and truncate them
+    const result = await client.query(`
+      SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+        AND tablename NOT IN ('supabase_migrations', 'schema_migrations')
     `);
+
+    const tables = result.rows.map((row) => `"${row.tablename}"`).join(", ");
+
+    if (tables) {
+      await client.query(`TRUNCATE TABLE ${tables} CASCADE;`);
+      console.log(`✅ Truncated ${result.rows.length} table(s)`);
+    } else {
+      console.log("ℹ️  No tables to truncate");
+    }
+
+    // Re-enable FK constraints
+    await client.query("SET session_replication_role = default;");
 
     await client.query("COMMIT");
     console.log("✅ Database cleaned successfully!");
-    console.log("⚠️  Note: Run 'npm run db:seed' to repopulate data");
+    console.log("ℹ️  All tables, RLS policies, and relationships preserved");
+    console.log("⚠️  Note: Run 'npm run seed:all' to repopulate data");
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("❌ Database clean failed:", error.message);

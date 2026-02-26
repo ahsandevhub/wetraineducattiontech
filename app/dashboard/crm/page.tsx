@@ -76,12 +76,12 @@ export default async function CrmDashboardPage({
       )}
 
       {/* MARKETER DASHBOARD */}
-      {isMarketer && roles?.crmUserId && (
+      {isMarketer && roles?.userId && (
         <>
           {/* Fetch marketer metrics */}
           <MarketerDashboardContent
             key={`marketer-${range.key}`}
-            crmUserId={roles.crmUserId}
+            crmUserId={roles.userId}
             dateRange={range}
           />
         </>

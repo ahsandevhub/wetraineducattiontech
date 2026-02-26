@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
 import {
   AlertCircle,
   Check,
@@ -73,6 +74,7 @@ export default function CustomerDashboardClient({
   purchasedPackages,
 }: CustomerDashboardClientProps) {
   const router = useRouter();
+  const { handleImageError, hasError } = useImageError();
 
   const handleCheckout = (serviceId: string) => {
     router.push(`/checkout?id=${serviceId}`);
@@ -254,12 +256,23 @@ export default function CustomerDashboardClient({
                           >
                             <CardHeader className="p-0">
                               <div className="relative w-full h-32 rounded-t-lg overflow-hidden">
-                                <Image
-                                  src={service.featured_image_url}
-                                  alt={service.title}
-                                  fill
-                                  className="object-cover"
-                                />
+                                {service.featured_image_url &&
+                                !hasError(service.id) ? (
+                                  <Image
+                                    src={service.featured_image_url}
+                                    alt={service.title}
+                                    fill
+                                    className="object-cover"
+                                    onError={() => handleImageError(service.id)}
+                                  />
+                                ) : (
+                                  <Image
+                                    src={getPlaceholderImage("service")}
+                                    alt="Placeholder"
+                                    fill
+                                    className="object-cover"
+                                  />
+                                )}
                                 {purchased && (
                                   <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
                                     <Check className="w-3 h-3" />

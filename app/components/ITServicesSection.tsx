@@ -2,6 +2,7 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
+import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 import Image from "next/image";
@@ -24,6 +25,7 @@ interface ITService {
 export default function ITServicesSection() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [services, setServices] = useState<ITService[]>([]);
+  const { handleImageError, hasError } = useImageError();
 
   const formatPrice = (price: number | null, currency: string) => {
     if (price === null) return "Custom Quote";
@@ -152,7 +154,7 @@ export default function ITServicesSection() {
                 <div className="flex flex-1 flex-col">
                   {/* Icon / Image (Video aspect) */}
                   <div className="">
-                    {service.imageUrl ? (
+                    {service.imageUrl && !hasError(service.id) ? (
                       <div className="relative w-full overflow-hidden bg-gray-100">
                         <div className="relative aspect-video w-full">
                           {/* Blurred background layer (handles portrait images nicely) */}
@@ -163,6 +165,7 @@ export default function ITServicesSection() {
                             sizes="(max-width: 768px) 100vw, 33vw"
                             className="scale-110 object-cover blur-2xl"
                             priority={false}
+                            onError={() => handleImageError(service.id)}
                           />
                           <div className="absolute inset-0 bg-black/10" />
 
@@ -174,12 +177,27 @@ export default function ITServicesSection() {
                             sizes="(max-width: 768px) 100vw, 33vw"
                             className="object-contain"
                             priority={false}
+                            onError={() => handleImageError(service.id)}
                           />
                         </div>
                       </div>
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
-                        {service.icon}
+                      <div className="relative w-full overflow-hidden bg-gray-100">
+                        <div className="relative aspect-video w-full">
+                          {service.imageUrl && hasError(service.id) ? (
+                            <Image
+                              src={getPlaceholderImage("service")}
+                              alt="Placeholder"
+                              fill
+                              sizes="(max-width: 768px) 100vw, 33vw"
+                              className="object-contain"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 text-white text-4xl">
+                              {service.icon}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

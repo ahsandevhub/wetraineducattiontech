@@ -37,7 +37,7 @@ export interface KpiMetrics {
  * @param crmUserId - The CRM user ID (used if not admin)
  * @param fromISO - Optional ISO start date
  * @param toISO - Optional ISO end date
- * @param scope - Filter scope: "owner" (default) or "created"
+ * @param scope - Filter scope: "owner" only
  * @param filters - Additional filters (search, status, source, owner)
  *
  * @returns KpiMetrics object
@@ -52,25 +52,21 @@ export async function getLeadKpiMetrics(
   filters: Omit<LeadsFilters, "fromDate" | "toDate"> = {},
 ): Promise<KpiMetrics> {
   try {
+    const ownerScope = scope;
+
     // Convert ISO dates to YYYY-MM-DD format for query builder
     const dateParams = getDateRangeParams(fromISO, toISO);
     const fullFilters: LeadsFilters = { ...filters, ...dateParams };
 
     // Helper to build base query with filters (must call select() immediately for filter chain)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const makeBaseQuery = (): any => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let q: any = supabase
         .from("crm_leads")
         .select("id", { count: "exact", head: false });
 
-      // Apply owner filter
-      if (!isAdmin) {
-        if (scope === "created") {
-          q = q.eq("created_by", crmUserId);
-        } else {
-          q = q.eq("owner_id", crmUserId);
-        }
+      // Apply owner filter (filter by owner_id only; crm_leads has no created_by column)
+      if (ownerScope === "owner" && !isAdmin) {
+        q = q.eq("owner_id", crmUserId);
       }
 
       // Apply date filters
@@ -187,7 +183,7 @@ export async function getLeadKpiMetrics(
  * @param crmUserId - The CRM user ID (used if not admin)
  * @param fromISO - Optional ISO start date
  * @param toISO - Optional ISO end date
- * @param scope - Filter scope: "owner" (default) or "created"
+ * @param scope - Filter scope: "owner" only
  * @param filters - Additional filters
  *
  * @returns Array of { status, count, percentage }
@@ -202,20 +198,17 @@ export async function getLeadStatusBreakdown(
   filters: Omit<LeadsFilters, "fromDate" | "toDate"> = {},
 ): Promise<Array<{ status: string; count: number; percentage: number }>> {
   try {
+    const ownerScope = scope;
+
     // Convert ISO dates to YYYY-MM-DD format for query builder
     const dateParams = getDateRangeParams(fromISO, toISO);
     const fullFilters: LeadsFilters = { ...filters, ...dateParams };
 
     // Helper function to apply common filters
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const applyFilters = (q: any): any => {
-      // Apply owner filter
-      if (!isAdmin) {
-        if (scope === "created") {
-          q = q.eq("created_by", crmUserId);
-        } else {
-          q = q.eq("owner_id", crmUserId);
-        }
+      // Apply owner filter (filter by owner_id only; crm_leads has no created_by column)
+      if (ownerScope === "owner" && !isAdmin) {
+        q = q.eq("owner_id", crmUserId);
       }
 
       // Apply date filters
@@ -256,7 +249,6 @@ export async function getLeadStatusBreakdown(
     };
 
     // Get total count
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let countQuery: any = supabase
       .from("crm_leads")
       .select("id", { count: "exact", head: true });
@@ -264,7 +256,6 @@ export async function getLeadStatusBreakdown(
     const { count: total } = await countQuery;
 
     // Fetch all statuses with higher limit (up to 5000)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let dataQuery: any = supabase.from("crm_leads").select("status");
     dataQuery = applyFilters(dataQuery);
     const { data: theads, error } = await dataQuery.limit(5000);
@@ -274,7 +265,6 @@ export async function getLeadStatusBreakdown(
       return [];
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const leadsData: any[] = theads || [];
 
     // Group by status

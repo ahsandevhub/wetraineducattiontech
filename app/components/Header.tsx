@@ -2,6 +2,7 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
+import { useImageError } from "@/hooks/useImageError";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { motion } from "framer-motion";
 import { ChevronDown, Menu, X } from "lucide-react";
@@ -15,6 +16,7 @@ export default function Header() {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const { handleImageError, hasError } = useImageError();
   const supabase = createClient();
 
   useEffect(() => {
@@ -80,14 +82,21 @@ export default function Header() {
             whileTap={{ scale: 0.96 }}
             className="flex items-center gap-2"
           >
-            <Image
-              src="/favicon.png"
-              alt="WeTrainEducation & Tech"
-              height={40}
-              width={140}
-              className="h-10 w-auto"
-              priority
-            />
+            {!hasError("logo") ? (
+              <Image
+                src="/favicon.png"
+                alt="WeTrainEducation & Tech"
+                height={40}
+                width={140}
+                className="h-10 w-auto"
+                priority
+                onError={() => handleImageError("logo")}
+              />
+            ) : (
+              <div className="h-10 w-40 bg-gradient-to-r from-yellow-500 to-orange-500 rounded flex items-center justify-center text-white font-bold text-sm">
+                WeTrain Tech
+              </div>
+            )}
             <span className="hidden sm:inline">WeTrainEducation & Tech</span>
           </motion.div>
         </Link>

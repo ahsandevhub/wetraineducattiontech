@@ -29,9 +29,8 @@ export interface MarketerKpiMetrics {
 /**
  * Metrics scope type
  * - "assigned": Metrics for leads where marketer is the owner (owner_id)
- * - "created": Metrics for leads created/requested by the marketer (created_by)
  */
-export type MetricsScope = "assigned" | "created";
+export type MetricsScope = "assigned";
 
 /**
  * Status breakdown by count
@@ -46,7 +45,7 @@ export interface StatusBreakdown {
  * Fetch KPI metrics for a specific marketer (MARKETER role)
  *
  * @param crmUserId - The ID of the marketer/user
- * @param scope - Metrics scope: "assigned" (owner_id) or "created" (created_by)
+ * @param scope - Metrics scope: "assigned" (owner_id) only
  * @param dateRange - Optional date range filter (from/to as ISO or YYYY-MM-DD)
  * @returns MarketerKpiMetrics
  */
@@ -81,7 +80,7 @@ export async function getMarketerKpiMetrics(
       crmUserId,
       fromISO,
       toISO,
-      scope === "created" ? "created" : "owner",
+      "owner",
     );
 
     return {
@@ -113,7 +112,7 @@ export async function getMarketerKpiMetrics(
 /**
  * Fetch status breakdown for a specific marketer
  * @param crmUserId - The ID of the marketer/user
- * @param scope - Metrics scope: "assigned" (owner_id) or "created" (created_by)
+ * @param scope - Metrics scope: "assigned" (owner_id) only
  * @param dateRange - Optional date range filter (from/to as ISO or YYYY-MM-DD)
  */
 export async function getMarketerStatusBreakdown(
@@ -145,12 +144,12 @@ export async function getMarketerStatusBreakdown(
       crmUserId,
       fromISO,
       toISO,
-      scope === "created" ? "created" : "owner",
+      "owner",
     );
 
     return breakdown;
   } catch (error) {
-    console.error("Error in getMarketerStatusBreakdown:", error);
+    console.error(`Error in getMarketerStatusBreakdown (scope: ${scope}):`, error);
     return [];
   }
 }

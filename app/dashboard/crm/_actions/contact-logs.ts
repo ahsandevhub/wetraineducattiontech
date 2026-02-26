@@ -18,11 +18,12 @@ export async function createContactLog(data: CreateContactLogData) {
 
   const supabase = await createClient();
 
-  // Get crm_user_id from auth_user_id
+  // In new schema, crm_users.id = auth.users.id directly
+  // Verify user exists in crm_users
   const { data: crmUser } = await supabase
     .from("crm_users")
     .select("id")
-    .eq("auth_user_id", userId)
+    .eq("id", userId)
     .single();
 
   if (!crmUser) {
@@ -60,23 +61,37 @@ export async function getContactLogs(leadId: string) {
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const { data: logs, error } = await supabase
     .from("crm_contact_logs")
-    .select(
-      `
-      *,
-      user:crm_users!crm_contact_logs_user_id_fkey (
-        full_name,
-        email
-      )
-    `,
-    )
+    .select("*")
     .eq("lead_id", leadId)
     .order("created_at", { ascending: false });
 
   if (error) {
     return { error: error.message };
   }
+
+  // Enrich with profile data (crm_users.id = auth.users.id = profiles.id)
+  const userIds = [
+    ...new Set((logs || []).map((l) => l.user_id).filter(Boolean)),
+  ];
+  const { data: userProfiles } = userIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds)
+    : { data: [] };
+  const profileMap = new Map((userProfiles || []).map((p) => [p.id, p]));
+
+  const data = (logs || []).map((log) => ({
+    ...log,
+    user: profileMap.get(log.user_id)
+      ? {
+          full_name: profileMap.get(log.user_id)!.full_name,
+          email: profileMap.get(log.user_id)!.email,
+        }
+      : null,
+  }));
 
   return { data };
 }

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "SUPER_ADMIN") {
@@ -62,10 +62,9 @@ export async function GET(request: NextRequest) {
         total_score,
         comment,
         submitted_at,
+        marker_admin_id,
         marker_admin:hrm_users!hrm_kpi_submissions_marker_admin_id_fkey(
-          id,
-          full_name,
-          email
+          id
         ),
         hrm_kpi_submission_items(
           id,
@@ -89,6 +88,22 @@ export async function GET(request: NextRequest) {
       .select("week_id, weekly_avg_score, is_complete, computed_at")
       .eq("subject_user_id", subjectUserId)
       .in("week_id", weekIds);
+
+    // Enrich marker admins with profile data (names/emails)
+    const markerAdminIds = [
+      ...new Set(
+        (submissions || []).map((s: any) => s.marker_admin_id).filter(Boolean),
+      ),
+    ];
+    const { data: markerProfiles } = markerAdminIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", markerAdminIds)
+      : { data: [] };
+    const markerProfileMap = new Map(
+      (markerProfiles || []).map((p: any) => [p.id, p]),
+    );
 
     // Group submissions by week
     const submissionsByWeek = new Map<string, any[]>();
@@ -115,21 +130,24 @@ export async function GET(request: NextRequest) {
           weeklyScore: result?.weekly_avg_score || 0,
           isComplete: result?.is_complete || false,
           computedAt: result?.computed_at,
-          submissions: subs.map((sub) => ({
-            id: sub.id,
-            markerName: sub.marker_admin.full_name,
-            markerEmail: sub.marker_admin.email,
-            totalScore: sub.total_score,
-            comment: sub.comment,
-            submittedAt: sub.submitted_at,
-            criteriaScores: (sub.hrm_kpi_submission_items || []).map(
-              (item: any) => ({
-                criteriaId: item.criteria_id,
-                criteriaName: item.hrm_criteria.name,
-                score: item.score_raw,
-              }),
-            ),
-          })),
+          submissions: subs.map((sub) => {
+            const markerProfile = markerProfileMap.get(sub.marker_admin_id);
+            return {
+              id: sub.id,
+              markerName: markerProfile?.full_name || null,
+              markerEmail: markerProfile?.email || null,
+              totalScore: sub.total_score,
+              comment: sub.comment,
+              submittedAt: sub.submitted_at,
+              criteriaScores: (sub.hrm_kpi_submission_items || []).map(
+                (item: any) => ({
+                  criteriaId: item.criteria_id,
+                  criteriaName: item.hrm_criteria.name,
+                  score: item.score_raw,
+                }),
+              ),
+            };
+          }),
         };
       });
 

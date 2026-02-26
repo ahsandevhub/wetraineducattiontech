@@ -73,7 +73,7 @@ export function ProfileMenu() {
     return <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />;
   }
 
-  const initials = profile.full_name
+  const initials = (profile.full_name || "U")
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -87,7 +87,7 @@ export function ProfileMenu() {
           {profile.avatar_url ? (
             <Image
               src={profile.avatar_url}
-              alt={profile.full_name}
+              alt={profile.full_name || "User Avatar"}
               width={40}
               height={40}
               className="w-10 h-10 rounded-full object-cover"
@@ -104,7 +104,7 @@ export function ProfileMenu() {
           {profile.avatar_url ? (
             <Image
               src={profile.avatar_url}
-              alt={profile.full_name}
+              alt={profile.full_name || "User Avatar"}
               width={40}
               height={40}
               className="w-10 h-10 rounded-full object-cover"
@@ -115,8 +115,10 @@ export function ProfileMenu() {
             </div>
           )}
           <div className="flex flex-col gap-0.5">
-            <p className="text-sm font-medium">{profile.full_name}</p>
-            <p className="text-xs text-muted-foreground">{profile.email}</p>
+            <p className="text-sm font-medium">{profile.full_name || "User"}</p>
+            <p className="text-xs text-muted-foreground">
+              {profile.email || "No email"}
+            </p>
           </div>
         </div>
         <DropdownMenuSeparator />

@@ -20,7 +20,7 @@ export async function PATCH(
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (hrmUser?.hrm_role !== "SUPER_ADMIN") {
@@ -29,15 +29,14 @@ export async function PATCH(
 
   const { userId } = await params;
   const body = await request.json();
-  const { hrmRole, isActive } = body;
+  const { hrmRole } = body;
+  // Note: isActive is no longer supported - hrm_users no longer has is_active column
+  // To deactivate a user, remove them from hrm_users entirely
 
   try {
     const updateData: any = {};
     if (hrmRole && ["SUPER_ADMIN", "ADMIN", "EMPLOYEE"].includes(hrmRole)) {
       updateData.hrm_role = hrmRole;
-    }
-    if (typeof isActive === "boolean") {
-      updateData.is_active = isActive;
     }
 
     if (Object.keys(updateData).length === 0) {

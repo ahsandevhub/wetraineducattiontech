@@ -15,7 +15,7 @@ export async function GET() {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser) {
@@ -71,3 +71,4 @@ export async function GET() {
     );
   }
 }
+

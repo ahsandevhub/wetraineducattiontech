@@ -5,7 +5,6 @@
 
 "use client";
 
-import { PendingProfile } from "@/app/dashboard/hrm/super/people/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +33,17 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
+
+type PendingProfile = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  desired_role: "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE";
+  is_active: boolean;
+  linked_auth_id: string | null;
+  linked_at: string | null;
+  created_at: string;
+};
 
 type PendingProfilesTableProps = {
   profiles: PendingProfile[];

@@ -2,6 +2,7 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
+import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
 import { motion } from "framer-motion";
 import { Clock, Star, TrendingUp, Users } from "lucide-react";
 import Image from "next/image";
@@ -18,6 +19,7 @@ export default function Testimonials() {
       rating: number;
     }[]
   >([]);
+  const { handleImageError, hasError } = useImageError();
 
   useEffect(() => {
     const loadStories = async () => {
@@ -120,21 +122,34 @@ export default function Testimonials() {
                 </p>
 
                 <div className="flex items-center">
-                  {t.avatar ? (
+                  {t.avatar && !hasError(`avatar-${t.name}`) ? (
                     <Image
                       src={t.avatar}
                       alt={`${t.name} — ${t.role}`}
                       height={48}
                       width={48}
                       className="mr-4 h-12 w-12 rounded-full border-2 border-[var(--primary-yellow)] object-cover"
+                      onError={() => handleImageError(`avatar-${t.name}`)}
                     />
                   ) : (
-                    <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--primary-yellow)] bg-[var(--tertiary-yellow)] text-sm font-semibold text-[var(--primary-yellow)]">
-                      {t.name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .slice(0, 2)
-                        .join("")}
+                    <div className="mr-4 flex h-12 w-12 items-center justify-center rounded-full border-2 border-[var(--primary-yellow)]">
+                      {t.avatar && hasError(`avatar-${t.name}`) ? (
+                        <Image
+                          src={getPlaceholderImage("person")}
+                          alt="Placeholder"
+                          height={48}
+                          width={48}
+                          className="h-12 w-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--tertiary-yellow)] text-sm font-semibold text-[var(--primary-yellow)]">
+                          {t.name
+                            .split(" ")
+                            .map((part) => part[0])
+                            .slice(0, 2)
+                            .join("")}
+                        </div>
+                      )}
                     </div>
                   )}
                   <div>

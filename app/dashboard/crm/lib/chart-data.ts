@@ -42,7 +42,6 @@ export async function getAdminChartData(
     }
 
     // Transform to chart format
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data || []).map((row: any) => ({
       day: row.day,
       total: Number(row.total),
@@ -82,7 +81,6 @@ export async function getMarketerAssignedChartData(
       return [];
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data || []).map((row: any) => ({
       day: row.day,
       total: Number(row.total),
@@ -122,7 +120,6 @@ export async function getMarketerCreatedChartData(
       return [];
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data || []).map((row: any) => ({
       day: row.day,
       total: Number(row.total),

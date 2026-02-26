@@ -21,7 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -38,35 +37,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Edit,
-  Loader2,
-  Trash2,
-  UserCheck,
-  UserPlus,
-  UserX,
-} from "lucide-react";
+import { Edit, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import {
-  createUser,
-  deleteUser,
-  resetUserPassword,
-  toggleUserStatus,
-  updateUser,
-} from "../../_actions/users";
+import { unlinkUserFromCRM, updateCRMUserRole } from "../../_actions/users";
 import AdminPageHeader from "../../_components/AdminPageHeader";
 import type { CrmUser } from "../../_types";
+import AddCRMUserDialog from "../_components/AddCRMUserDialog";
 
 type UserRole = "ADMIN" | "MARKETER";
-
-interface CreateUserData {
-  email: string;
-  password: string;
-  fullName: string;
-  crmRole: UserRole;
-}
 
 interface UsersPageClientProps {
   users: CrmUser[];
@@ -79,11 +59,8 @@ export function UsersPageClient({
 }: UsersPageClientProps) {
   const router = useRouter();
   const [users, setUsers] = useState(initialUsers);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [selectedUser, setSelectedUser] = useState<CrmUser | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -92,68 +69,24 @@ export function UsersPageClient({
     setUsers(initialUsers);
   }, [initialUsers]);
 
-  // Create user form
-  const [createForm, setCreateForm] = useState<CreateUserData>({
-    email: "",
-    password: "",
-    fullName: "",
-    crmRole: "MARKETER",
-  });
-
-  // Edit user form
+  // Edit user form (role only)
   const [editForm, setEditForm] = useState({
-    fullName: "",
     crmRole: "MARKETER" as UserRole,
   });
-
-  const handleCreateUser = async () => {
-    if (!createForm.email || !createForm.password || !createForm.fullName) {
-      toast.error("Please fill all fields");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await createUser(createForm);
-      setLoading(false);
-
-      if (result.error) {
-        console.error("Create user error:", result.error);
-        toast.error(result.error);
-      } else {
-        toast.success("User created successfully");
-        setIsCreateDialogOpen(false);
-        setCreateForm({
-          email: "",
-          password: "",
-          fullName: "",
-          crmRole: "MARKETER",
-        });
-        router.refresh();
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred");
-    }
-  };
 
   const handleEditUser = async () => {
     if (!selectedUser) return;
 
     setLoading(true);
     try {
-      const result = await updateUser(selectedUser.id, {
-        fullName: editForm.fullName,
-        role: editForm.crmRole,
-      });
+      const result = await updateCRMUserRole(selectedUser.id, editForm.crmRole);
       setLoading(false);
 
       if (result.error) {
         console.error("Update user error:", result.error);
         toast.error(result.error);
       } else {
-        toast.success("User updated successfully");
+        toast.success("User role updated successfully");
         setIsEditDialogOpen(false);
         router.refresh();
       }
@@ -165,9 +98,9 @@ export function UsersPageClient({
   };
 
   const handleDeleteUser = (userId: string) => {
-    // Prevent deleting own account
+    // Prevent removing own account
     if (userId === currentUserId) {
-      toast.error("You cannot delete your own account");
+      toast.error("You cannot remove yourself from CRM");
       return;
     }
 
@@ -180,65 +113,16 @@ export function UsersPageClient({
 
     setLoading(true);
     try {
-      const result = await deleteUser(selectedUser.id);
+      const result = await unlinkUserFromCRM(selectedUser.id);
       setLoading(false);
 
       if (result.error) {
-        console.error("Delete user error:", result.error);
+        console.error("Remove user error:", result.error);
         toast.error(result.error);
       } else {
-        toast.success("User deleted successfully");
+        toast.success("User removed from CRM successfully");
         setIsDeleteDialogOpen(false);
         setSelectedUser(null);
-        router.refresh();
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred");
-    }
-  };
-
-  const handleToggleStatus = async (userId: string) => {
-    setLoading(true);
-    try {
-      const result = await toggleUserStatus(userId);
-      setLoading(false);
-
-      if (result.error) {
-        console.error("Toggle status error:", result.error);
-        toast.error(result.error);
-      } else {
-        toast.success("User status updated");
-        router.refresh();
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error("Unexpected error:", error);
-      toast.error("An unexpected error occurred");
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!selectedUser || !resetPasswordValue) {
-      toast.error("Enter a password");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await resetUserPassword(
-        selectedUser.id,
-        resetPasswordValue,
-      );
-      setLoading(false);
-
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Password reset successfully");
-        setIsResetDialogOpen(false);
-        setResetPasswordValue("");
         router.refresh();
       }
     } catch (error) {
@@ -251,7 +135,6 @@ export function UsersPageClient({
   const openEditDialog = (user: CrmUser) => {
     setSelectedUser(user);
     setEditForm({
-      fullName: user.full_name || "",
       crmRole: user.crm_role,
     });
     setIsEditDialogOpen(true);
@@ -262,12 +145,7 @@ export function UsersPageClient({
       <AdminPageHeader
         title="User Management"
         description="Manage users and their roles"
-        action={
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Create User
-          </Button>
-        }
+        action={<AddCRMUserDialog onUserAdded={() => router.refresh()} />}
       />
 
       <Card>
@@ -282,7 +160,6 @@ export function UsersPageClient({
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -304,15 +181,6 @@ export function UsersPageClient({
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {user.is_active ? (
-                        <Badge variant="default" className="bg-green-600">
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive">Inactive</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
                       {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right space-x-2">
@@ -327,41 +195,13 @@ export function UsersPageClient({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleToggleStatus(user.id)}
-                        disabled={loading}
-                      >
-                        {user.is_active ? (
-                          <UserX className="h-4 w-4" />
-                        ) : (
-                          <UserCheck className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
                         onClick={() => handleDeleteUser(user.id)}
-                        disabled={
-                          loading || user.auth_user_id === currentUserId
-                        }
+                        disabled={loading || user.id === currentUserId}
                         className={
-                          user.auth_user_id === currentUserId
-                            ? "opacity-50"
-                            : ""
+                          user.id === currentUserId ? "opacity-50" : ""
                         }
                       >
                         <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setResetPasswordValue("");
-                          setIsResetDialogOpen(true);
-                        }}
-                        disabled={loading}
-                      >
-                        Reset
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -372,104 +212,26 @@ export function UsersPageClient({
         </CardContent>
       </Card>
 
-      {/* Create User Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
-            <DialogDescription>Add a new user to the system</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={createForm.fullName}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, fullName: e.target.value })
-                }
-                placeholder="John Doe"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={createForm.email}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, email: e.target.value })
-                }
-                placeholder="john@wetrain.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={createForm.password}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, password: e.target.value })
-                }
-                placeholder="••••••••"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={createForm.crmRole}
-                onValueChange={(value: UserRole) =>
-                  setCreateForm({ ...createForm, crmRole: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="MARKETER">Marketer</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateDialogOpen(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreateUser} disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create User
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>Update user information</DialogDescription>
+            <DialogTitle>Edit User Role</DialogTitle>
+            <DialogDescription>Update user CRM role</DialogDescription>
           </DialogHeader>
           {selectedUser && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="editFullName">Full Name</Label>
-                <Input
-                  id="editFullName"
-                  value={editForm.fullName}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, fullName: e.target.value })
-                  }
-                />
+                <Label>User</Label>
+                <div className="p-2 border rounded bg-muted">
+                  <div className="font-medium">{selectedUser.full_name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {selectedUser.email}
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="editRole">Role</Label>
+                <Label htmlFor="editRole">CRM Role</Label>
                 <Select
                   value={editForm.crmRole}
                   onValueChange={(value: UserRole) =>
@@ -510,12 +272,12 @@ export function UsersPageClient({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle>Remove User from CRM</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold">{selectedUser?.email}</span>? This
-              action cannot be undone. All associated data will be permanently
-              removed.
+              Are you sure you want to remove{" "}
+              <span className="font-semibold">{selectedUser?.full_name}</span> (
+              {selectedUser?.email}) from CRM? This user will no longer have
+              access to the CRM system.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -526,49 +288,11 @@ export function UsersPageClient({
               className="bg-red-600 hover:bg-red-700"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete User
+              Remove from CRM
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Reset Password Dialog */}
-      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
-            <DialogDescription>
-              Set a new password for {selectedUser?.full_name}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>New Password</Label>
-                <Input
-                  type="password"
-                  value={resetPasswordValue}
-                  onChange={(e) => setResetPasswordValue(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsResetDialogOpen(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleResetPassword} disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Reset Password
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

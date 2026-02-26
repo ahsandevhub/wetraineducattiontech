@@ -21,9 +21,8 @@ export interface LeadsFilters {
 /**
  * Scope for filtering leads
  * - "owner": Filter by owner_id (marketer's assigned leads)
- * - "created": Filter by created_by (marketer's created/requested leads)
  */
-export type LeadsFilterScope = "owner" | "created";
+export type LeadsFilterScope = "owner";
 
 /**
  * Build a leads query with consistent filtering logic
@@ -35,7 +34,6 @@ export type LeadsFilterScope = "owner" | "created";
  * @param filters - Query filters
  * @param includeRelations - Include owner/contact_logs relations (for leads page data fetch)
  * @param forCountOnly - Optimize for count query (no relations needed)
- * @param scope - Filter scope: "owner" (owner_id) or "created" (created_by)
  *
  * @returns The configured query, ready to add pagination or execute count
  */
@@ -46,7 +44,6 @@ export function buildLeadsQuery(
   filters: LeadsFilters = {},
   includeRelations = false,
   forCountOnly = false,
-  scope: LeadsFilterScope = "owner",
 ) {
   // Build select statement
   let selectStr = "*";
@@ -54,15 +51,14 @@ export function buildLeadsQuery(
     selectStr = `
       *,
       owner:crm_users!crm_leads_owner_id_fkey (
-        full_name,
-        email
+        id
       ),
       contact_logs:crm_contact_logs (
         notes,
         created_at,
         contact_type,
         user:crm_users!crm_contact_logs_user_id_fkey (
-          full_name
+          id
         )
       )
     `;
@@ -71,15 +67,9 @@ export function buildLeadsQuery(
   // Start base query
   let q = supabase.from("crm_leads").select(selectStr);
 
-  // Owner filter - scope-dependent (matches leads page logic)
+  // Owner filter - only filter by owner_id if not admin
   if (!isAdmin) {
-    // Marketer: filter based on scope
-    if (scope === "created") {
-      q = q.eq("created_by", crmUserId);
-    } else {
-      // Default: "owner" - marketer's assigned leads
-      q = q.eq("owner_id", crmUserId);
-    }
+    q = q.eq("owner_id", crmUserId);
   }
 
   // Search filter (matches leads page)

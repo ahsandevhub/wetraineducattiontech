@@ -9,10 +9,7 @@
  * and creates hrm_users if found.
  */
 
-import {
-  ensureHrmUserLinked,
-  getCurrentUserWithRoles,
-} from "@/app/utils/auth/roles";
+import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -27,10 +24,7 @@ export default async function HrmDashboardPage() {
     redirect("/login");
   }
 
-  // Auto-link pending HRM profile if exists (first-time login)
-  await ensureHrmUserLinked(user.id, user.email || "");
-
-  // Get user roles (will now include newly-linked HRM role if applicable)
+  // Get user roles
   const roles = await getCurrentUserWithRoles();
 
   if (!roles?.hrmRole) {

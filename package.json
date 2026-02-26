@@ -7,9 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "seed:public": "node scripts/seed-public.mjs",
+    "seed:hrm": "node scripts/seed-hrm.mjs",
+    "seed:crm": "node scripts/seed-crm.mjs",
+    "seed:all": "npm run seed:public && npm run seed:hrm && npm run seed:crm",
     "db:clean": "node scripts/db-clean.mjs",
-    "db:seed": "node scripts/db-seed.mjs",
-    "hrm:seed": "node scripts/hrm-seed-criteria.mjs"
+    "migrate:test": "node scripts/db-migrate.mjs test",
+    "migrate:live": "node scripts/db-migrate.mjs live"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

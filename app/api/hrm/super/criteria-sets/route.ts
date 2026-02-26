@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (hrmUser?.hrm_role !== "SUPER_ADMIN") {
@@ -31,24 +31,30 @@ export async function GET(request: NextRequest) {
 
   try {
     // Get all users (admins + employees)
-    let usersQuery = supabase
+    let hrmUsersQuery = supabase
       .from("hrm_users")
-      .select("id, full_name, email, hrm_role")
-      .in("hrm_role", ["ADMIN", "EMPLOYEE"])
-      .order("full_name");
-
-    if (search) {
-      usersQuery = usersQuery.or(
-        `full_name.ilike.%${search}%,email.ilike.%${search}%`,
-      );
-    }
+      .select("id, hrm_role")
+      .in("hrm_role", ["ADMIN", "EMPLOYEE"]);
 
     if (role && ["ADMIN", "EMPLOYEE"].includes(role)) {
-      usersQuery = usersQuery.eq("hrm_role", role);
+      hrmUsersQuery = hrmUsersQuery.eq("hrm_role", role);
     }
 
-    const { data: users, error: usersError } = await usersQuery;
+    const { data: hrmUsers, error: usersError } = await hrmUsersQuery;
     if (usersError) throw usersError;
+
+    if (!hrmUsers || hrmUsers.length === 0) {
+      return NextResponse.json({ subjects: [] });
+    }
+
+    // Enrich with profile data
+    const userIds = hrmUsers.map((u) => u.id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
     // Get active criteria sets for all users
     const { data: activeSets, error: setsError } = await supabase
@@ -64,12 +70,28 @@ export async function GET(request: NextRequest) {
     );
 
     // Combine data
-    const result = users?.map((user) => ({
-      userId: user.id,
-      fullName: user.full_name,
-      email: user.email,
-      hasActiveCriteriaSet: activeSetsMap.has(user.id),
-    }));
+    let result = hrmUsers.map((u) => {
+      const profile = profileMap.get(u.id);
+      return {
+        userId: u.id,
+        fullName: profile?.full_name || null,
+        email: profile?.email || null,
+        hasActiveCriteriaSet: activeSetsMap.has(u.id),
+      };
+    });
+
+    // Apply search filter on enriched data
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      result = result.filter(
+        (u) =>
+          u.fullName?.toLowerCase().includes(lowerSearch) ||
+          u.email?.toLowerCase().includes(lowerSearch),
+      );
+    }
+
+    // Sort by fullName
+    result.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
 
     return NextResponse.json({ subjects: result });
   } catch (error: any) {

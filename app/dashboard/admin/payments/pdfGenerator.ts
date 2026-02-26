@@ -123,7 +123,6 @@ export const generateInvoice = (payment: PaymentData) => {
     });
 
     // Total
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const finalY = (doc as any).lastAutoTable.finalY || 145;
     doc.setFont("helvetica", "bold");
     doc.text(

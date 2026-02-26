@@ -22,11 +22,11 @@ export default async function LeadDetailPage({
 
   const isAdmin = crmRole === "ADMIN";
 
-  // Get CRM user ID
+  // Get CRM user ID (crm_users.id = auth.users.id)
   const { data: crmUser } = await supabase
     .from("crm_users")
     .select("id")
-    .eq("auth_user_id", userId)
+    .eq("id", userId)
     .single();
 
   if (!crmUser) {
@@ -49,20 +49,58 @@ export default async function LeadDetailPage({
     redirect("/dashboard/crm/leads");
   }
 
-  // Fetch contact logs
-  const { data: logs } = await supabase
+  // Fetch contact logs (only get id from crm_users, enrich from profiles)
+  const { data: rawLogs } = await supabase
     .from("crm_contact_logs")
     .select(
       `
       *,
       user:crm_users!crm_contact_logs_user_id_fkey (
-        full_name,
-        email
+        id
       )
     `,
     )
     .eq("lead_id", id)
     .order("created_at", { ascending: false });
 
-  return <LeadDetailClient lead={lead} logs={logs || []} isAdmin={isAdmin} />;
+  // Collect user IDs to enrich from profiles (also include owner)
+  const enrichIds = new Set<string>();
+  if (lead.owner_id) enrichIds.add(lead.owner_id);
+  for (const log of rawLogs || []) {
+    const u = log.user as { id: string } | null;
+    if (u?.id) enrichIds.add(u.id);
+  }
+  const profileMap = new Map<
+    string,
+    { full_name: string | null; email: string | null }
+  >();
+  if (enrichIds.size > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", [...enrichIds]);
+    if (profs) {
+      for (const p of profs) profileMap.set(p.id, p);
+    }
+  }
+
+  const ownerProfile = lead.owner_id
+    ? profileMap.get(lead.owner_id)
+    : undefined;
+  const leadWithOwner = {
+    ...lead,
+    owner: ownerProfile ? { id: lead.owner_id, ...ownerProfile } : undefined,
+  };
+
+  const logs = (rawLogs || []).map((log) => {
+    const u = log.user as { id: string } | null;
+    return {
+      ...log,
+      user: u ? { id: u.id, ...profileMap.get(u.id) } : undefined,
+    };
+  });
+
+  return (
+    <LeadDetailClient lead={leadWithOwner} logs={logs} isAdmin={isAdmin} />
+  );
 }

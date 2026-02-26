@@ -18,7 +18,7 @@ export async function GET() {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "ADMIN") {

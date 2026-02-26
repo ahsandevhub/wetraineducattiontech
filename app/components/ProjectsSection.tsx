@@ -2,6 +2,7 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
+import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
 import { motion } from "framer-motion";
 import { ExternalLink, Github } from "lucide-react";
 import Image from "next/image";
@@ -21,6 +22,7 @@ interface Project {
 
 export default function ProjectsSection() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const { handleImageError, hasError } = useImageError();
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -101,21 +103,31 @@ export default function ProjectsSection() {
               >
                 {/* Project Image */}
                 <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-yellow-100 to-orange-100">
-                  {project.imageUrl ? (
+                  {project.imageUrl && !hasError(project.id) ? (
                     <Image
                       src={project.imageUrl}
                       alt={project.title}
                       fill
                       className="object-cover"
+                      onError={() => handleImageError(project.id)}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center">
-                      <div className="text-center">
-                        <div className="mb-2 text-4xl">🚀</div>
-                        <p className="text-sm font-medium text-gray-600">
-                          {project.category}
-                        </p>
-                      </div>
+                      {project.imageUrl && hasError(project.id) ? (
+                        <Image
+                          src={getPlaceholderImage("project")}
+                          alt="Placeholder"
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="text-center">
+                          <div className="mb-2 text-4xl">🚀</div>
+                          <p className="text-sm font-medium text-gray-600">
+                            {project.category}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                   {/* Overlay on hover */}

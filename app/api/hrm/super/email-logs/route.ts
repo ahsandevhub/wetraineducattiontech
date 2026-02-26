@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "SUPER_ADMIN") {
@@ -61,9 +61,7 @@ export async function GET(request: NextRequest) {
         recipient_email,
         delivery_status,
         sent_by_admin:hrm_users!sent_by_admin_id(
-          id,
-          full_name,
-          email
+          id
         )
       `,
       )

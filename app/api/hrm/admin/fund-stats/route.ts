@@ -15,7 +15,7 @@ export async function GET() {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id, hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || !["ADMIN", "SUPER_ADMIN"].includes(hrmUser.hrm_role)) {
@@ -71,3 +71,4 @@ export async function GET() {
     );
   }
 }
+

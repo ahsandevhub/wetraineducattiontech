@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
 import { Upload } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -75,6 +76,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { handleImageError, hasError } = useImageError();
   const supabase = createClient();
   const router = useRouter();
 
@@ -429,6 +431,7 @@ export default function ProfilePage() {
               <Input
                 id="full_name"
                 type="text"
+                placeholder="Enter your full name"
                 value={profile.full_name || ""}
                 onChange={(e) =>
                   setProfile({ ...profile, full_name: e.target.value })
@@ -523,13 +526,26 @@ export default function ProfilePage() {
                       <SelectValue placeholder="Select country">
                         {profile.country && (
                           <div className="flex items-center gap-2">
-                            <Image
-                              src={`https://flagcdn.com/w20/${profile.country.toLowerCase()}.png`}
-                              alt={profile.country}
-                              width={20}
-                              height={15}
-                              className="rounded-sm"
-                            />
+                            {!hasError(`flag-${profile.country}`) ? (
+                              <Image
+                                src={`https://flagcdn.com/w20/${profile.country.toLowerCase()}.png`}
+                                alt={profile.country}
+                                width={20}
+                                height={15}
+                                className="rounded-sm"
+                                onError={() =>
+                                  handleImageError(`flag-${profile.country}`)
+                                }
+                              />
+                            ) : (
+                              <Image
+                                src={getPlaceholderImage("flag")}
+                                alt="Placeholder"
+                                width={20}
+                                height={15}
+                                className="rounded-sm"
+                              />
+                            )}
                             <span>
                               {COUNTRIES.find((c) => c.code === profile.country)
                                 ?.name || profile.country}
@@ -542,14 +558,27 @@ export default function ProfilePage() {
                       {COUNTRIES.map((country) => (
                         <SelectItem key={country.code} value={country.code}>
                           <div className="flex items-center gap-2">
-                            <Image
-                              src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
-                              alt={country.name}
-                              width={20}
-                              height={15}
-                              className="rounded-sm"
-                              unoptimized
-                            />
+                            {!hasError(`flag-${country.code}`) ? (
+                              <Image
+                                src={`https://flagcdn.com/w20/${country.code.toLowerCase()}.png`}
+                                alt={country.name}
+                                width={20}
+                                height={15}
+                                className="rounded-sm"
+                                unoptimized
+                                onError={() =>
+                                  handleImageError(`flag-${country.code}`)
+                                }
+                              />
+                            ) : (
+                              <Image
+                                src={getPlaceholderImage("flag")}
+                                alt="Placeholder"
+                                width={20}
+                                height={15}
+                                className="rounded-sm"
+                              />
+                            )}
                             <span>{country.name}</span>
                           </div>
                         </SelectItem>

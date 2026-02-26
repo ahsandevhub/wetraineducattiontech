@@ -15,8 +15,6 @@
  * Reference: https://supabase.com/docs/guides/api#api-keys
  */
 
-const isDev = process.env.NODE_ENV === "development";
-
 /**
  * Get Supabase project URL
  * Required for all Supabase operations
@@ -29,10 +27,6 @@ export function getSupabaseUrl(): string {
       "Missing NEXT_PUBLIC_SUPABASE_URL environment variable. " +
         "Get this from: Supabase Dashboard → Settings → API → Project URL",
     );
-  }
-
-  if (isDev) {
-    console.log(`[Supabase] Using URL: ${url.split(".")[0]}...`);
   }
 
   return url;
@@ -62,16 +56,6 @@ export function getSupabasePublicKey(): string {
         "  - NEXT_PUBLIC_SUPABASE_ANON_KEY (legacy)\n" +
         "Get from: Supabase Dashboard → Settings → API",
     );
-  }
-
-  if (isDev) {
-    const keyType = publishableKey
-      ? "publishable"
-      : anonKey
-        ? "anon (legacy)"
-        : "legacy fallback";
-    const preview = key.substring(0, 20) + "...";
-    console.log(`[Supabase] Using ${keyType} key: ${preview}`);
   }
 
   return key;
@@ -105,12 +89,6 @@ export function getSupabaseSecretKey(): string {
         "Get from: Supabase Dashboard → Settings → API → service_role key\n" +
         "⚠️ Keep this secret! Never commit to git or expose to client.",
     );
-  }
-
-  if (isDev) {
-    const keyType = secretKey ? "secret" : "service_role (legacy)";
-    const preview = key.substring(0, 20) + "...";
-    console.log(`[Supabase] Using ${keyType} key: ${preview}`);
   }
 
   return key;

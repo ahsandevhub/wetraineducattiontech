@@ -47,11 +47,11 @@ export async function createLeadRequest(data: CreateLeadRequestData) {
     return { error: "Invalid phone number format" };
   }
 
-  // Get crm_user_id from auth_user_id
+  // In new schema, crm_users.id = auth.users.id directly
   const { data: crmUser } = await supabase
     .from("crm_users")
     .select("id")
-    .eq("auth_user_id", userId)
+    .eq("id", userId)
     .single();
 
   if (!crmUser) {
@@ -113,8 +113,7 @@ export async function listLeadRequests(options?: {
       reviewed_by,
       reviewed_at,
       created_at,
-      updated_at,
-      requester:crm_users!requester_id(id, full_name, email)
+      updated_at
     `,
     { count: "exact" },
   );
@@ -135,29 +134,50 @@ export async function listLeadRequests(options?: {
       return { error: "Failed to fetch lead requests", data: [] };
     }
 
-    const filtered = allData.data?.filter((req) => {
-      const payload = req.lead_payload;
-      const requester = req.requester as {
-        id?: string;
-        full_name?: string | null;
-        email?: string;
-      };
-      const name = (payload.name || "").toLowerCase();
-      const phone = (payload.phone || "").toLowerCase();
-      const email = (payload.email || "").toLowerCase();
-      const company = (payload.company || "").toLowerCase();
-      const requesterName = (requester?.full_name || "").toLowerCase();
+    const rawData = allData.data || [];
+    // Enrich with profile info for name search
+    const requesterIds = [
+      ...new Set(rawData.map((r) => r.requester_id).filter(Boolean)),
+    ];
+    const profileMap = new Map<
+      string,
+      { full_name: string | null; email: string | null }
+    >();
+    if (requesterIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", requesterIds);
+      (profs || []).forEach((p) => profileMap.set(p.id, p));
+    }
 
-      return (
-        name.includes(searchTerm) ||
-        phone.includes(searchTerm) ||
-        email.includes(searchTerm) ||
-        company.includes(searchTerm) ||
-        requesterName.includes(searchTerm)
-      );
-    });
+    const filtered = rawData
+      .filter((req) => {
+        const payload = req.lead_payload;
+        const profile = profileMap.get(req.requester_id);
+        const name = (payload.name || "").toLowerCase();
+        const phone = (payload.phone || "").toLowerCase();
+        const email = (payload.email || "").toLowerCase();
+        const company = (payload.company || "").toLowerCase();
+        const requesterName = (profile?.full_name || "").toLowerCase();
 
-    return { data: filtered || [] };
+        return (
+          name.includes(searchTerm) ||
+          phone.includes(searchTerm) ||
+          email.includes(searchTerm) ||
+          company.includes(searchTerm) ||
+          requesterName.includes(searchTerm)
+        );
+      })
+      .map((req) => ({
+        ...req,
+        requester: {
+          id: req.requester_id,
+          ...profileMap.get(req.requester_id),
+        },
+      }));
+
+    return { data: filtered as unknown as LeadRequestWithRequester[] };
   }
 
   // Order by newest first
@@ -174,15 +194,36 @@ export async function listLeadRequests(options?: {
     );
   }
 
-  const { data, error, count } = await query;
+  const { data: rawRows, error, count } = await query;
 
   if (error) {
     console.error("Error fetching lead requests:", error);
     return { error: "Failed to fetch lead requests", data: [] };
   }
 
+  // Enrich with profile names
+  const requesterIds = [
+    ...new Set((rawRows || []).map((r) => r.requester_id).filter(Boolean)),
+  ];
+  const profileMap = new Map<
+    string,
+    { full_name: string | null; email: string | null }
+  >();
+  if (requesterIds.length > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", requesterIds);
+    (profs || []).forEach((p) => profileMap.set(p.id, p));
+  }
+
+  const enriched = (rawRows || []).map((r) => ({
+    ...r,
+    requester: { id: r.requester_id, ...profileMap.get(r.requester_id) },
+  }));
+
   return {
-    data: (data as unknown as LeadRequestWithRequester[]) || [],
+    data: enriched as unknown as LeadRequestWithRequester[],
     count: count || 0,
   };
 }
@@ -205,11 +246,11 @@ export async function reviewLeadRequest(options: {
   const { userId } = userWithRoles;
   const supabase = await createClient();
 
-  // Get admin's crm_user_id
+  // Get admin's crm_user_id (in new schema, crm_users.id = auth.users.id)
   const { data: adminUser } = await supabase
     .from("crm_users")
     .select("id")
-    .eq("auth_user_id", userId)
+    .eq("id", userId)
     .single();
 
   if (!adminUser) {
@@ -244,7 +285,6 @@ export async function reviewLeadRequest(options: {
         status: validatedStatus,
         source: leadPayload.source,
         owner_id: request.requester_id, // Auto-assign to requester
-        created_by: request.requester_id, // Track who created/requested the lead
         notes: leadPayload.notes || null,
       })
       .select()
@@ -319,8 +359,7 @@ export async function getLeadRequest(requestId: string) {
       reviewed_by,
       reviewed_at,
       created_at,
-      updated_at,
-      requester:crm_users!requester_id(id, full_name, email)
+      updated_at
     `,
     )
     .eq("id", requestId)
@@ -331,7 +370,26 @@ export async function getLeadRequest(requestId: string) {
     return { error: "Lead request not found" };
   }
 
-  return { data: data as unknown as LeadRequestWithRequester };
+  // Enrich requester with profile info
+  let requesterProfile: { full_name: string | null; email: string | null } = {
+    full_name: null,
+    email: null,
+  };
+  if (data?.requester_id) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", data.requester_id)
+      .single();
+    if (prof) requesterProfile = prof;
+  }
+
+  const result = {
+    ...data,
+    requester: { id: data.requester_id, ...requesterProfile },
+  };
+
+  return { data: result as unknown as LeadRequestWithRequester };
 }
 
 /**
@@ -353,11 +411,11 @@ export async function getMyLeadRequests(options?: {
   const { userId } = userWithRoles;
   const supabase = await createClient();
 
-  // Get current user's crm_user_id
+  // Get current user's crm_user_id (in new schema, crm_users.id = auth.users.id)
   const { data: crmUser } = await supabase
     .from("crm_users")
     .select("id")
-    .eq("auth_user_id", userId)
+    .eq("id", userId)
     .single();
 
   if (!crmUser) {
@@ -378,8 +436,7 @@ export async function getMyLeadRequests(options?: {
       reviewed_by,
       reviewed_at,
       created_at,
-      updated_at,
-      requester:crm_users!requester_id(id, full_name, email)
+      updated_at
     `,
       { count: "exact" },
     )
@@ -404,15 +461,33 @@ export async function getMyLeadRequests(options?: {
     );
   }
 
-  const { data, error, count } = await query;
+  const { data: rawRows, error, count } = await query;
 
   if (error) {
     console.error("Error fetching marketer requests:", error);
     return { error: "Failed to fetch requests", data: [] };
   }
 
+  // Enrich requester_id with profile (the marketer is the current user)
+  let selfProfile: { full_name: string | null; email: string | null } = {
+    full_name: null,
+    email: null,
+  };
+  if (crmUser.id) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", crmUser.id)
+      .single();
+    if (prof) selfProfile = prof;
+  }
+
+  let results = (rawRows || []).map((r) => ({
+    ...r,
+    requester: { id: r.requester_id, ...selfProfile },
+  })) as unknown as LeadRequestWithRequester[];
+
   // Client-side search if provided (search in payload)
-  let results = (data as unknown as LeadRequestWithRequester[]) || [];
   if (options?.search) {
     const searchTerm = options.search.toLowerCase();
     results = results.filter((req) => {

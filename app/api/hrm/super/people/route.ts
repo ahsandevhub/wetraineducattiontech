@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (hrmUser?.hrm_role !== "SUPER_ADMIN") {
@@ -27,32 +27,58 @@ export async function GET(request: NextRequest) {
   // Get query params
   const searchParams = request.nextUrl.searchParams;
   const role = searchParams.get("role");
-  const active = searchParams.get("active");
   const search = searchParams.get("search");
+  // Note: is_active is no longer on hrm_users (dropped in schema simplification)
+  // Users are fully removed from hrm_users when deactivated
 
   try {
-    let query = supabase
+    let hrmQuery = supabase
       .from("hrm_users")
-      .select("*")
+      .select("id, hrm_role, created_at")
       .order("created_at", { ascending: false });
 
     if (role && ["SUPER_ADMIN", "ADMIN", "EMPLOYEE"].includes(role)) {
-      query = query.eq("hrm_role", role);
+      hrmQuery = hrmQuery.eq("hrm_role", role);
     }
 
-    if (active !== null) {
-      query = query.eq("is_active", active === "true");
-    }
-
-    if (search) {
-      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
-    }
-
-    const { data, error } = await query;
-
+    const { data: hrmUsers, error } = await hrmQuery;
     if (error) throw error;
 
-    return NextResponse.json({ users: data });
+    if (!hrmUsers || hrmUsers.length === 0) {
+      return NextResponse.json({ users: [] });
+    }
+
+    // Enrich with profile data (full_name, email from profiles table)
+    const userIds = hrmUsers.map((u) => u.id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+    let users = hrmUsers.map((u) => {
+      const profile = profileMap.get(u.id);
+      return {
+        id: u.id,
+        hrm_role: u.hrm_role,
+        created_at: u.created_at,
+        full_name: profile?.full_name || null,
+        email: profile?.email || null,
+      };
+    });
+
+    // Apply search filter after enrichment
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      users = users.filter(
+        (u) =>
+          u.full_name?.toLowerCase().includes(lowerSearch) ||
+          u.email?.toLowerCase().includes(lowerSearch),
+      );
+    }
+
+    return NextResponse.json({ users });
   } catch (error: any) {
     console.error("Error fetching people:", error);
     return NextResponse.json(

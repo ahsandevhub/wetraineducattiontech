@@ -2,6 +2,7 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
+import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
 import { motion } from "framer-motion";
 import { BookOpen, Clock, Star, Users } from "lucide-react";
 import Image from "next/image";
@@ -26,6 +27,7 @@ interface Course {
 export default function CoursesSection() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
+  const { handleImageError, hasError } = useImageError();
 
   const formatPrice = (price: number | null, currency: string) => {
     if (price === null) return "Custom Quote";
@@ -140,17 +142,29 @@ export default function CoursesSection() {
               >
                 {/* Course Image/Icon */}
                 <div className="flex h-48 items-center justify-center bg-gradient-to-br from-yellow-100 to-yellow-50 text-6xl">
-                  {course.imageUrl ? (
+                  {course.imageUrl && !hasError(course.id) ? (
                     <div className="relative h-full w-full">
                       <Image
                         src={course.imageUrl}
                         alt={course.title}
                         fill
                         className="object-cover"
+                        onError={() => handleImageError(course.id)}
                       />
                     </div>
                   ) : (
-                    <span>{course.emoji ?? "🎓"}</span>
+                    <div className="flex h-full w-full items-center justify-center">
+                      {course.imageUrl && hasError(course.id) ? (
+                        <Image
+                          src={getPlaceholderImage("service")}
+                          alt="Placeholder"
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <span>{course.emoji ?? "🎓"}</span>
+                      )}
+                    </div>
                   )}
                 </div>
 

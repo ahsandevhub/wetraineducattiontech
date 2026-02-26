@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id, hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "SUPER_ADMIN") {
@@ -42,9 +42,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Get subject user details
+    // Get subject user details from profiles (hrm_users no longer has full_name/email)
     const { data: subject } = await supabase
-      .from("hrm_users")
+      .from("profiles")
       .select("id, full_name, email")
       .eq("id", subjectUserId)
       .single();
@@ -117,10 +117,9 @@ export async function POST(request: NextRequest) {
         total_score,
         comment,
         submitted_at,
+        marker_admin_id,
         marker_admin:hrm_users!hrm_kpi_submissions_marker_admin_id_fkey(
-          id,
-          full_name,
-          email
+          id
         ),
         hrm_kpi_submission_items(
           id,
@@ -137,6 +136,22 @@ export async function POST(request: NextRequest) {
       .eq("subject_user_id", subjectUserId)
       .in("week_id", weekIds)
       .order("submitted_at", { ascending: false });
+
+    // Enrich marker admins with profile data
+    const markerIds = [
+      ...new Set(
+        (submissions || []).map((s: any) => s.marker_admin_id).filter(Boolean),
+      ),
+    ];
+    const { data: markerProfs } = markerIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", markerIds)
+      : { data: [] };
+    const markerProfMap = new Map(
+      (markerProfs || []).map((p: any) => [p.id, p]),
+    );
 
     // Get weekly results
     const { data: weeklyResults } = await supabase
@@ -172,8 +187,9 @@ export async function POST(request: NextRequest) {
           computedAt: result?.computed_at,
           submissions: subs.map((sub) => ({
             id: sub.id,
-            markerName: sub.marker_admin.full_name,
-            markerEmail: sub.marker_admin.email,
+            markerName:
+              markerProfMap.get(sub.marker_admin_id)?.full_name || null,
+            markerEmail: markerProfMap.get(sub.marker_admin_id)?.email || null,
             totalScore: sub.total_score,
             comment: sub.comment,
             submittedAt: sub.submitted_at,

@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id, hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "ADMIN") {
@@ -52,8 +52,6 @@ export async function GET(request: NextRequest) {
         subject_user_id,
         subject:hrm_users!hrm_assignments_subject_user_id_fkey(
           id,
-          full_name,
-          email,
           hrm_role
         )
       `,
@@ -63,8 +61,17 @@ export async function GET(request: NextRequest) {
 
     if (assignmentsError) throw assignmentsError;
 
-    // For each subject, check if they have active criteria set
+    // Enrich subjects with profile data
     const subjectUserIds = assignments?.map((a) => a.subject_user_id) || [];
+    const { data: markingListProfiles } = subjectUserIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", subjectUserIds)
+      : { data: [] };
+    const markingProfileMap = new Map(
+      (markingListProfiles || []).map((p) => [p.id, p]),
+    );
 
     // Get active criteria sets for these subjects
     const { data: criteriaSets } = await supabase
@@ -92,9 +99,11 @@ export async function GET(request: NextRequest) {
     const subjects = assignments?.map((assignment: any) => ({
       assignmentId: assignment.id,
       subjectUserId: assignment.subject_user_id,
-      subjectName: assignment.subject.full_name,
-      subjectEmail: assignment.subject.email,
-      subjectRole: assignment.subject.hrm_role,
+      subjectName:
+        markingProfileMap.get(assignment.subject_user_id)?.full_name || null,
+      subjectEmail:
+        markingProfileMap.get(assignment.subject_user_id)?.email || null,
+      subjectRole: assignment.subject?.hrm_role || null,
       hasActiveCriteriaSet: subjectsWithCriteria.has(
         assignment.subject_user_id,
       ),

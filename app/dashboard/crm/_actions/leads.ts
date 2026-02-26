@@ -58,11 +58,11 @@ export async function createLead(data: CreateLeadData) {
     return { error: "Lead with this phone number already exists" };
   }
 
-  // Get crm_user_id from auth_user_id
+  // Get crm_user_id (in new schema, crm_users.id = auth.users.id)
   const { data: crmUser } = await supabase
     .from("crm_users")
     .select("id")
-    .eq("auth_user_id", userId)
+    .eq("id", userId)
     .single();
 
   if (!crmUser) {
@@ -165,10 +165,10 @@ export async function reassignLead(leadId: string, newOwnerId: string) {
     return { error: "Unauthorized" };
   }
 
-  const { crmUserId, crmRole } = userWithRoles;
+  const { userId, crmRole } = userWithRoles;
   const isAdmin = crmRole === "ADMIN";
 
-  if (!crmUserId) {
+  if (!userId) {
     return { error: "CRM user not found" };
   }
 
@@ -192,7 +192,7 @@ export async function reassignLead(leadId: string, newOwnerId: string) {
   // Permission check:
   // - ADMIN can reassign any lead
   // - MARKETER can only reassign leads they own
-  if (!isAdmin && lead.owner_id !== crmUserId) {
+  if (!isAdmin && lead.owner_id !== userId) {
     return { error: "You can only reassign leads you own" };
   }
 

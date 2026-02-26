@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id, hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "SUPER_ADMIN") {
@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
         total_score,
         comment,
         submitted_at,
+        marker_admin_id,
+        subject_user_id,
         week_id,
         hrm_weeks!inner(
           id,
@@ -51,14 +53,10 @@ export async function GET(request: NextRequest) {
         ),
         marker_admin:hrm_users!hrm_kpi_submissions_marker_admin_id_fkey(
           id,
-          full_name,
-          email,
           hrm_role
         ),
         subject:hrm_users!hrm_kpi_submissions_subject_user_id_fkey(
           id,
-          full_name,
-          email,
           hrm_role
         ),
         hrm_kpi_submission_items(
@@ -94,6 +92,27 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
+    // Enrich with profile data (names/emails)
+    const allUserIds = [
+      ...new Set([
+        ...(submissions || [])
+          .map((s: any) => s.marker_admin_id)
+          .filter(Boolean),
+        ...(submissions || [])
+          .map((s: any) => s.subject_user_id)
+          .filter(Boolean),
+      ]),
+    ];
+    const { data: subProfiles } = allUserIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", allUserIds)
+      : { data: [] };
+    const subProfileMap = new Map(
+      (subProfiles || []).map((p: any) => [p.id, p]),
+    );
+
     // Filter by month if monthKey provided
     let filteredSubmissions = submissions || [];
     if (monthKey && filteredSubmissions.length > 0) {
@@ -108,8 +127,12 @@ export async function GET(request: NextRequest) {
     if (search && filteredSubmissions.length > 0) {
       const searchLower = search.toLowerCase();
       filteredSubmissions = filteredSubmissions.filter((sub: any) => {
-        const adminName = sub.marker_admin?.full_name?.toLowerCase() || "";
-        const subjectName = sub.subject?.full_name?.toLowerCase() || "";
+        const adminName =
+          subProfileMap.get(sub.marker_admin_id)?.full_name?.toLowerCase() ||
+          "";
+        const subjectName =
+          subProfileMap.get(sub.subject_user_id)?.full_name?.toLowerCase() ||
+          "";
         return (
           adminName.includes(searchLower) || subjectName.includes(searchLower)
         );
@@ -123,15 +146,15 @@ export async function GET(request: NextRequest) {
       weekFridayDate: sub.hrm_weeks.friday_date,
       weekStatus: sub.hrm_weeks.status,
       markerAdmin: {
-        id: sub.marker_admin.id,
-        fullName: sub.marker_admin.full_name,
-        email: sub.marker_admin.email,
+        id: sub.marker_admin?.id,
+        fullName: subProfileMap.get(sub.marker_admin_id)?.full_name || null,
+        email: subProfileMap.get(sub.marker_admin_id)?.email || null,
       },
       subject: {
-        id: sub.subject.id,
-        fullName: sub.subject.full_name,
-        email: sub.subject.email,
-        role: sub.subject.hrm_role,
+        id: sub.subject?.id,
+        fullName: subProfileMap.get(sub.subject_user_id)?.full_name || null,
+        email: subProfileMap.get(sub.subject_user_id)?.email || null,
+        role: sub.subject?.hrm_role || null,
       },
       totalScore: sub.total_score,
       comment: sub.comment,

@@ -109,8 +109,12 @@ function copyToClipboard(
 }
 
 interface LeadDetailClientProps {
-  lead: Lead & { owner?: { full_name: string; email: string } };
-  logs: (ContactLog & { user?: { full_name: string; email: string } })[];
+  lead: Lead & {
+    owner?: { id: string; full_name: string | null; email: string | null };
+  };
+  logs: (ContactLog & {
+    user?: { id: string; full_name: string | null; email: string | null };
+  })[];
   isAdmin: boolean;
 }
 

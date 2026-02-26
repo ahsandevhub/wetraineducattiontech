@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "SUPER_ADMIN") {
@@ -391,3 +391,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message, monthKey }, { status: 500 });
   }
 }
+

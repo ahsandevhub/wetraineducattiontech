@@ -27,7 +27,7 @@ async function requireSuperAdmin() {
   const { data: hrmUser } = await supabase
     .from("hrm_users")
     .select("id, hrm_role")
-    .eq("profile_id", user.id)
+    .eq("id", user.id)
     .single();
 
   if (!hrmUser || hrmUser.hrm_role !== "SUPER_ADMIN") {
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at,
         month:hrm_months!hrm_fund_logs_month_id_fkey(month_key),
-        subject:hrm_users!hrm_fund_logs_subject_user_id_fkey(id, full_name, email),
-        markedBy:hrm_users!hrm_fund_logs_marked_by_id_fkey(id, full_name, email)
+        subject:hrm_users!hrm_fund_logs_subject_user_id_fkey(id),
+        markedBy:hrm_users!hrm_fund_logs_marked_by_id_fkey(id)
       `,
       )
       .order("created_at", { ascending: false });
@@ -103,7 +103,40 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query;
     if (error) throw error;
 
-    let entries = data || [];
+    // Enrich entries with profile data (subject name/email, markedBy name/email)
+    const allUserIds = [
+      ...new Set([
+        ...(data || []).map((e: any) => e.subject?.id).filter(Boolean),
+        ...(data || []).map((e: any) => e.markedBy?.id).filter(Boolean),
+      ]),
+    ];
+    const { data: fundProfiles } = allUserIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", allUserIds)
+      : { data: [] };
+    const fundProfileMap = new Map(
+      (fundProfiles || []).map((p: any) => [p.id, p]),
+    );
+
+    let entries = (data || []).map((entry: any) => ({
+      ...entry,
+      subject: entry.subject
+        ? {
+            ...entry.subject,
+            full_name: fundProfileMap.get(entry.subject.id)?.full_name || null,
+            email: fundProfileMap.get(entry.subject.id)?.email || null,
+          }
+        : null,
+      markedBy: entry.markedBy
+        ? {
+            ...entry.markedBy,
+            full_name: fundProfileMap.get(entry.markedBy.id)?.full_name || null,
+            email: fundProfileMap.get(entry.markedBy.id)?.email || null,
+          }
+        : null,
+    }));
 
     if (search) {
       const q = search.toLowerCase();

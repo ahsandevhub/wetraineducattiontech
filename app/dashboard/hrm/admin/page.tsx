@@ -59,7 +59,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 type WeekInfo = {
@@ -144,13 +144,7 @@ export default function AdminDashboardPage() {
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
   const monthOptions = getMonthOptions(12);
 
-  useEffect(() => {
-    fetchData();
-    fetchMyResults();
-    fetchFundStats();
-  }, [selectedMonth]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       // Get current week first to determine which week to fetch for selected month
@@ -218,9 +212,9 @@ export default function AdminDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMonth]);
 
-  const fetchFundStats = async () => {
+  const fetchFundStats = useCallback(async () => {
     try {
       const res = await fetch("/api/hrm/admin/fund-stats");
       const data = await res.json();
@@ -236,9 +230,9 @@ export default function AdminDashboardPage() {
     } catch (error) {
       console.error("Failed to load fund stats:", error);
     }
-  };
+  }, []);
 
-  const fetchMyResults = async () => {
+  const fetchMyResults = useCallback(async () => {
     try {
       const res = await fetch("/api/hrm/employee/monthly?limit=6");
       const data = await res.json();
@@ -252,7 +246,13 @@ export default function AdminDashboardPage() {
     } catch (error) {
       console.error("Failed to load my results:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    fetchMyResults();
+    fetchFundStats();
+  }, [fetchData, fetchMyResults, fetchFundStats]);
 
   const getTierBadge = (tier: string) => {
     switch (tier) {
