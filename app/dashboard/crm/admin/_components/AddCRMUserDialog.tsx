@@ -50,8 +50,7 @@ export default function AddCRMUserDialog({
     userId: "",
     role: "MARKETER" as "ADMIN" | "MARKETER",
   });
-
-  const selectedUser = searchResults.find((u) => u.id === formData.userId);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
@@ -103,6 +102,7 @@ export default function AddCRMUserDialog({
         toast.success("User added to CRM");
         setDialogOpen(false);
         setFormData({ userId: "", role: "MARKETER" });
+        setSelectedUser(null);
         onUserAdded();
       }
     });
@@ -116,7 +116,7 @@ export default function AddCRMUserDialog({
           Add User
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Add User to CRM</DialogTitle>
         </DialogHeader>
@@ -161,11 +161,14 @@ export default function AddCRMUserDialog({
                     {searchResults.map((user) => (
                       <div
                         key={user.id}
-                        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                        className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-slate-100 dark:hover:bg-slate-800"
                         onClick={() => {
                           setFormData({ ...formData, userId: user.id });
+                          setSelectedUser(user);
                           setUserOpen(false);
                         }}
+                        role="option"
+                        aria-selected={formData.userId === user.id}
                       >
                         <Check
                           className={cn(
