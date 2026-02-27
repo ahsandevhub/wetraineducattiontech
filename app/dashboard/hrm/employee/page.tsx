@@ -342,9 +342,6 @@ export default function EmployeeDashboard() {
             <CardContent>
               <div className="flex items-center gap-2">
                 {getTierBadge(latestResult.tier)}
-                <span className="text-sm text-muted-foreground">
-                  {latestResult.actionType}
-                </span>
               </div>
             </CardContent>
           </Card>
@@ -409,7 +406,6 @@ export default function EmployeeDashboard() {
                     <TableHead>Month</TableHead>
                     <TableHead>Score</TableHead>
                     <TableHead>Tier</TableHead>
-                    <TableHead>Action</TableHead>
                     <TableHead>Fine</TableHead>
                     <TableHead>Weeks</TableHead>
                     <TableHead>Status</TableHead>
@@ -424,7 +420,6 @@ export default function EmployeeDashboard() {
                       </TableCell>
                       <TableCell>{result.monthlyScore.toFixed(2)}</TableCell>
                       <TableCell>{getTierBadge(result.tier)}</TableCell>
-                      <TableCell>{result.actionType}</TableCell>
                       <TableCell>
                         {result.finalFine > 0 ? (
                           <span className="text-red-600 font-semibold">
