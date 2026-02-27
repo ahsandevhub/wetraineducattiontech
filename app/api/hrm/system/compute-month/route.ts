@@ -331,21 +331,26 @@ export async function POST(request: NextRequest) {
       // Upsert monthly result
       const { error: resultError } = await supabase
         .from("hrm_monthly_results")
-        .upsert({
-          month_id: monthId,
-          subject_user_id: subjectId,
-          monthly_score: monthlyScore,
-          tier: result.tier,
-          action_type: result.actionType,
-          base_fine: result.baseFine,
-          month_fine_count: result.monthFineCount,
-          final_fine: result.finalFine,
-          gift_amount: null, // Keep null for now
-          weeks_count_used: weeksCountUsed,
-          expected_weeks_count: expectedWeeksCount,
-          is_complete_month: isCompleteMonth,
-          computed_at: new Date().toISOString(),
-        });
+        .upsert(
+          {
+            month_id: monthId,
+            subject_user_id: subjectId,
+            monthly_score: monthlyScore,
+            tier: result.tier,
+            action_type: result.actionType,
+            base_fine: result.baseFine,
+            month_fine_count: result.monthFineCount,
+            final_fine: result.finalFine,
+            gift_amount: null, // Keep null for now
+            weeks_count_used: weeksCountUsed,
+            expected_weeks_count: expectedWeeksCount,
+            is_complete_month: isCompleteMonth,
+            computed_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "month_id,subject_user_id",
+          },
+        );
 
       if (resultError) {
         console.error("Error upserting monthly result:", resultError);
@@ -358,13 +363,18 @@ export async function POST(request: NextRequest) {
         monthState?.consecutive_improvement_months || 0,
       );
 
-      await supabase.from("hrm_subject_month_states").upsert({
-        subject_user_id: subjectId,
-        last_month_key: monthKey,
-        last_month_tier: result.tier,
-        consecutive_improvement_months: newConsecutiveCount,
-        updated_at: new Date().toISOString(),
-      });
+      await supabase.from("hrm_subject_month_states").upsert(
+        {
+          subject_user_id: subjectId,
+          last_month_key: monthKey,
+          last_month_tier: result.tier,
+          consecutive_improvement_months: newConsecutiveCount,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "subject_user_id",
+        },
+      );
 
       computedCount++;
       console.log(
@@ -391,4 +401,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message, monthKey }, { status: 500 });
   }
 }
-

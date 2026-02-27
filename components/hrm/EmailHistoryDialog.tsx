@@ -164,9 +164,9 @@ export function EmailHistoryDialog({
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col gap-4 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col gap-4">
           {/* Email History List */}
-          <div className="border rounded-lg overflow-hidden flex flex-col flex-[0.35] min-h-0">
+          <div className="border rounded-lg overflow-hidden flex flex-col shrink-0">
             <div className="bg-muted p-3 flex items-center justify-between shrink-0">
               <h3 className="font-semibold text-sm">Email History</h3>
               <Button
@@ -190,11 +190,11 @@ export function EmailHistoryDialog({
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center py-8 flex-1">
+              <div className="flex items-center justify-center py-8 flex-1 shrink-0">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : emailLogs.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground flex-1 flex items-center justify-center">
+              <div className="text-center py-4 text-muted-foreground flex-1 flex items-center justify-center shrink-0">
                 <div>
                   <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No emails sent yet for this month</p>
@@ -204,7 +204,7 @@ export function EmailHistoryDialog({
                 </div>
               </div>
             ) : (
-              <ScrollArea className="flex-1">
+              <div className="max-h-32 overflow-y-auto">
                 <div className="divide-y">
                   {emailLogs.map((log) => (
                     <div
@@ -239,13 +239,13 @@ export function EmailHistoryDialog({
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             )}
           </div>
 
           {/* Email Content Preview */}
           {viewingEmail && (
-            <div className="border rounded-lg overflow-hidden flex flex-col flex-[0.65] min-h-0">
+            <div className="border rounded-lg overflow-hidden flex flex-col flex-1 min-h-0">
               <div className="bg-muted p-3 flex items-center justify-between shrink-0">
                 <h3 className="font-semibold text-sm">Email Preview</h3>
                 <Button

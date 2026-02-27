@@ -9,6 +9,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { formatMonthDisplay } from "@/lib/hrm/week-utils";
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -221,21 +229,35 @@ export function MonthlyReportDetailsDialog({
                                 <div className="text-xs font-medium mb-2">
                                   Criteria Breakdown:
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {submission.criteriaScores.map((criteria) => (
-                                    <div
-                                      key={criteria.criteriaId}
-                                      className="text-xs flex justify-between items-center bg-background rounded px-2 py-1"
-                                    >
-                                      <span className="text-muted-foreground">
-                                        {criteria.criteriaName}:
-                                      </span>
-                                      <span className="font-medium">
-                                        {criteria.score.toFixed(2)}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
+                                <Table className="text-xs border">
+                                  <TableHeader className="bg-muted">
+                                    <TableRow className="*:border-x">
+                                      <TableHead className="text-xs font-medium">
+                                        Criteria
+                                      </TableHead>
+                                      <TableHead className="text-xs font-medium text-right">
+                                        Score
+                                      </TableHead>
+                                    </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                    {submission.criteriaScores.map(
+                                      (criteria) => (
+                                        <TableRow
+                                          className="*:border-x"
+                                          key={criteria.criteriaId}
+                                        >
+                                          <TableCell className="text-xs">
+                                            {criteria.criteriaName}
+                                          </TableCell>
+                                          <TableCell className="text-xs text-right font-medium">
+                                            {criteria.score.toFixed(2)}
+                                          </TableCell>
+                                        </TableRow>
+                                      ),
+                                    )}
+                                  </TableBody>
+                                </Table>
                               </div>
                             )}
 

@@ -117,10 +117,6 @@ export async function POST(request: NextRequest) {
         total_score,
         comment,
         submitted_at,
-        marker_admin_id,
-        marker_admin:hrm_users!hrm_kpi_submissions_marker_admin_id_fkey(
-          id
-        ),
         hrm_kpi_submission_items(
           id,
           criteria_id,
@@ -136,22 +132,6 @@ export async function POST(request: NextRequest) {
       .eq("subject_user_id", subjectUserId)
       .in("week_id", weekIds)
       .order("submitted_at", { ascending: false });
-
-    // Enrich marker admins with profile data
-    const markerIds = [
-      ...new Set(
-        (submissions || []).map((s: any) => s.marker_admin_id).filter(Boolean),
-      ),
-    ];
-    const { data: markerProfs } = markerIds.length
-      ? await supabase
-          .from("profiles")
-          .select("id, full_name, email")
-          .in("id", markerIds)
-      : { data: [] };
-    const markerProfMap = new Map(
-      (markerProfs || []).map((p: any) => [p.id, p]),
-    );
 
     // Get weekly results
     const { data: weeklyResults } = await supabase
@@ -187,9 +167,6 @@ export async function POST(request: NextRequest) {
           computedAt: result?.computed_at,
           submissions: subs.map((sub) => ({
             id: sub.id,
-            markerName:
-              markerProfMap.get(sub.marker_admin_id)?.full_name || null,
-            markerEmail: markerProfMap.get(sub.marker_admin_id)?.email || null,
             totalScore: sub.total_score,
             comment: sub.comment,
             submittedAt: sub.submitted_at,
@@ -342,9 +319,9 @@ function generateMarksheetHTML(data: MarksheetData): string {
     .map((week) => {
       const submissionRows = week.submissions
         .map(
-          (sub) => `
+          (sub, idx) => `
         <tr style="border-bottom: 1px solid #eee;">
-          <td style="padding: 10px; color: #666; font-size: 13px;">${sub.markerName}</td>
+          <td style="padding: 10px; color: #666; font-size: 13px;">Submission ${idx + 1}</td>
           <td style="padding: 10px; text-align: center; color: #666; font-size: 13px;">${sub.totalScore.toFixed(2)}</td>
           <td style="padding: 10px; font-size: 12px;">
             ${sub.criteriaScores.map((c: any) => `<div style="color: #666; margin: 3px 0;">${c.criteriaName}: ${c.score.toFixed(2)}</div>`).join("")}
@@ -368,7 +345,7 @@ function generateMarksheetHTML(data: MarksheetData): string {
           <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
             <thead>
               <tr style="background: #f0f0f0; border-bottom: 2px solid #ddd;">
-                <th style="padding: 10px; text-align: left; font-weight: bold;">Marker Name</th>
+                <th style="padding: 10px; text-align: left; font-weight: bold;">Submission</th>
                 <th style="padding: 10px; text-align: center; font-weight: bold;">Score</th>
                 <th style="padding: 10px; text-align: left; font-weight: bold;">Criteria Breakdown</th>
               </tr>
@@ -485,12 +462,12 @@ function generateMarksheetText(data: MarksheetData): string {
     text += `Status: ${week.isComplete ? "Complete" : "Incomplete"}\n`;
     text += `Submissions:\n`;
 
-    for (const sub of week.submissions) {
-      text += `  - ${sub.markerName}: ${sub.totalScore.toFixed(2)}\n`;
+    week.submissions.forEach((sub, idx) => {
+      text += `  - Submission ${idx + 1}: ${sub.totalScore.toFixed(2)}\n`;
       for (const criteria of sub.criteriaScores) {
         text += `    • ${criteria.criteriaName}: ${criteria.score.toFixed(2)}\n`;
       }
-    }
+    });
     text += `\n`;
   }
 
