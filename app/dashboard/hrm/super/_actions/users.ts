@@ -213,29 +213,29 @@ export async function getAllHRMUsers() {
       return { data: [], error: null };
     }
 
-    // Fetch auth user metadata for names and emails
-    const { data: authData, error: authError } =
-      await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    // Fetch profile data for names and emails
+    const userIds = hrmUsers.map((u) => u.id);
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
 
-    if (authError) {
-      return { data: null, error: authError.message };
+    if (profilesError) {
+      return { data: null, error: profilesError.message };
     }
 
-    const authUserMap = new Map(authData.users.map((u) => [u.id, u]));
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
-    // Combine hrm_users with auth user data
+    // Combine hrm_users with profile data
     const combined = hrmUsers.map((hrmUser) => {
-      const authUser = authUserMap.get(hrmUser.id);
+      const profile = profileMap.get(hrmUser.id);
       return {
         id: hrmUser.id,
         hrm_role: hrmUser.hrm_role as "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE",
         created_at: hrmUser.created_at,
         updated_at: hrmUser.updated_at,
-        full_name:
-          (authUser?.user_metadata?.name as string) ||
-          authUser?.email?.split("@")[0] ||
-          "Unknown",
-        email: authUser?.email || "Unknown",
+        full_name: profile?.full_name || "Unknown",
+        email: profile?.email || "Unknown",
       };
     });
 
