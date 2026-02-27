@@ -1,4 +1,5 @@
 import { createClient } from "@/app/utils/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -48,9 +49,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ users: [] });
     }
 
-    // Enrich with profile data (full_name, email from profiles table)
+    // Enrich with profile data using admin client to bypass RLS
+    const supabaseAdmin = createAdminClient();
     const userIds = hrmUsers.map((u) => u.id);
-    const { data: profiles } = await supabase
+    const { data: profiles } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, email")
       .in("id", userIds);
