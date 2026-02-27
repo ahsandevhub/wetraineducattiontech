@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/app/utils/supabase/admin";
 import { createClient } from "@/app/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -73,10 +74,11 @@ export async function GET(request: NextRequest) {
 
     if (assignmentsError) throw assignmentsError;
 
-    // Enrich subjects with profile data
+    // Enrich subjects with profile data using admin client to bypass RLS
     const subjectUserIds = assignments?.map((a) => a.subject_user_id) || [];
+    const supabaseAdmin = await createAdminClient();
     const { data: monthMarkingProfiles } = subjectUserIds.length
-      ? await supabase
+      ? await supabaseAdmin
           .from("profiles")
           .select("id, full_name, email")
           .in("id", subjectUserIds)

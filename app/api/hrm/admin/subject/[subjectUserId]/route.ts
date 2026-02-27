@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/app/utils/supabase/admin";
 import { createClient } from "@/app/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -61,8 +62,9 @@ export async function GET(
 
     if (subjectError) throw subjectError;
 
-    // Get subject's profile (name/email)
-    const { data: subjectProfile } = await supabase
+    // Get subject's profile (name/email) using admin client to bypass RLS
+    const supabaseAdmin = await createAdminClient();
+    const { data: subjectProfile } = await supabaseAdmin
       .from("profiles")
       .select("id, full_name, email")
       .eq("id", subjectUserId)

@@ -59,11 +59,6 @@ export async function GET(request: NextRequest) {
         total_score,
         comment,
         submitted_at,
-        marker_admin:hrm_users!hrm_kpi_submissions_marker_admin_id_fkey(
-          id,
-          full_name,
-          email
-        ),
         hrm_kpi_submission_items(
           id,
           criteria_id,
@@ -116,8 +111,6 @@ export async function GET(request: NextRequest) {
           computedAt: result?.computed_at,
           submissions: weekSubmissions.map((submission) => ({
             id: submission.id,
-            markerName: submission.marker_admin?.full_name || "Unknown",
-            markerEmail: submission.marker_admin?.email || "",
             totalScore: submission.total_score,
             comment: submission.comment,
             submittedAt: submission.submitted_at,
@@ -145,4 +138,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

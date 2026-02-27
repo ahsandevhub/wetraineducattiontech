@@ -238,9 +238,14 @@ export default function AdminLayout({
               ...(hrmRole === "ADMIN"
                 ? [
                     {
-                      label: "My Dashboard",
+                      label: "My Admin Dashboard",
                       icon: LayoutDashboard,
                       href: "/dashboard/hrm/admin",
+                    },
+                    {
+                      label: "My KPI Dashboard",
+                      icon: TrendingUp,
+                      href: "/dashboard/hrm/admin/kpi",
                     },
                     {
                       label: "Marking List",
@@ -252,7 +257,7 @@ export default function AdminLayout({
               ...(hrmRole === "EMPLOYEE"
                 ? [
                     {
-                      label: "My KPI",
+                      label: "My KPI Dashboard",
                       icon: TrendingUp,
                       href: "/dashboard/hrm/employee",
                     },

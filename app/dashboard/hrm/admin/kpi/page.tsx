@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  DialogBreakdownLoadingSkeleton,
-  KpiDashboardLoadingSkeleton,
-} from "@/components/hrm/DashboardLoadingSkeletons";
+import { DialogBreakdownLoadingSkeleton } from "@/components/hrm/DashboardLoadingSkeletons";
 import { EmptyState } from "@/components/hrm/EmptyState";
 import { PerformanceTrendChart } from "@/components/hrm/PerformanceTrendChart";
 import {
@@ -39,22 +36,8 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-
-type MonthlyResult = {
-  id: string;
-  monthKey: string;
-  monthlyScore: number;
-  tier: string;
-  actionType: string;
-  baseFine: number;
-  finalFine: number;
-  weeksCountUsed: number;
-  expectedWeeksCount: number;
-  isCompleteMonth: boolean;
-  status: string;
-};
 
 type CriteriaScore = {
   criteriaId: string;
@@ -64,6 +47,8 @@ type CriteriaScore = {
 
 type WeeklySubmission = {
   id: string;
+  markerName: string;
+  markerEmail: string;
   totalScore: number;
   comment?: string;
   submittedAt: string;
@@ -79,51 +64,47 @@ type WeeklyDetail = {
   submissions: WeeklySubmission[];
 };
 
-export default function EmployeeDashboard() {
-  const [results, setResults] = useState<MonthlyResult[]>([]);
-  const [loading, setLoading] = useState(true);
+type MonthlyResult = {
+  id: string;
+  monthKey: string;
+  monthlyScore: number;
+  tier: string;
+  actionType: string;
+  baseFine: number;
+  finalFine: number;
+  giftAmount: number | null;
+  weeksCountUsed: number;
+  expectedWeeksCount: number;
+  isCompleteMonth: boolean;
+  status: string;
+};
+
+type FundStats = {
+  fineCollected: number;
+  fineDue: number;
+  bonusPaid: number;
+  bonusDue: number;
+};
+
+export default function AdminKpiPage() {
+  const [myResults, setMyResults] = useState<MonthlyResult[]>([]);
   const [latestResult, setLatestResult] = useState<MonthlyResult | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [detailsLoading, setDetailsLoading] = useState(false);
-  const [selectedMonthKey, setSelectedMonthKey] = useState<string>("");
-  const [weeklyDetails, setWeeklyDetails] = useState<WeeklyDetail[]>([]);
-  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
-  const [fundStats, setFundStats] = useState({
+  const [fundStats, setFundStats] = useState<FundStats>({
     fineCollected: 0,
     fineDue: 0,
     bonusPaid: 0,
     bonusDue: 0,
   });
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>("");
+  const [weeklyDetails, setWeeklyDetails] = useState<WeeklyDetail[]>([]);
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchMonthlyResults();
-    fetchFundStats();
-  }, []);
-
-  const fetchMonthlyResults = async () => {
-    setLoading(true);
+  const fetchFundStats = useCallback(async () => {
     try {
-      const res = await fetch("/api/hrm/employee/monthly?limit=6");
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error);
-
-      setResults(data.results || []);
-      if (data.results && data.results.length > 0) {
-        setLatestResult(data.results[0]);
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to load results";
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFundStats = async () => {
-    try {
-      const res = await fetch("/api/hrm/employee/fund-stats");
+      const res = await fetch("/api/hrm/admin/fund-stats");
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error);
@@ -137,7 +118,31 @@ export default function EmployeeDashboard() {
     } catch (error) {
       console.error("Failed to load fund stats:", error);
     }
-  };
+  }, []);
+
+  const fetchMyResults = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/hrm/employee/monthly?limit=6");
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      setMyResults(data.results || []);
+      if (data.results && data.results.length > 0) {
+        setLatestResult(data.results[0]);
+      }
+    } catch (error) {
+      console.error("Failed to load my results:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMyResults();
+    fetchFundStats();
+  }, [fetchMyResults, fetchFundStats]);
 
   const getTierBadge = (tier: string) => {
     switch (tier) {
@@ -222,7 +227,17 @@ export default function EmployeeDashboard() {
   };
 
   if (loading) {
-    return <KpiDashboardLoadingSkeleton />;
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">My KPI Dashboard</h1>
+          <p className="text-muted-foreground">
+            View your monthly performance results
+          </p>
+        </div>
+        <DialogBreakdownLoadingSkeleton />
+      </div>
+    );
   }
 
   return (
@@ -230,11 +245,12 @@ export default function EmployeeDashboard() {
       <div>
         <h1 className="text-3xl font-bold">My KPI Dashboard</h1>
         <p className="text-muted-foreground">
-          View your monthly performance results
+          View your monthly performance results (as you are also marked by
+          higher admins)
         </p>
       </div>
 
-      {/* Fund Stats - Fines & Bonuses */}
+      {/* Bonus & Fine Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -299,7 +315,7 @@ export default function EmployeeDashboard() {
         </Card>
       </div>
 
-      {/* Latest Month Summary */}
+      {/* Latest Performance Summary */}
       {latestResult ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -387,87 +403,87 @@ export default function EmployeeDashboard() {
         </Card>
       )}
 
-      {/* Historical Results */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Monthly Performance History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {results.length === 0 ? (
-            <div className="py-12">
+      {/* Monthly Results Table */}
+      <div>
+        <h3 className="text-lg font-semibold mb-4">
+          Monthly Performance History
+        </h3>
+        {myResults.length === 0 ? (
+          <Card>
+            <CardContent className="py-8">
               <EmptyState
                 icon={BarChart3}
                 title="No historical data"
                 description="Your monthly performance history will appear here once available."
               />
-            </div>
-          ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Month</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Tier</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Fine</TableHead>
-                    <TableHead>Weeks</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Month</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Tier</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Fine</TableHead>
+                  <TableHead>Weeks</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {myResults.map((result) => (
+                  <TableRow key={result.id}>
+                    <TableCell className="font-medium">
+                      {formatMonthDisplay(result.monthKey)}
+                    </TableCell>
+                    <TableCell>{result.monthlyScore.toFixed(2)}</TableCell>
+                    <TableCell>{getTierBadge(result.tier)}</TableCell>
+                    <TableCell>{result.actionType}</TableCell>
+                    <TableCell>
+                      {result.finalFine > 0 ? (
+                        <span className="text-red-600 font-semibold">
+                          ৳{result.finalFine}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <CompletenessChip
+                        weeksUsed={result.weeksCountUsed}
+                        expectedWeeks={result.expectedWeeksCount}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <MonthStatusChip
+                        status={result.status as "OPEN" | "LOCKED"}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleViewBreakdown(result.monthKey)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background hover:bg-accent"
+                        aria-label="View marks breakdown"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {results.map((result) => (
-                    <TableRow key={result.id}>
-                      <TableCell className="font-medium">
-                        {formatMonthDisplay(result.monthKey)}
-                      </TableCell>
-                      <TableCell>{result.monthlyScore.toFixed(2)}</TableCell>
-                      <TableCell>{getTierBadge(result.tier)}</TableCell>
-                      <TableCell>{result.actionType}</TableCell>
-                      <TableCell>
-                        {result.finalFine > 0 ? (
-                          <span className="text-red-600 font-semibold">
-                            ৳{result.finalFine}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <CompletenessChip
-                          weeksUsed={result.weeksCountUsed}
-                          expectedWeeks={result.expectedWeeksCount}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <MonthStatusChip
-                          status={result.status as "OPEN" | "LOCKED"}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleViewBreakdown(result.monthKey)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background hover:bg-accent"
-                          aria-label="View marks breakdown"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
       {/* Performance Trend */}
-      {results.length > 0 && (
+      {myResults.length > 0 && (
         <PerformanceTrendChart
-          data={results.slice(0, 6).map((r) => ({
+          data={myResults.slice(0, 6).map((r) => ({
             monthKey: r.monthKey,
             monthlyScore: r.monthlyScore,
             tier: r.tier,
@@ -475,8 +491,9 @@ export default function EmployeeDashboard() {
         />
       )}
 
+      {/* Marks Breakdown Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>
               Marks Breakdown • {formatMonthDisplay(selectedMonthKey || "")}
@@ -548,7 +565,7 @@ export default function EmployeeDashboard() {
                                   {week.submissions.indexOf(submission) + 1}
                                 </div>
                                 <div className="text-right">
-                                  <div className="text-lg font-semibold text-primary">
+                                  <div className="font-bold text-lg text-primary">
                                     {submission.totalScore.toFixed(2)}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
@@ -556,15 +573,14 @@ export default function EmployeeDashboard() {
                                   </div>
                                 </div>
                               </div>
-
                               {submission.criteriaScores.length > 0 && (
-                                <div className="mt-2 pt-2 border-t">
+                                <div className="text-sm border-t pt-2">
                                   <div className="text-xs font-medium mb-2">
                                     Criteria Breakdown:
                                   </div>
                                   <Table className="text-xs border">
-                                    <TableHeader className="bg-muted">
-                                      <TableRow className="*:border-x">
+                                    <TableHeader>
+                                      <TableRow>
                                         <TableHead className="text-xs font-medium">
                                           Criteria
                                         </TableHead>
@@ -575,16 +591,13 @@ export default function EmployeeDashboard() {
                                     </TableHeader>
                                     <TableBody>
                                       {submission.criteriaScores.map(
-                                        (criteria) => (
-                                          <TableRow
-                                            className="*:border-x"
-                                            key={criteria.criteriaId}
-                                          >
+                                        (score) => (
+                                          <TableRow key={score.criteriaId}>
                                             <TableCell className="text-xs">
-                                              {criteria.criteriaName}
+                                              {score.criteriaName}
                                             </TableCell>
                                             <TableCell className="text-xs text-right font-medium">
-                                              {criteria.score.toFixed(2)}
+                                              {score.score.toFixed(2)}
                                             </TableCell>
                                           </TableRow>
                                         ),
@@ -593,13 +606,12 @@ export default function EmployeeDashboard() {
                                   </Table>
                                 </div>
                               )}
-
                               {submission.comment && (
-                                <div className="mt-2 pt-2 border-t">
-                                  <div className="text-xs font-medium mb-1">
+                                <div className="text-sm border-t pt-2">
+                                  <div className="text-muted-foreground">
                                     Comment:
                                   </div>
-                                  <div className="text-xs text-muted-foreground italic">
+                                  <div className="text-xs mt-1">
                                     {submission.comment}
                                   </div>
                                 </div>

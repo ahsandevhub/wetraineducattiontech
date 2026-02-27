@@ -1,5 +1,17 @@
-import { createClient } from "@/app/utils/supabase/server";
+import { getSupabaseUrl } from "@/lib/supabase/env";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export async function createAdminClient() {
-  return createClient();
+  const secretKey = process.env.SUPABASE_SECRET_KEY;
+
+  if (!secretKey) {
+    throw new Error("SUPABASE_SECRET_KEY is not set in environment");
+  }
+
+  return createSupabaseClient(getSupabaseUrl(), secretKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
 }
