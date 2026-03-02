@@ -112,12 +112,46 @@ export async function POST(request: NextRequest) {
           hint: monthError.hint,
         });
         const monthErrorMessage = monthError.message?.toLowerCase() || "";
+        const monthErrorDetails = monthError.details?.toLowerCase() || "";
+        const yearMonthNotNullViolation =
+          monthError.code === "23502" &&
+          (monthErrorMessage.includes("year_month") ||
+            monthErrorDetails.includes("year_month"));
         const missingStartOrEndDateColumn =
           monthError.code === "PGRST204" &&
           (monthErrorMessage.includes("start_date") ||
             monthErrorMessage.includes("end_date"));
 
-        if (missingStartOrEndDateColumn) {
+        if (yearMonthNotNullViolation) {
+          const { data: withYearMonth, error: withYearMonthError } =
+            await supabase
+              .from("hrm_months")
+              .insert({
+                month_key: monthKey,
+                start_date: startDateISO,
+                end_date: endDateISO,
+                year_month: startDateISO,
+              })
+              .select("id")
+              .single();
+
+          if (withYearMonthError) {
+            if (withYearMonthError.code === "23505") {
+              const { data: raceMonth, error: raceMonthError } = await supabase
+                .from("hrm_months")
+                .select("id")
+                .eq("month_key", monthKey)
+                .single();
+
+              if (raceMonthError) throw raceMonthError;
+              monthId = raceMonth.id;
+            } else {
+              throw withYearMonthError;
+            }
+          } else {
+            monthId = withYearMonth.id;
+          }
+        } else if (missingStartOrEndDateColumn) {
           const { data: fallbackMonth, error: fallbackError } = await supabase
             .from("hrm_months")
             .insert({
