@@ -103,6 +103,7 @@ export default function MonthlyReportPage() {
       daysOverdue: number;
     }>;
   } | null>(null);
+  const [pendingPreviewPage, setPendingPreviewPage] = useState(1);
   const [summary, setSummary] = useState({
     totalSubjects: 0,
     bonusTier: 0,
@@ -219,6 +220,7 @@ export default function MonthlyReportPage() {
   const openComputeConfirm = async () => {
     setComputeConfirmOpen(true);
     setPreviewLoading(true);
+    setPendingPreviewPage(1);
     setComputePreview(null);
     try {
       const [submissionsRes, pendingRes, weeksRes] = await Promise.all([
@@ -237,14 +239,12 @@ export default function MonthlyReportPage() {
         submissionsCount: submissionsData.submissions?.length ?? 0,
         weeksCount: weeksData.weeks?.length ?? 0,
         pendingCount: pendingData.pendingCount ?? 0,
-        pendingList: (pendingData.submissions ?? [])
-          .slice(0, 10)
-          .map((p: any) => ({
-            weekKey: p.weekKey,
-            markerName: p.markerName,
-            subjectName: p.subjectName,
-            daysOverdue: p.daysOverdue,
-          })),
+        pendingList: (pendingData.submissions ?? []).map((p: any) => ({
+          weekKey: p.weekKey,
+          markerName: p.markerName,
+          subjectName: p.subjectName,
+          daysOverdue: p.daysOverdue,
+        })),
       });
     } catch (error) {
       console.error("Failed to load compute preview:", error);
@@ -878,93 +878,162 @@ export default function MonthlyReportPage() {
               </div>
             ) : computePreview ? (
               <div className="space-y-6">
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="rounded-lg border p-4 text-center">
-                    <div className="text-3xl font-bold text-primary">
-                      {computePreview.weeksCount}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Weeks with data
-                    </div>
-                  </div>
-                  <div className="rounded-lg border p-4 text-center">
-                    <div className="text-3xl font-bold text-green-600">
-                      {computePreview.submissionsCount}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Submissions recorded
-                    </div>
-                  </div>
-                  <div className="rounded-lg border p-4 text-center">
-                    <div
-                      className={`text-3xl font-bold ${computePreview.pendingCount > 0 ? "text-orange-600" : "text-green-600"}`}
-                    >
-                      {computePreview.pendingCount}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Pending (overdue)
-                    </div>
-                  </div>
-                </div>
+                {(() => {
+                  const pendingPageSize = 10;
+                  const totalPendingPages = Math.max(
+                    1,
+                    Math.ceil(
+                      computePreview.pendingList.length / pendingPageSize,
+                    ),
+                  );
+                  const safePendingPage = Math.min(
+                    pendingPreviewPage,
+                    totalPendingPages,
+                  );
+                  const startIndex = (safePendingPage - 1) * pendingPageSize;
+                  const endIndex = startIndex + pendingPageSize;
+                  const pagedPendingList = computePreview.pendingList.slice(
+                    startIndex,
+                    endIndex,
+                  );
 
-                {/* Pending submissions breakdown */}
-                {computePreview.pendingCount > 0 ? (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5 text-orange-700">
-                      <AlertCircle className="h-4 w-4" />
-                      Pending Submissions
-                      {computePreview.pendingCount > 10 && (
-                        <span className="text-xs font-normal text-muted-foreground">
-                          (showing first 10 of {computePreview.pendingCount})
-                        </span>
+                  return (
+                    <>
+                      {/* Stats row */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="rounded-lg border p-4 text-center">
+                          <div className="text-3xl font-bold text-primary">
+                            {computePreview.weeksCount}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Weeks with data
+                          </div>
+                        </div>
+                        <div className="rounded-lg border p-4 text-center">
+                          <div className="text-3xl font-bold text-green-600">
+                            {computePreview.submissionsCount}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Submissions recorded
+                          </div>
+                        </div>
+                        <div className="rounded-lg border p-4 text-center">
+                          <div
+                            className={`text-3xl font-bold ${computePreview.pendingCount > 0 ? "text-orange-600" : "text-green-600"}`}
+                          >
+                            {computePreview.pendingCount}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Pending (overdue)
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pending submissions breakdown */}
+                      {computePreview.pendingCount > 0 ? (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5 text-orange-700">
+                            <AlertCircle className="h-4 w-4" />
+                            Pending Submissions
+                            {computePreview.pendingCount > 0 && (
+                              <span className="text-xs font-normal text-muted-foreground">
+                                (showing {startIndex + 1}-
+                                {Math.min(
+                                  endIndex,
+                                  computePreview.pendingCount,
+                                )}{" "}
+                                of {computePreview.pendingCount})
+                              </span>
+                            )}
+                          </h4>
+                          <div className="rounded-md border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-xs">
+                                    Week
+                                  </TableHead>
+                                  <TableHead className="text-xs">
+                                    Marker Admin
+                                  </TableHead>
+                                  <TableHead className="text-xs">
+                                    Subject
+                                  </TableHead>
+                                  <TableHead className="text-xs text-right">
+                                    Days Overdue
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {pagedPendingList.map((item, idx) => (
+                                  <TableRow key={idx}>
+                                    <TableCell className="font-mono text-xs">
+                                      {item.weekKey}
+                                    </TableCell>
+                                    <TableCell className="text-xs">
+                                      {item.markerName}
+                                    </TableCell>
+                                    <TableCell className="text-xs">
+                                      {item.subjectName}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-right font-semibold text-orange-600">
+                                      {item.daysOverdue}d
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                          {computePreview.pendingCount > pendingPageSize && (
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                              <p className="text-xs text-muted-foreground">
+                                Page {safePendingPage} of {totalPendingPages}
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    setPendingPreviewPage((prev) =>
+                                      Math.max(1, prev - 1),
+                                    )
+                                  }
+                                  disabled={safePendingPage === 1}
+                                >
+                                  Previous
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    setPendingPreviewPage((prev) =>
+                                      Math.min(totalPendingPages, prev + 1),
+                                    )
+                                  }
+                                  disabled={
+                                    safePendingPage === totalPendingPages
+                                  }
+                                >
+                                  Next
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            ⚠ These subjects will be computed with 0 score for
+                            missed weeks.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800 text-sm">
+                          <CheckCircle2 className="h-5 w-5 shrink-0" />
+                          All submissions are in — no overdue marks for this
+                          month.
+                        </div>
                       )}
-                    </h4>
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-xs">Week</TableHead>
-                            <TableHead className="text-xs">
-                              Marker Admin
-                            </TableHead>
-                            <TableHead className="text-xs">Subject</TableHead>
-                            <TableHead className="text-xs text-right">
-                              Days Overdue
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {computePreview.pendingList.map((item, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell className="font-mono text-xs">
-                                {item.weekKey}
-                              </TableCell>
-                              <TableCell className="text-xs">
-                                {item.markerName}
-                              </TableCell>
-                              <TableCell className="text-xs">
-                                {item.subjectName}
-                              </TableCell>
-                              <TableCell className="text-xs text-right font-semibold text-orange-600">
-                                {item.daysOverdue}d
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      ⚠ These subjects will be computed with 0 score for missed
-                      weeks.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800 text-sm">
-                    <CheckCircle2 className="h-5 w-5 shrink-0" />
-                    All submissions are in — no overdue marks for this month.
-                  </div>
-                )}
+                    </>
+                  );
+                })()}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground text-sm">
