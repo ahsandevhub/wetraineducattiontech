@@ -79,7 +79,7 @@ export async function CrmReportsPanel({
       status,
       source,
       owner_id,
-      owner:crm_users!crm_leads_owner_id_fkey(id, full_name)
+      owner:crm_users!crm_leads_owner_id_fkey(id)
     `,
     { count: "exact" },
   );
@@ -93,6 +93,28 @@ export async function CrmReportsPanel({
   }
 
   const { data: leads } = await breakdownQuery.limit(5000); // Fetch up to 5000 for accurate breakdowns
+
+  const ownerIds = Array.from(
+    new Set(
+      (leads || [])
+        .map((lead) => lead.owner_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+
+  const { data: ownerProfiles } = ownerIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", ownerIds)
+    : { data: [] as { id: string; full_name: string | null }[] };
+
+  const ownerNameMap = new Map(
+    (ownerProfiles || []).map((profile) => [
+      profile.id,
+      profile.full_name ?? null,
+    ]),
+  );
 
   // Get marketer performance
   interface MarketerStat {
@@ -127,11 +149,9 @@ export async function CrmReportsPanel({
       const ownerRelation = lead.owner as
         | {
             id: string;
-            full_name?: string | null;
           }
         | {
             id: string;
-            full_name?: string | null;
           }[]
         | null
         | undefined;
@@ -139,7 +159,7 @@ export async function CrmReportsPanel({
         ? (ownerRelation[0] ?? null)
         : ownerRelation;
       const ownerName = normalizeLabel(
-        owner?.full_name,
+        owner?.id ? ownerNameMap.get(owner.id) ?? null : null,
         ownerId ? "Unknown" : "Unassigned",
       );
 

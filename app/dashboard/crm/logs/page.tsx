@@ -44,16 +44,14 @@ export default async function LogsPage({
   );
   const offset = (pageNumber - 1) * pageSize;
 
-  // Build query for contact logs (use crm_users join fields directly)
+  // Build query for contact logs (crm_users stays id-only; enrich from profiles)
   let logsQuery = supabase
     .from("crm_contact_logs")
     .select(
       `
       *,
       user:crm_users!crm_contact_logs_user_id_fkey (
-        id,
-        full_name,
-        email
+        id
       ),
       lead:crm_leads (
         id,
@@ -96,19 +94,42 @@ export default async function LogsPage({
   const { data: logsRaw, count } = await logsQuery;
   const totalCount = count ?? 0;
 
+  const userIds = Array.from(
+    new Set(
+      (logsRaw || [])
+        .map((log) => (log.user as { id: string } | null)?.id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+
+  const { data: profiles } = userIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds)
+    : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
+
+  const profileMap = new Map(
+    (profiles || []).map((profile) => [
+      profile.id,
+      {
+        full_name: profile.full_name ?? null,
+        email: profile.email ?? null,
+      },
+    ]),
+  );
+
   const logs = (logsRaw || []).map((l) => {
     const user = l.user as {
       id: string;
-      full_name?: string | null;
-      email?: string | null;
     } | null;
     return {
       ...l,
       user: user
         ? {
             id: user.id,
-            full_name: user.full_name ?? null,
-            email: user.email ?? null,
+            full_name: profileMap.get(user.id)?.full_name ?? null,
+            email: profileMap.get(user.id)?.email ?? null,
           }
         : null,
     };

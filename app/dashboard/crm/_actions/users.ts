@@ -90,18 +90,10 @@ export async function linkUserToCRM(data: LinkUserToCRMData) {
       return { data: null, error: "User already linked to CRM" };
     }
 
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", data.userId)
-      .maybeSingle();
-
     // Insert into crm_users
     const { error } = await supabaseAdmin.from("crm_users").insert({
       id: data.userId,
       crm_role: data.crmRole,
-      full_name: profile?.full_name ?? null,
-      email: profile?.email ?? null,
     });
 
     if (error) {
