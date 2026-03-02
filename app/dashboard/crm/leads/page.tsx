@@ -23,6 +23,15 @@ export default async function LeadsPage({
 
   const isAdmin = crmRole === "ADMIN";
 
+  const hasMissingCrmUserColumns = (err: unknown) => {
+    const e = err as { code?: string; message?: string } | null;
+    const message = e?.message || "";
+    return (
+      e?.code === "42703" &&
+      (/crm_users/i.test(message) && /full_name|email/i.test(message))
+    );
+  };
+
   // Get CRM user ID (crm_users.id = auth.users.id)
   const { data: crmUser } = await supabase
     .from("crm_users")
@@ -53,71 +62,108 @@ export default async function LeadsPage({
   );
   const offset = (pageNumber - 1) * pageSize;
 
-  // Build initial query (use crm_users join fields directly for stable name visibility)
-  let q = supabase
-    .from("crm_leads")
-    .select(
-      `
-    *,
-    owner:crm_users!crm_leads_owner_id_fkey (
-      id,
-      full_name,
-      email
-    ),
-    contact_logs:crm_contact_logs (
-      notes,
-      created_at,
-      contact_type,
-      user:crm_users!crm_contact_logs_user_id_fkey (
+  const applyLeadFilters = (query: any) => {
+    let q = query.order("created_at", { ascending: false });
+
+    if (!isAdmin) {
+      q = q.eq("owner_id", crmUser.id);
+    }
+
+    if (search) {
+      q = q.or(
+        `name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`,
+      );
+    }
+
+    if (status && status !== "all") {
+      q = q.eq("status", status.toUpperCase());
+    }
+
+    if (source && source !== "all") {
+      q = q.eq("source", source.toUpperCase());
+    }
+
+    if (owner && owner !== "all" && isAdmin) {
+      if (owner === "unassigned") {
+        q = q.is("owner_id", null);
+      } else {
+        q = q.eq("owner_id", owner);
+      }
+    }
+
+    if (fromDate) {
+      q = q.gte("created_at", fromDate);
+    }
+
+    if (toDate) {
+      q = q.lte("created_at", `${toDate}T23:59:59`);
+    }
+
+    return q.range(offset, offset + pageSize - 1);
+  };
+
+  let leadData: unknown[] | null = null;
+  let count: number | null = 0;
+  let error: { code?: string; message?: string } | null = null;
+
+  {
+    const result = await applyLeadFilters(
+      supabase.from("crm_leads").select(
+        `
+      *,
+      owner:crm_users!crm_leads_owner_id_fkey (
         id,
         full_name,
         email
+      ),
+      contact_logs:crm_contact_logs (
+        notes,
+        created_at,
+        contact_type,
+        user:crm_users!crm_contact_logs_user_id_fkey (
+          id,
+          full_name,
+          email
+        )
       )
-    )
-  `,
-      { count: "exact" },
-    )
-    .order("created_at", { ascending: false });
-
-  if (!isAdmin) {
-    q = q.eq("owner_id", crmUser.id);
-  }
-
-  // Apply filters
-  if (search) {
-    q = q.or(
-      `name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`,
+    `,
+        { count: "exact" },
+      ),
     );
+    leadData = (result.data as unknown[] | null) ?? null;
+    count = result.count;
+    error = result.error;
   }
 
-  if (status && status !== "all") {
-    q = q.eq("status", status.toUpperCase());
+  if (hasMissingCrmUserColumns(error)) {
+    console.warn(
+      "crm_users.full_name/email missing; falling back to id-only CRM joins for leads page",
+    );
+
+    const fallbackResult = await applyLeadFilters(
+      supabase.from("crm_leads").select(
+        `
+      *,
+      owner:crm_users!crm_leads_owner_id_fkey (
+        id
+      ),
+      contact_logs:crm_contact_logs (
+        notes,
+        created_at,
+        contact_type,
+        user:crm_users!crm_contact_logs_user_id_fkey (
+          id
+        )
+      )
+    `,
+        { count: "exact" },
+      ),
+    );
+
+    leadData = (fallbackResult.data as unknown[] | null) ?? null;
+    count = fallbackResult.count;
+    error = fallbackResult.error;
   }
-
-  if (source && source !== "all") {
-    q = q.eq("source", source.toUpperCase());
-  }
-
-  if (owner && owner !== "all" && isAdmin) {
-    if (owner === "unassigned") {
-      q = q.is("owner_id", null);
-    } else {
-      q = q.eq("owner_id", owner);
-    }
-  }
-
-  if (fromDate) {
-    q = q.gte("created_at", fromDate);
-  }
-
-  if (toDate) {
-    q = q.lte("created_at", `${toDate}T23:59:59`);
-  }
-
-  // Apply pagination
-  q = q.range(offset, offset + pageSize - 1);
-
-  const { data: leadData, count, error } = await q;
 
   if (error) {
     console.error("Error fetching leads:", error);
@@ -178,10 +224,36 @@ export default async function LeadsPage({
   })[];
 
   // Fetch all marketers for admin and marketer reassignment
-  const { data: marketerUsers } = await supabase
-    .from("crm_users")
-    .select("id, crm_role, full_name, email, created_at, updated_at")
-    .eq("crm_role", "MARKETER");
+  type MarketerRow = {
+    id: string;
+    crm_role: "ADMIN" | "MARKETER";
+    created_at: string;
+    updated_at: string;
+    full_name?: string | null;
+    email?: string | null;
+  };
+  let marketerUsers: MarketerRow[] = [];
+
+  {
+    const marketerResult = await supabase
+      .from("crm_users")
+      .select("id, crm_role, full_name, email, created_at, updated_at")
+      .eq("crm_role", "MARKETER");
+
+    if (hasMissingCrmUserColumns(marketerResult.error)) {
+      console.warn(
+        "crm_users.full_name/email missing; falling back to id-only marketer query",
+      );
+      const fallbackMarketerResult = await supabase
+        .from("crm_users")
+        .select("id, crm_role, created_at, updated_at")
+        .eq("crm_role", "MARKETER");
+
+      marketerUsers = (fallbackMarketerResult.data || []) as MarketerRow[];
+    } else {
+      marketerUsers = (marketerResult.data || []) as MarketerRow[];
+    }
+  }
   const marketers = (marketerUsers || [])
     .map((u) => ({
       id: u.id,
