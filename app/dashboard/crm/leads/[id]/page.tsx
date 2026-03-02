@@ -33,16 +33,14 @@ export default async function LeadDetailPage({
     redirect("/unauthorized");
   }
 
-  // Fetch lead with owner info from crm_users
+  // Fetch lead with owner id from crm_users (profile data comes from profiles)
   const { data: lead } = await supabase
     .from("crm_leads")
     .select(
       `
       *,
       owner:crm_users!crm_leads_owner_id_fkey (
-        id,
-        full_name,
-        email
+        id
       )
     `,
     )
@@ -58,16 +56,14 @@ export default async function LeadDetailPage({
     redirect("/dashboard/crm/leads");
   }
 
-  // Fetch contact logs with crm_users fields directly
+  // Fetch contact logs with crm_users id (profile data comes from profiles)
   const { data: rawLogs } = await supabase
     .from("crm_contact_logs")
     .select(
       `
       *,
       user:crm_users!crm_contact_logs_user_id_fkey (
-        id,
-        full_name,
-        email
+        id
       )
     `,
     )
@@ -76,16 +72,41 @@ export default async function LeadDetailPage({
 
   const owner = lead.owner as {
     id: string;
-    full_name?: string | null;
-    email?: string | null;
   } | null;
+
+  const relatedUserIds = Array.from(
+    new Set([
+      ...(owner?.id ? [owner.id] : []),
+      ...((rawLogs || [])
+        .map((log) => (log.user as { id: string } | null)?.id)
+        .filter((userId): userId is string => Boolean(userId))),
+    ]),
+  );
+
+  const { data: profiles } = relatedUserIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", relatedUserIds)
+    : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
+
+  const profileMap = new Map(
+    (profiles || []).map((profile) => [
+      profile.id,
+      {
+        full_name: profile.full_name ?? null,
+        email: profile.email ?? null,
+      },
+    ]),
+  );
+
   const leadWithOwner = {
     ...lead,
     owner: owner
       ? {
           id: owner.id,
-          full_name: owner.full_name ?? null,
-          email: owner.email ?? null,
+          full_name: profileMap.get(owner.id)?.full_name ?? null,
+          email: profileMap.get(owner.id)?.email ?? null,
         }
       : undefined,
   };
@@ -93,16 +114,14 @@ export default async function LeadDetailPage({
   const logs = (rawLogs || []).map((log) => {
     const u = log.user as {
       id: string;
-      full_name?: string | null;
-      email?: string | null;
     } | null;
     return {
       ...log,
       user: u
         ? {
             id: u.id,
-            full_name: u.full_name ?? null,
-            email: u.email ?? null,
+            full_name: profileMap.get(u.id)?.full_name ?? null,
+            email: profileMap.get(u.id)?.email ?? null,
           }
         : undefined,
     };
