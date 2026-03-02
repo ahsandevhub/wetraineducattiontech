@@ -27,13 +27,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   formatWeekWithNumber,
   getCurrentMonthKey,
   getMonthKeyFromWeekKey,
   getMonthOptions,
 } from "@/lib/hrm/week-utils";
-import { Eye } from "lucide-react";
+import { AlertCircle, Eye, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -72,6 +73,18 @@ type HrmUser = {
   hrm_role: "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE";
 };
 
+type PendingSubmission = {
+  weekKey: string;
+  fridayDate: string;
+  markerAdminId: string;
+  markerName: string;
+  markerEmail: string;
+  subjectUserId: string;
+  subjectName: string;
+  subjectEmail: string;
+  daysOverdue: number;
+};
+
 export default function SubmissionsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [availableWeeks, setAvailableWeeks] = useState<
@@ -100,15 +113,33 @@ export default function SubmissionsPage() {
   const [selectedSubmission, setSelectedSubmission] =
     useState<Submission | null>(null);
 
+  // Pending submissions tab
+  const [activeTab, setActiveTab] = useState("submitted");
+  const [pendingSubmissions, setPendingSubmissions] = useState<
+    PendingSubmission[]
+  >([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+
   useEffect(() => {
     fetchAdminsAndEmployees();
     fetchAvailableWeeks();
   }, []);
 
   useEffect(() => {
-    fetchSubmissions();
+    if (activeTab === "submitted") {
+      fetchSubmissions();
+    } else {
+      fetchPendingSubmissions();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, selectedWeek, selectedAdmin, selectedSubject, search]);
+  }, [
+    activeTab,
+    selectedMonth,
+    selectedWeek,
+    selectedAdmin,
+    selectedSubject,
+    search,
+  ]);
 
   // Filter weeks by selected month
   useEffect(() => {
@@ -201,6 +232,42 @@ export default function SubmissionsPage() {
     }
   };
 
+  const fetchPendingSubmissions = async () => {
+    setPendingLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (selectedMonth) params.set("monthKey", selectedMonth);
+      if (selectedWeek !== "all") params.set("weekKey", selectedWeek);
+      if (selectedAdmin !== "all") params.set("markerAdminId", selectedAdmin);
+      if (selectedSubject !== "all")
+        params.set("subjectUserId", selectedSubject);
+
+      const response = await fetch(`/api/hrm/admin/kpi/pending?${params}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to fetch pending submissions");
+      }
+
+      setPendingSubmissions(result.submissions || []);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch pending submissions";
+      toast.error(message);
+    } finally {
+      setPendingLoading(false);
+    }
+  };
+
+  const getOverdueColor = (days: number) => {
+    if (days >= 30) return "text-red-700 font-semibold";
+    if (days >= 14) return "text-orange-600 font-semibold";
+    if (days >= 7) return "text-amber-600 font-semibold";
+    return "text-yellow-600 font-semibold";
+  };
+
   const handleViewDetails = (submission: Submission) => {
     setSelectedSubmission(submission);
     setDetailDialogOpen(true);
@@ -236,169 +303,358 @@ export default function SubmissionsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Submitted Marks - {submissions.length} shown
-            {selectedWeek !== "all" && (
-              <span className="text-muted-foreground font-normal text-base ml-2">
-                • {formatWeekWithNumber(selectedWeek)}
-              </span>
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
+        <TabsList>
+          <TabsTrigger value="submitted">
+            Submitted
+            {submissions.length > 0 && (
+              <Badge variant="secondary" className="ml-1.5 text-xs">
+                {submissions.length}
+              </Badge>
             )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Filters */}
-          <DataTableToolbar
-            searchValue={search}
-            onSearchChange={setSearch}
-            searchPlaceholder="Search by admin or subject name..."
-          >
-            <Select value={selectedMonth} onValueChange={handleMonthChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select month" />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          </TabsTrigger>
+          <TabsTrigger value="pending">
+            Pending
+            {pendingSubmissions.length > 0 && (
+              <Badge className="ml-1.5 bg-orange-100 text-orange-800 text-xs">
+                {pendingSubmissions.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-            <Select value={selectedWeek} onValueChange={handleWeekChange}>
-              <SelectTrigger className="w-[220px]">
-                <SelectValue placeholder="All Weeks" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Weeks</SelectItem>
-                {filteredWeeks.map((week) => (
-                  <SelectItem key={week.week_key} value={week.week_key}>
-                    {formatWeekWithNumber(week.week_key)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* ── Submitted Tab ── */}
+        <TabsContent value="submitted">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Submitted Marks - {submissions.length} shown
+                {selectedWeek !== "all" && (
+                  <span className="text-muted-foreground font-normal text-base ml-2">
+                    • {formatWeekWithNumber(selectedWeek)}
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Filters */}
+              <DataTableToolbar
+                searchValue={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Search by admin or subject name..."
+              >
+                <Select value={selectedMonth} onValueChange={handleMonthChange}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select value={selectedAdmin} onValueChange={setSelectedAdmin}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Admins" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Admins</SelectItem>
-                {admins.map((admin) => (
-                  <SelectItem key={admin.id} value={admin.id}>
-                    {admin.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <Select value={selectedWeek} onValueChange={handleWeekChange}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="All Weeks" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Weeks</SelectItem>
+                    {filteredWeeks.map((week) => (
+                      <SelectItem key={week.week_key} value={week.week_key}>
+                        {formatWeekWithNumber(week.week_key)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Subjects" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Subjects</SelectItem>
-                {admins.map((admin) => (
-                  <SelectItem key={admin.id} value={admin.id}>
-                    {admin.full_name}
-                  </SelectItem>
-                ))}
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </DataTableToolbar>
+                <Select value={selectedAdmin} onValueChange={setSelectedAdmin}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Admins" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Admins</SelectItem>
+                    {admins.map((admin) => (
+                      <SelectItem key={admin.id} value={admin.id}>
+                        {admin.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-          {/* Table */}
-          {loading ? (
-            <TableSkeleton columns={7} rows={10} />
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Week</TableHead>
-                    <TableHead>Marked By (Admin)</TableHead>
-                    <TableHead>Subject (Employee)</TableHead>
-                    <TableHead>Total Score</TableHead>
-                    <TableHead>Week Status</TableHead>
-                    <TableHead>Submitted At</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {submissions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
-                        No submissions found for the selected filters.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    submissions.map((submission) => (
-                      <TableRow key={submission.id}>
-                        <TableCell className="font-mono font-medium">
-                          {formatWeekWithNumber(submission.weekKey)}
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              {submission.markerAdmin.fullName}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {submission.markerAdmin.email}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              {submission.subject.fullName}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {submission.subject.email}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-mono text-lg font-semibold">
-                            {submission.totalScore.toFixed(2)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {submission.weekStatus === "OPEN" ? (
-                            <Badge variant="default">Open</Badge>
-                          ) : (
-                            <Badge variant="secondary">Locked</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(submission.submittedAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetails(submission)}
-                          >
-                            <Eye className="mr-1 h-4 w-4" />
-                            View
-                          </Button>
-                        </TableCell>
+                <Select
+                  value={selectedSubject}
+                  onValueChange={setSelectedSubject}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="All Subjects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Subjects</SelectItem>
+                    {admins.map((admin) => (
+                      <SelectItem key={admin.id} value={admin.id}>
+                        {admin.full_name}
+                      </SelectItem>
+                    ))}
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </DataTableToolbar>
+
+              {/* Table */}
+              {loading ? (
+                <TableSkeleton columns={7} rows={10} />
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Week</TableHead>
+                        <TableHead>Marked By (Admin)</TableHead>
+                        <TableHead>Subject (Employee)</TableHead>
+                        <TableHead>Total Score</TableHead>
+                        <TableHead>Week Status</TableHead>
+                        <TableHead>Submitted At</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {submissions.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-24 text-center">
+                            No submissions found for the selected filters.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        submissions.map((submission) => (
+                          <TableRow key={submission.id}>
+                            <TableCell className="font-mono font-medium">
+                              {formatWeekWithNumber(submission.weekKey)}
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">
+                                  {submission.markerAdmin.fullName}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {submission.markerAdmin.email}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">
+                                  {submission.subject.fullName}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {submission.subject.email}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-lg font-semibold">
+                                {submission.totalScore.toFixed(2)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {submission.weekStatus === "OPEN" ? (
+                                <Badge variant="default">Open</Badge>
+                              ) : (
+                                <Badge variant="secondary">Locked</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {formatDate(submission.submittedAt)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewDetails(submission)}
+                              >
+                                <Eye className="mr-1 h-4 w-4" />
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Pending Tab ── */}
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Pending Submissions
+                {pendingLoading && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Filters */}
+              <div className="flex flex-wrap gap-3">
+                <Select value={selectedMonth} onValueChange={handleMonthChange}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedWeek} onValueChange={handleWeekChange}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="All Weeks" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Weeks</SelectItem>
+                    {filteredWeeks.map((week) => (
+                      <SelectItem key={week.week_key} value={week.week_key}>
+                        {formatWeekWithNumber(week.week_key)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={selectedAdmin} onValueChange={setSelectedAdmin}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="All Admins" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Admins</SelectItem>
+                    {admins.map((admin) => (
+                      <SelectItem key={admin.id} value={admin.id}>
+                        {admin.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={selectedSubject}
+                  onValueChange={setSelectedSubject}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="All Subjects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Subjects</SelectItem>
+                    {admins.map((admin) => (
+                      <SelectItem key={admin.id} value={admin.id}>
+                        {admin.full_name}
+                      </SelectItem>
+                    ))}
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        {employee.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Pending Table */}
+              {pendingLoading ? (
+                <TableSkeleton columns={5} rows={8} />
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Week</TableHead>
+                        <TableHead>Deadline (Friday)</TableHead>
+                        <TableHead>Days Overdue</TableHead>
+                        <TableHead>Marker (Admin)</TableHead>
+                        <TableHead>Subject (Employee)</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingSubmissions.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={5}
+                            className="h-24 text-center text-muted-foreground"
+                          >
+                            <div className="flex flex-col items-center gap-2">
+                              <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                              No pending submissions — everything is up to date!
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        pendingSubmissions.map((item) => (
+                          <TableRow
+                            key={`${item.weekKey}-${item.markerAdminId}-${item.subjectUserId}`}
+                          >
+                            <TableCell className="font-mono font-medium">
+                              {formatWeekWithNumber(item.weekKey)}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(item.fridayDate).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                },
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={getOverdueColor(item.daysOverdue)}
+                              >
+                                {item.daysOverdue} days
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">
+                                {item.markerName}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {item.markerEmail}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-medium">
+                                {item.subjectName}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {item.subjectEmail}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Details Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>

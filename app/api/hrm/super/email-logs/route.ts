@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         sent_at,
         recipient_email,
         delivery_status,
-        sent_by_admin:hrm_users!sent_by_admin_id(
+        sent_by_admin:hrm_users!hrm_email_logs_sent_by_admin_id_fkey(
           id
         )
       `,
