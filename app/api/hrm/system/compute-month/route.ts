@@ -76,20 +76,27 @@ export async function POST(request: NextRequest) {
     let monthId: string;
 
     if (!existingMonth) {
-      // Create month
+      // Create month — omit status so DB DEFAULT 'OPEN' is used;
+      // avoids PGRST204 when hrm_month_status enum isn't in PostgREST schema cache yet.
       const { data: newMonth, error: monthError } = await adminSupabase
         .from("hrm_months")
         .insert({
           month_key: monthKey,
           start_date: startDate.toISOString().split("T")[0],
           end_date: endDate.toISOString().split("T")[0],
-          status: "OPEN",
         })
         .select("id")
         .single();
 
       if (monthError) {
+        console.error("[Compute Month] Error inserting month:", {
+          code: monthError.code,
+          message: monthError.message,
+          details: monthError.details,
+          hint: monthError.hint,
+        });
         if (monthError.code === "23505") {
+          // Race condition: another request already inserted this month
           const { data: raceMonth, error: raceMonthError } = await adminSupabase
             .from("hrm_months")
             .select("id")
@@ -480,8 +487,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error(`[Compute Month] Error computing month ${monthKey}:`, error);
+    // PostgrestError is a plain object (not an Error instance) — extract its message explicitly
     const message =
-      error instanceof Error ? error.message : "Failed to compute month";
+      error instanceof Error
+        ? error.message
+        : (error as { message?: string })?.message ||
+          JSON.stringify(error) ||
+          "Failed to compute month";
     return NextResponse.json({ error: message, monthKey }, { status: 500 });
   }
 }

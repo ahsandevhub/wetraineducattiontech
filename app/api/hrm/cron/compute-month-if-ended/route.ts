@@ -90,19 +90,25 @@ export async function POST(request: NextRequest) {
     if (!existingMonth) {
       const { startDate, endDate } = getMonthDateRange(monthKey);
 
+      // Omit status so DB DEFAULT 'OPEN' is used; avoids PGRST204 when
+      // hrm_month_status enum isn't in PostgREST schema cache after deploy.
       const { data: newMonth, error: monthError } = await supabase
         .from("hrm_months")
         .insert({
           month_key: monthKey,
           start_date: startDate.toISOString().split("T")[0],
           end_date: endDate.toISOString().split("T")[0],
-          status: "OPEN",
         })
         .select("id")
         .single();
 
       if (monthError) {
-        console.error("Error creating month:", monthError);
+        console.error("[Cron Compute Month] Error creating month:", {
+          code: monthError.code,
+          message: monthError.message,
+          details: monthError.details,
+          hint: monthError.hint,
+        });
         throw monthError;
       }
       monthId = newMonth.id;
@@ -328,7 +334,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Cron compute-month-if-ended error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    // PostgrestError is a plain object, not an Error instance
+    const message =
+      error instanceof Error
+        ? error.message
+        : (error as { message?: string })?.message ||
+          JSON.stringify(error) ||
+          "Unknown error";
     return NextResponse.json(
       { error: "Failed to compute/lock month", details: message },
       { status: 500 },
