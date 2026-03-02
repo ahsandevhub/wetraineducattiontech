@@ -7,38 +7,59 @@ import { type NextRequest, NextResponse } from "next/server";
  * Uses publishable/anon key (respects RLS policies)
  */
 export async function updateSession(request: NextRequest) {
-  const supabaseResponse = NextResponse.next({
-    request,
-  });
+  try {
+    const supabaseResponse = NextResponse.next({
+      request,
+    });
 
-  const pathname = request.nextUrl.pathname;
+    const pathname = request.nextUrl.pathname;
 
-  const supabase = createServerClient(
-    getSupabaseUrl(),
-    getSupabasePublicKey(),
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
+    // Safely initialize Supabase client with error handling
+    let supabase;
+    try {
+      supabase = createServerClient(
+        getSupabaseUrl(),
+        getSupabasePublicKey(),
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll(
+              cookiesToSet: Array<{
+                name: string;
+                value: string;
+                options: CookieOptions;
+              }>,
+            ) {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                supabaseResponse.cookies.set(name, value, options),
+              );
+            },
+          },
         },
-        setAll(
-          cookiesToSet: Array<{
-            name: string;
-            value: string;
-            options: CookieOptions;
-          }>,
-        ) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
+      );
+    } catch (error) {
+      console.error(
+        "[Middleware] Failed to initialize Supabase client:",
+        error instanceof Error ? error.message : String(error),
+      );
+      // Return response without user auth if Supabase client fails
+      return supabaseResponse;
+    }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    let user = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      user = data?.user ?? null;
+    } catch (error) {
+      console.error(
+        "[Middleware] Failed to get user:",
+        error instanceof Error ? error.message : String(error),
+      );
+      // Continue with no user if auth check fails
+      user = null;
+    }
 
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isLoginRoute = pathname.startsWith("/login");
@@ -210,4 +231,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   return supabaseResponse;
+  } catch (error) {
+    console.error(
+      "[Middleware] Unexpected error:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return NextResponse.next({ request });
+  }
 }
