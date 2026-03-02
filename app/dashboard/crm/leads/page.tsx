@@ -53,21 +53,25 @@ export default async function LeadsPage({
   );
   const offset = (pageNumber - 1) * pageSize;
 
-  // Build initial query (only get id from crm_users FK joins, enrich names from profiles)
+  // Build initial query (use crm_users join fields directly for stable name visibility)
   let q = supabase
     .from("crm_leads")
     .select(
       `
     *,
     owner:crm_users!crm_leads_owner_id_fkey (
-      id
+      id,
+      full_name,
+      email
     ),
     contact_logs:crm_contact_logs (
       notes,
       created_at,
       contact_type,
       user:crm_users!crm_contact_logs_user_id_fkey (
-        id
+        id,
+        full_name,
+        email
       )
     )
   `,
@@ -121,41 +125,21 @@ export default async function LeadsPage({
 
   const totalCount = count ?? 0;
 
-  // Collect user IDs to enrich with profiles
   type RawLead = typeof leadData extends (infer T)[] | null ? T : never;
-  const ownerIds = new Set<string>();
-  const logUserIds = new Set<string>();
-  for (const lead of (leadData || []) as RawLead[]) {
-    const l = lead as {
-      owner?: { id: string } | null;
-      contact_logs?: { user?: { id: string } | null }[] | null;
-    };
-    if (l.owner?.id) ownerIds.add(l.owner.id);
-    for (const log of l.contact_logs || []) {
-      if (log.user?.id) logUserIds.add(log.user.id);
-    }
-  }
-  const allUserIds = [...new Set([...ownerIds, ...logUserIds])];
-  const profileMap = new Map<
-    string,
-    { full_name: string | null; email: string | null }
-  >();
-  if (allUserIds.length > 0) {
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", allUserIds);
-    if (profs) {
-      for (const p of profs) profileMap.set(p.id, p);
-    }
-  }
-
   const leads = ((leadData || []) as RawLead[]).map((lead) => {
     const l = lead as {
-      owner?: { id: string } | null;
+      owner?: {
+        id: string;
+        full_name?: string | null;
+        email?: string | null;
+      } | null;
       contact_logs?:
         | {
-            user?: { id: string } | null;
+            user?: {
+              id: string;
+              full_name?: string | null;
+              email?: string | null;
+            } | null;
             notes: string | null;
             created_at: string;
             contact_type: string;
@@ -166,12 +150,20 @@ export default async function LeadsPage({
     return {
       ...l,
       owner: l.owner
-        ? { id: l.owner.id, ...profileMap.get(l.owner.id) }
+        ? {
+            id: l.owner.id,
+            full_name: l.owner.full_name ?? null,
+            email: l.owner.email ?? null,
+          }
         : undefined,
       contact_logs: (l.contact_logs || []).map((log) => ({
         ...log,
         user: log.user
-          ? { id: log.user.id, ...profileMap.get(log.user.id) }
+          ? {
+              id: log.user.id,
+              full_name: log.user.full_name ?? null,
+              email: log.user.email ?? null,
+            }
           : undefined,
       })),
     };
@@ -185,31 +177,17 @@ export default async function LeadsPage({
     }[];
   })[];
 
-  // Fetch all marketers for admin and marketer reassignment, enriched from profiles
+  // Fetch all marketers for admin and marketer reassignment
   const { data: marketerUsers } = await supabase
     .from("crm_users")
-    .select("id, crm_role, created_at, updated_at")
+    .select("id, crm_role, full_name, email, created_at, updated_at")
     .eq("crm_role", "MARKETER");
-  const marketerIds = (marketerUsers || []).map((u) => u.id);
-  const marketerProfileMap = new Map<
-    string,
-    { full_name: string | null; email: string | null }
-  >();
-  if (marketerIds.length > 0) {
-    const { data: mProfs } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", marketerIds);
-    if (mProfs) {
-      for (const p of mProfs) marketerProfileMap.set(p.id, p);
-    }
-  }
   const marketers = (marketerUsers || [])
     .map((u) => ({
       id: u.id,
       crm_role: u.crm_role as "ADMIN" | "MARKETER",
-      full_name: marketerProfileMap.get(u.id)?.full_name ?? null,
-      email: marketerProfileMap.get(u.id)?.email ?? null,
+      full_name: u.full_name ?? null,
+      email: u.email ?? null,
       created_at: u.created_at,
       updated_at: u.updated_at,
     }))
