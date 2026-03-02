@@ -92,12 +92,6 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (monthError) {
-        console.error("[Compute Month] Error inserting month:", {
-          code: monthError.code,
-          message: monthError.message,
-          details: monthError.details,
-          hint: monthError.hint,
-        });
         const monthErrorMessage = monthError.message?.toLowerCase() || "";
         const monthErrorDetails = monthError.details?.toLowerCase() || "";
         const yearMonthNotNullViolation =
@@ -108,6 +102,29 @@ export async function POST(request: NextRequest) {
           monthError.code === "PGRST204" &&
           (monthErrorMessage.includes("start_date") ||
             monthErrorMessage.includes("end_date"));
+        const isRetriableMonthInsertError =
+          yearMonthNotNullViolation ||
+          missingStartOrEndDateColumn ||
+          monthError.code === "23505";
+
+        const monthInsertErrorPayload = {
+          code: monthError.code,
+          message: monthError.message,
+          details: monthError.details,
+          hint: monthError.hint,
+        };
+
+        if (isRetriableMonthInsertError) {
+          console.warn(
+            "[Compute Month] Month insert attempt failed, applying fallback/retry",
+            monthInsertErrorPayload,
+          );
+        } else {
+          console.error(
+            "[Compute Month] Error inserting month:",
+            monthInsertErrorPayload,
+          );
+        }
 
         if (yearMonthNotNullViolation) {
           const { data: withYearMonth, error: withYearMonthError } =
