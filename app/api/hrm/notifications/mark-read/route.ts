@@ -17,6 +17,22 @@ type MarkReadRequest = {
   markAll?: boolean;
 };
 
+function isMissingNotificationsTableError(error: {
+  code?: string;
+  message?: string;
+}) {
+  if (error.code === "PGRST205") return true;
+
+  const message = error.message?.toLowerCase() || "";
+  return (
+    message.includes("hrm_notifications") &&
+    (message.includes("does not exist") ||
+      message.includes("schema cache") ||
+      message.includes("could not find the table") ||
+      message.includes("relation"))
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -49,16 +65,14 @@ export async function POST(request: NextRequest) {
 
       // Gracefully handle missing table
       if (error) {
-        if (
-          error.message?.includes("relation") ||
-          error.message?.includes("does not exist")
-        ) {
-          console.warn(
-            "hrm_notifications table not found - Migration may not be applied",
-          );
+        if (isMissingNotificationsTableError(error)) {
           return NextResponse.json(
-            { success: false, message: "Notifications not available" },
-            { status: 400 },
+            {
+              success: true,
+              action: "noop",
+              message: "Notifications table not available yet",
+            },
+            { status: 200 },
           );
         }
         console.error("Error marking all as read:", error);
@@ -84,16 +98,14 @@ export async function POST(request: NextRequest) {
 
     // Gracefully handle missing table
     if (error) {
-      if (
-        error.message?.includes("relation") ||
-        error.message?.includes("does not exist")
-      ) {
-        console.warn(
-          "hrm_notifications table not found - Migration may not be applied",
-        );
+      if (isMissingNotificationsTableError(error)) {
         return NextResponse.json(
-          { success: false, message: "Notifications not available" },
-          { status: 400 },
+          {
+            success: true,
+            action: "noop",
+            message: "Notifications table not available yet",
+          },
+          { status: 200 },
         );
       }
       console.error("Error marking notification as read:", error);
@@ -118,4 +130,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
