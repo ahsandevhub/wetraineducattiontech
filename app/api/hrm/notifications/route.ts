@@ -11,6 +11,22 @@
 import { createClient } from "@/app/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
+function isMissingNotificationsTableError(error: {
+  code?: string;
+  message?: string;
+}) {
+  if (error.code === "PGRST205") return true;
+
+  const message = error.message?.toLowerCase() || "";
+  return (
+    message.includes("hrm_notifications") &&
+    (message.includes("does not exist") ||
+      message.includes("schema cache") ||
+      message.includes("could not find the table") ||
+      message.includes("relation"))
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -51,13 +67,7 @@ export async function GET(request: NextRequest) {
 
     // If table doesn't exist (migration not applied), return empty state
     if (error) {
-      if (
-        error.message?.includes("relation") ||
-        error.message?.includes("does not exist")
-      ) {
-        console.warn(
-          "hrm_notifications table not found - Migration may not be applied",
-        );
+      if (isMissingNotificationsTableError(error)) {
         return NextResponse.json({
           notifications: [],
           pagination: {
@@ -108,4 +118,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

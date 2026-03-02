@@ -15,7 +15,7 @@
  * Schedule: Run daily at 01:00 Dhaka time (19:00 UTC previous day)
  */
 
-import { createClient } from "@/app/utils/supabase/server";
+import { createAdminClient } from "@/app/utils/supabase/admin";
 import { verifyCronSecret } from "@/lib/hrm/cron-auth";
 import {
   computeMonthlyResult,
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    const supabase = await createClient();
+    const supabase = await createAdminClient();
 
     // Get current date in Dhaka timezone
     const dhakaDate = getDhakaNow();
@@ -125,10 +125,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get all weeks in this month
-    const { data: weeks } = await supabase
+    const { data: weeks, error: weeksError } = await supabase
       .from("hrm_weeks")
       .select("id, week_key")
       .in("week_key", fridayWeekKeys);
+
+    if (weeksError) {
+      throw weeksError;
+    }
 
     if (!weeks || weeks.length === 0) {
       return NextResponse.json(
@@ -141,13 +145,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const weekIds = weeks.map((w) => w.id);
+    const sortedWeeks = [...weeks].sort((a, b) =>
+      a.week_key.localeCompare(b.week_key),
+    );
+    const weekIds = sortedWeeks.map((w) => w.id);
 
     // Get all weekly results for these weeks
-    const { data: weeklyResults } = await supabase
+    const { data: weeklyResults, error: weeklyResultsError } = await supabase
       .from("hrm_weekly_results")
       .select("subject_user_id, weekly_avg_score")
       .in("week_id", weekIds);
+
+    if (weeklyResultsError) {
+      throw weeklyResultsError;
+    }
 
     if (!weeklyResults || weeklyResults.length === 0) {
       return NextResponse.json(
@@ -175,20 +186,36 @@ export async function POST(request: NextRequest) {
 
     // Compute monthly results for each subject
     let computedCount = 0;
+    const monthlyResultErrors: string[] = [];
 
     for (const subjectId of Object.keys(subjectWeeklyScores)) {
       const { scores } = subjectWeeklyScores[subjectId];
-      const weeksCountUsed = scores.length;
+      const numericScores = scores
+        .map((score) => Number(score))
+        .filter((score) => Number.isFinite(score));
+      const weeksCountUsed = numericScores.length;
+
+      if (weeksCountUsed === 0) {
+        continue;
+      }
+
       const monthlyScore =
-        scores.reduce((sum, score) => sum + score, 0) / weeksCountUsed;
+        numericScores.reduce((sum, score) => sum + score, 0) / weeksCountUsed;
       const isCompleteMonth = weeksCountUsed === expectedWeeksCount;
 
       // Get previous month state
-      const { data: monthState } = await supabase
+      const { data: monthStateRows, error: monthStateError } = await supabase
         .from("hrm_subject_month_states")
         .select("last_month_tier, consecutive_improvement_months")
         .eq("subject_user_id", subjectId)
-        .maybeSingle();
+        .order("updated_at", { ascending: false })
+        .limit(1);
+
+      if (monthStateError) {
+        console.error("Error reading subject month state:", monthStateError);
+      }
+
+      const monthState = monthStateRows?.[0] || null;
 
       const previousMonthTier =
         (monthState?.last_month_tier as HrmTier) || null;
@@ -220,6 +247,7 @@ export async function POST(request: NextRequest) {
 
       if (resultError) {
         console.error("Error upserting monthly result:", resultError);
+        monthlyResultErrors.push(`${subjectId}: ${resultError.message}`);
         continue;
       }
 
@@ -229,15 +257,40 @@ export async function POST(request: NextRequest) {
         monthState?.consecutive_improvement_months || 0,
       );
 
-      await supabase.from("hrm_subject_month_states").upsert({
-        subject_user_id: subjectId,
-        last_month_key: monthKey,
-        last_month_tier: result.tier,
-        consecutive_improvement_months: newConsecutiveCount,
-        updated_at: new Date().toISOString(),
-      });
+      const { error: monthStateUpsertError } = await supabase
+        .from("hrm_subject_month_states")
+        .upsert(
+          {
+            subject_user_id: subjectId,
+            last_month_key: monthKey,
+            last_month_tier: result.tier,
+            consecutive_improvement_months: newConsecutiveCount,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "subject_user_id" },
+        );
+
+      if (monthStateUpsertError) {
+        console.error(
+          "Error upserting subject month state:",
+          monthStateUpsertError,
+        );
+      }
 
       computedCount++;
+    }
+
+    if (computedCount === 0 && Object.keys(subjectWeeklyScores).length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Month computation failed for all subjects. Check schema constraints/columns on hrm_monthly_results and hrm_subject_month_states.",
+          monthKey,
+          attemptedSubjects: Object.keys(subjectWeeklyScores).length,
+          sampleErrors: monthlyResultErrors.slice(0, 5),
+        },
+        { status: 500 },
+      );
     }
 
     // Lock the month after successful computation
@@ -282,4 +335,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

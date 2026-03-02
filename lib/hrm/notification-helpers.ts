@@ -38,6 +38,13 @@ export async function createNotification(
     });
 
     if (error) {
+      if (error.code === "PGRST205") {
+        console.log(
+          "Skipping notification insert: hrm_notifications table is unavailable",
+        );
+        return { success: true };
+      }
+
       console.error("Error creating notification:", error);
       return { success: false, error: error.message };
     }
