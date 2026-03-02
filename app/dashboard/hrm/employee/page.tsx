@@ -471,14 +471,14 @@ export default function EmployeeDashboard() {
       )}
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>
               Marks Breakdown • {formatMonthDisplay(selectedMonthKey || "")}
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 pr-2">
+          <ScrollArea className="h-[calc(85vh-120px)] pr-2">
             {detailsLoading ? (
               <DialogBreakdownLoadingSkeleton />
             ) : weeklyDetails.length === 0 ? (

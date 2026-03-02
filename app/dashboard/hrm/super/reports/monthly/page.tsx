@@ -12,11 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -36,9 +39,11 @@ import { formatMonthDisplay, getCurrentMonthKey } from "@/lib/hrm/week-utils";
 import {
   AlertCircle,
   BarChart3,
+  CheckCircle2,
   Coins,
   Download,
   Eye,
+  Loader2,
   Lock,
   Mail,
   RefreshCw,
@@ -83,6 +88,21 @@ export default function MonthlyReportPage() {
   const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
   const [bonusTarget, setBonusTarget] = useState<MonthlyResult | null>(null);
   const [bonusPaidAmount, setBonusPaidAmount] = useState("");
+
+  // Compute confirmation dialog
+  const [computeConfirmOpen, setComputeConfirmOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [computePreview, setComputePreview] = useState<{
+    submissionsCount: number;
+    weeksCount: number;
+    pendingCount: number;
+    pendingList: Array<{
+      weekKey: string;
+      markerName: string;
+      subjectName: string;
+      daysOverdue: number;
+    }>;
+  } | null>(null);
   const [summary, setSummary] = useState({
     totalSubjects: 0,
     bonusTier: 0,
@@ -175,12 +195,11 @@ export default function MonthlyReportPage() {
 
   const handleComputeMonth = async () => {
     setComputing(true);
+    setComputeConfirmOpen(false);
     try {
       const res = await fetch(
         `/api/hrm/system/compute-month?monthKey=${monthKey}`,
-        {
-          method: "POST",
-        },
+        { method: "POST" },
       );
       const data = await res.json();
 
@@ -194,6 +213,43 @@ export default function MonthlyReportPage() {
       toast.error(message);
     } finally {
       setComputing(false);
+    }
+  };
+
+  const openComputeConfirm = async () => {
+    setComputeConfirmOpen(true);
+    setPreviewLoading(true);
+    setComputePreview(null);
+    try {
+      const [submissionsRes, pendingRes, weeksRes] = await Promise.all([
+        fetch(`/api/hrm/super/submissions?monthKey=${monthKey}`),
+        fetch(`/api/hrm/admin/kpi/pending?monthKey=${monthKey}`),
+        fetch(`/api/hrm/super/weeks?search=${monthKey}&pageSize=50`),
+      ]);
+
+      const [submissionsData, pendingData, weeksData] = await Promise.all([
+        submissionsRes.json(),
+        pendingRes.json(),
+        weeksRes.json(),
+      ]);
+
+      setComputePreview({
+        submissionsCount: submissionsData.submissions?.length ?? 0,
+        weeksCount: weeksData.weeks?.length ?? 0,
+        pendingCount: pendingData.pendingCount ?? 0,
+        pendingList: (pendingData.submissions ?? [])
+          .slice(0, 10)
+          .map((p: any) => ({
+            weekKey: p.weekKey,
+            markerName: p.markerName,
+            subjectName: p.subjectName,
+            daysOverdue: p.daysOverdue,
+          })),
+      });
+    } catch (error) {
+      console.error("Failed to load compute preview:", error);
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -457,7 +513,7 @@ export default function MonthlyReportPage() {
               className="w-48"
             />
             <Button
-              onClick={handleComputeMonth}
+              onClick={openComputeConfirm}
               disabled={computing || monthStatus === "LOCKED"}
             >
               <RefreshCw
@@ -799,6 +855,147 @@ export default function MonthlyReportPage() {
               <Button onClick={submitBonusPaid}>Save Payment</Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Compute Month Confirmation Dialog ── */}
+      <Dialog open={computeConfirmOpen} onOpenChange={setComputeConfirmOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>
+              Compute Month — {formatMonthDisplay(monthKey)}
+            </DialogTitle>
+            <DialogDescription>
+              Review the summary below before confirming computation.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="h-[calc(85vh-200px)] pr-2">
+            {previewLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm">Loading month summary…</p>
+              </div>
+            ) : computePreview ? (
+              <div className="space-y-6">
+                {/* Stats row */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="rounded-lg border p-4 text-center">
+                    <div className="text-3xl font-bold text-primary">
+                      {computePreview.weeksCount}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Weeks with data
+                    </div>
+                  </div>
+                  <div className="rounded-lg border p-4 text-center">
+                    <div className="text-3xl font-bold text-green-600">
+                      {computePreview.submissionsCount}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Submissions recorded
+                    </div>
+                  </div>
+                  <div className="rounded-lg border p-4 text-center">
+                    <div
+                      className={`text-3xl font-bold ${computePreview.pendingCount > 0 ? "text-orange-600" : "text-green-600"}`}
+                    >
+                      {computePreview.pendingCount}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Pending (overdue)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pending submissions breakdown */}
+                {computePreview.pendingCount > 0 ? (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5 text-orange-700">
+                      <AlertCircle className="h-4 w-4" />
+                      Pending Submissions
+                      {computePreview.pendingCount > 10 && (
+                        <span className="text-xs font-normal text-muted-foreground">
+                          (showing first 10 of {computePreview.pendingCount})
+                        </span>
+                      )}
+                    </h4>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-xs">Week</TableHead>
+                            <TableHead className="text-xs">
+                              Marker Admin
+                            </TableHead>
+                            <TableHead className="text-xs">Subject</TableHead>
+                            <TableHead className="text-xs text-right">
+                              Days Overdue
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {computePreview.pendingList.map((item, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell className="font-mono text-xs">
+                                {item.weekKey}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {item.markerName}
+                              </TableCell>
+                              <TableCell className="text-xs">
+                                {item.subjectName}
+                              </TableCell>
+                              <TableCell className="text-xs text-right font-semibold text-orange-600">
+                                {item.daysOverdue}d
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      ⚠ These subjects will be computed with 0 score for missed
+                      weeks.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800 text-sm">
+                    <CheckCircle2 className="h-5 w-5 shrink-0" />
+                    All submissions are in — no overdue marks for this month.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground text-sm">
+                <AlertCircle className="h-6 w-6" />
+                Failed to load preview. You can still proceed.
+              </div>
+            )}
+          </ScrollArea>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setComputeConfirmOpen(false)}
+              disabled={computing}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleComputeMonth} disabled={computing}>
+              {computing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Computing…
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Confirm &amp; Compute
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
