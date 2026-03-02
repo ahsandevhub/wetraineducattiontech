@@ -76,14 +76,17 @@ export async function POST(request: NextRequest) {
     let monthId: string;
 
     if (!existingMonth) {
-      // Create month — omit status so DB DEFAULT 'OPEN' is used;
-      // avoids PGRST204 when hrm_month_status enum isn't in PostgREST schema cache yet.
+      const startDateISO = startDate.toISOString().split("T")[0];
+      const endDateISO = endDate.toISOString().split("T")[0];
+
+      // Create month. Prefer newer schema (start_date/end_date), then fallback
+      // to older schema (year_month) used by some production environments.
       const { data: newMonth, error: monthError } = await adminSupabase
         .from("hrm_months")
         .insert({
           month_key: monthKey,
-          start_date: startDate.toISOString().split("T")[0],
-          end_date: endDate.toISOString().split("T")[0],
+          start_date: startDateISO,
+          end_date: endDateISO,
         })
         .select("id")
         .single();
@@ -95,7 +98,41 @@ export async function POST(request: NextRequest) {
           details: monthError.details,
           hint: monthError.hint,
         });
-        if (monthError.code === "23505") {
+        const monthErrorMessage = monthError.message?.toLowerCase() || "";
+        const missingStartOrEndDateColumn =
+          monthError.code === "PGRST204" &&
+          (monthErrorMessage.includes("start_date") ||
+            monthErrorMessage.includes("end_date"));
+
+        if (missingStartOrEndDateColumn) {
+          const { data: fallbackMonth, error: fallbackError } =
+            await adminSupabase
+              .from("hrm_months")
+              .insert({
+                month_key: monthKey,
+                year_month: startDateISO,
+              })
+              .select("id")
+              .single();
+
+          if (fallbackError) {
+            if (fallbackError.code === "23505") {
+              const { data: raceMonth, error: raceMonthError } =
+                await adminSupabase
+                  .from("hrm_months")
+                  .select("id")
+                  .eq("month_key", monthKey)
+                  .single();
+
+              if (raceMonthError) throw raceMonthError;
+              monthId = raceMonth.id;
+            } else {
+              throw fallbackError;
+            }
+          } else {
+            monthId = fallbackMonth.id;
+          }
+        } else if (monthError.code === "23505") {
           // Race condition: another request already inserted this month
           const { data: raceMonth, error: raceMonthError } = await adminSupabase
             .from("hrm_months")
