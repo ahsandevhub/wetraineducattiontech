@@ -6,7 +6,6 @@ import type {
 } from "@/app/dashboard/crm/_types";
 import { requireCrmAccess, requireCrmAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
-import { createClient } from "@/app/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
@@ -183,7 +182,6 @@ export async function reassignLead(leadId: string, newOwnerId: string) {
     return { error: "CRM user not found" };
   }
 
-  const supabase = await createClient();
   const supabaseAdmin = createAdminClient();
 
   // Fetch the lead to check ownership
