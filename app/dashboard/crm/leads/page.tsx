@@ -3,6 +3,7 @@ import { requireCrmAccess } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { buildCrmLeadSearchOr } from "../lib/phone";
 import { LeadsPageClient } from "./leads-client";
 
 export default async function LeadsPage({
@@ -61,9 +62,7 @@ export default async function LeadsPage({
     }
 
     if (search) {
-      q = q.or(
-        `name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`,
-      );
+      q = q.or(buildCrmLeadSearchOr(search));
     }
 
     if (status && status !== "all") {

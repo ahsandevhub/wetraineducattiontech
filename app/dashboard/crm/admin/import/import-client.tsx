@@ -554,8 +554,8 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
                           selectedMarketers.length
                         } selected marketer${
                           selectedMarketers.length !== 1 ? "s" : ""
-                        } using round-robin.`}{" "}
-                  Phone numbers will be normalized to BD format (+880).
+                        } using round-robin.`} {" "}
+                  Phone numbers are normalized to strict format 8801XXXXXXXXX.
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -713,7 +713,7 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
                   <code className="bg-slate-100 px-1 rounded">
                     Phone Number
                   </code>{" "}
-                  - BD phone (will be normalized to +880)
+                  - BD mobile number (stored as 8801XXXXXXXXX)
                 </li>
               </ul>
             </div>
@@ -757,7 +757,7 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
             <div className="bg-slate-50 p-4 rounded-md text-xs font-mono overflow-x-auto">
               First Name,Last Name,Phone Number,Company name
               <br />
-              John,Doe,01712345678,ABC Corp
+              John,Doe,8801712345678,ABC Corp
               <br />
               Md,Rahman,8801934567890,Tech Solutions
             </div>

@@ -176,7 +176,7 @@ export function LeadDialog({
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+8801XXXXXXXXX or 01XXXXXXXXX"
+                placeholder="8801XXXXXXXXX"
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
@@ -184,6 +184,9 @@ export function LeadDialog({
                 required
                 disabled={loading || (!isAdmin && !!lead)}
               />
+              <p className="text-xs text-muted-foreground">
+                Format: 8801XXXXXXXXX
+              </p>
               {!isAdmin && lead && (
                 <p className="text-xs text-muted-foreground">
                   Phone can only be changed by admin

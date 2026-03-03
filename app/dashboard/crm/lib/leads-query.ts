@@ -5,6 +5,7 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { buildCrmLeadSearchOr } from "./phone";
 
 /**
  * Filter parameters for leads query
@@ -74,9 +75,7 @@ export function buildLeadsQuery(
 
   // Search filter (matches leads page)
   if (filters.search) {
-    q = q.or(
-      `name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%,company.ilike.%${filters.search}%`,
-    );
+    q = q.or(buildCrmLeadSearchOr(filters.search));
   }
 
   // Status filter (matches leads page)

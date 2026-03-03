@@ -10,6 +10,7 @@ import {
   type LeadsFilters,
   type LeadsFilterScope,
 } from "./leads-query";
+import { buildCrmLeadSearchOr } from "./phone";
 
 /**
  * KPI metrics response
@@ -79,9 +80,7 @@ export async function getLeadKpiMetrics(
 
       // Apply search filter
       if (fullFilters.search) {
-        q = q.or(
-          `name.ilike.%${fullFilters.search}%,phone.ilike.%${fullFilters.search}%,email.ilike.%${fullFilters.search}%,company.ilike.%${fullFilters.search}%`,
-        );
+        q = q.or(buildCrmLeadSearchOr(fullFilters.search));
       }
 
       // Apply status filter
@@ -221,9 +220,7 @@ export async function getLeadStatusBreakdown(
 
       // Apply search filter
       if (fullFilters.search) {
-        q = q.or(
-          `name.ilike.%${fullFilters.search}%,phone.ilike.%${fullFilters.search}%,email.ilike.%${fullFilters.search}%,company.ilike.%${fullFilters.search}%`,
-        );
+        q = q.or(buildCrmLeadSearchOr(fullFilters.search));
       }
 
       // Apply status filter

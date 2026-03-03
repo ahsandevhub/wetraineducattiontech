@@ -1,29 +1,9 @@
 "use server";
 
+import { normalizeCrmPhone } from "@/app/dashboard/crm/lib/phone";
 import { requireCrmAdmin } from "@/app/utils/auth/require";
-import { createClient } from "@/app/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-
-// Normalize Bangladesh phone numbers
-function normalizeBDPhone(phone: string): string | null {
-  if (!phone) return null;
-
-  // Remove all non-digit characters
-  let cleaned = phone.replace(/\D/g, "");
-
-  // Handle international format (+880 or 880)
-  if (cleaned.startsWith("880")) {
-    cleaned = cleaned.slice(3);
-  }
-
-  // Must be 11 digits starting with 01
-  if (cleaned.length === 11 && cleaned.startsWith("01")) {
-    return cleaned;
-  }
-
-  return null;
-}
 
 interface ImportRow {
   name: string;
@@ -50,8 +30,6 @@ export async function importLeadsBatch(
   marketerIds: string[] = [],
 ): Promise<{ data?: ImportProgress; error?: string; done: boolean }> {
   await requireCrmAdmin();
-
-  const supabase = await createClient();
 
   // Use provided marketers or get all marketers
   let marketers: { id: string }[] = [];
@@ -101,23 +79,23 @@ export async function importLeadsBatch(
       }
 
       // Normalize phone
-      const normalizedPhone = normalizeBDPhone(row.phone);
+      const normalizedPhone = normalizeCrmPhone(row.phone);
       if (!normalizedPhone) {
         progress.skipped++;
         progress.errors.push({
           row: rowNumber,
           name: row.name,
-          reason: `Invalid/Non-BD phone: ${row.phone}`,
+          reason: `Invalid phone format (expected 8801XXXXXXXXX): ${row.phone}`,
         });
         continue;
       }
 
       // Check for duplicates
-      const { data: existing } = await supabase
+      const { data: existing } = await supabaseAdmin
         .from("crm_leads")
         .select("id")
         .eq("phone", normalizedPhone)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         progress.skipped++;

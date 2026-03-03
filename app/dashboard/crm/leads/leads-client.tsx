@@ -47,28 +47,6 @@ import { useScrollRestoration } from "../_hooks/useScrollRestoration";
 import type { CrmUser, Lead, LeadStatus } from "../_types";
 import { updateSearchParams } from "../lib/url-params";
 
-// Normalize Bangladesh phone numbers
-function normalizeBdPhone(phone: string): {
-  status: string;
-  local?: string;
-  cleaned?: string;
-} {
-  if (!phone) return { status: "INVALID" };
-
-  const cleaned = phone.replace(/\D/g, "");
-
-  let local = cleaned;
-  if (cleaned.startsWith("880")) {
-    local = cleaned.slice(3);
-  }
-
-  if (local.length === 11 && local.startsWith("01")) {
-    return { status: "VALID_BD", local, cleaned };
-  }
-
-  return { status: "INVALID", cleaned };
-}
-
 // Helper to render status badge with icon
 function renderStatusBadge(status: LeadStatus) {
   const config = LEAD_STATUS_BADGE[status];
@@ -189,11 +167,7 @@ export function LeadsPageClient({
       header: "Phone",
       cell: ({ row }) => {
         const raw = row.getValue("phone") as string;
-        const info = normalizeBdPhone(raw || "");
-        const display =
-          info.status === "VALID_BD" && info.local
-            ? info.local
-            : info.cleaned || raw || "-";
+        const display = raw || "-";
         return (
           <div className="flex items-center gap-1.5 text-sm">
             <PhoneCall className="size-4 text-slate-500" />

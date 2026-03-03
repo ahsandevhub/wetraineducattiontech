@@ -1,6 +1,7 @@
 "use server";
 
 import { getValidLeadStatus } from "@/app/dashboard/crm/_constants/lead-status";
+import { normalizeCrmPhone } from "@/app/dashboard/crm/lib/phone";
 import type {
   CreateLeadRequestData,
   LeadRequestWithRequester,
@@ -10,25 +11,6 @@ import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-
-// Normalize phone numbers with flexible validation
-function normalizePhone(phone: string): string | null {
-  if (!phone) return null;
-
-  let cleaned = phone.trim().replace(/\D/g, "");
-
-  // Normalize Bangladesh international format to local mobile format
-  if (cleaned.startsWith("8801") && cleaned.length === 13) {
-    cleaned = cleaned.slice(2);
-  }
-
-  // Accept flexible international/local numbers
-  if (cleaned.length >= 7 && cleaned.length <= 15) {
-    return cleaned;
-  }
-
-  return null;
-}
 
 /**
  * Create a lead request (Marketer requests admin to add a lead)
@@ -45,9 +27,9 @@ export async function createLeadRequest(data: CreateLeadRequestData) {
   const supabase = await createClient();
 
   // Normalize phone
-  const normalizedPhone = normalizePhone(data.phone);
+  const normalizedPhone = normalizeCrmPhone(data.phone);
   if (!normalizedPhone) {
-    return { error: "Invalid phone number" };
+    return { error: "Phone must be in format 8801XXXXXXXXX" };
   }
 
   // In new schema, crm_users.id = auth.users.id directly
@@ -129,6 +111,7 @@ export async function listLeadRequests(options?: {
   // Search in lead_payload (name, phone, email, company)
   if (options?.search) {
     const searchTerm = options.search.toLowerCase();
+    const normalizedSearchPhone = normalizeCrmPhone(options.search);
     // This is a simplified search - in production, use full-text search
     // For now, we'll fetch all and filter in JS, or use Supabase full-text search
     const allData = await query;
@@ -163,10 +146,14 @@ export async function listLeadRequests(options?: {
         const email = (payload.email || "").toLowerCase();
         const company = (payload.company || "").toLowerCase();
         const requesterName = (profile?.full_name || "").toLowerCase();
+        const payloadPhoneRaw = payload.phone || "";
+        const payloadPhoneDigits = String(payloadPhoneRaw).replace(/\D/g, "");
 
         return (
           name.includes(searchTerm) ||
           phone.includes(searchTerm) ||
+          (normalizedSearchPhone !== null &&
+            payloadPhoneDigits === normalizedSearchPhone) ||
           email.includes(searchTerm) ||
           company.includes(searchTerm) ||
           requesterName.includes(searchTerm)
@@ -275,6 +262,24 @@ export async function reviewLeadRequest(options: {
   if (options.decision === "APPROVE") {
     // Create the lead
     const leadPayload = request.lead_payload;
+    const normalizedPhone = normalizeCrmPhone(leadPayload.phone || "");
+
+    if (!normalizedPhone) {
+      return {
+        error:
+          "Lead request has invalid phone format. Expected 8801XXXXXXXXX.",
+      };
+    }
+
+    const { data: existingLead } = await supabaseAdmin
+      .from("crm_leads")
+      .select("id")
+      .eq("phone", normalizedPhone)
+      .maybeSingle();
+
+    if (existingLead) {
+      return { error: "Lead with this phone number already exists" };
+    }
 
     // Validate status - force 'NEW' if invalid
     const validatedStatus = getValidLeadStatus(leadPayload.status);
@@ -283,7 +288,7 @@ export async function reviewLeadRequest(options: {
       .from("crm_leads")
       .insert({
         name: leadPayload.name,
-        phone: leadPayload.phone,
+        phone: normalizedPhone,
         email: leadPayload.email || null,
         company: leadPayload.company || null,
         status: validatedStatus,

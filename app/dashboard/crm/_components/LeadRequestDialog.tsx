@@ -137,7 +137,7 @@ export function LeadRequestDialog({
             </Label>
             <Input
               id="phone"
-              placeholder="e.g., +880 1XX XXXXXXX"
+              placeholder="e.g., 8801XXXXXXXXX"
               value={formData.phone}
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
@@ -145,6 +145,9 @@ export function LeadRequestDialog({
               required
               disabled={loading}
             />
+            <p className="text-xs text-muted-foreground">
+              Format: 8801XXXXXXXXX
+            </p>
           </div>
 
           {/* Email */}

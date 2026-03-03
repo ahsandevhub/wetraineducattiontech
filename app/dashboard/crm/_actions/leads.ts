@@ -4,31 +4,11 @@ import type {
   CreateLeadData,
   UpdateLeadData,
 } from "@/app/dashboard/crm/_types";
+import { normalizeCrmPhone } from "@/app/dashboard/crm/lib/phone";
 import { requireCrmAccess, requireCrmAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-
-// Normalize phone numbers with flexible validation
-function normalizePhone(phone: string): string | null {
-  if (!phone) return null;
-
-  let cleaned = phone.trim().replace(/\D/g, "");
-
-  // Normalize Bangladesh international format to local mobile format
-  // e.g. +8801700000000 -> 01700000000
-  if (cleaned.startsWith("8801") && cleaned.length === 13) {
-    cleaned = cleaned.slice(2);
-  }
-
-  // Accept flexible international/local numbers
-  // E.164 max length is 15 digits
-  if (cleaned.length >= 7 && cleaned.length <= 15) {
-    return cleaned;
-  }
-
-  return null;
-}
 
 export async function createLead(data: CreateLeadData) {
   await requireCrmAccess();
@@ -43,9 +23,9 @@ export async function createLead(data: CreateLeadData) {
   const supabaseAdmin = createAdminClient();
 
   // Normalize phone
-  const normalizedPhone = normalizePhone(data.phone);
+  const normalizedPhone = normalizeCrmPhone(data.phone);
   if (!normalizedPhone) {
-    return { error: "Invalid phone number" };
+    return { error: "Phone must be in format 8801XXXXXXXXX" };
   }
 
   // Check for duplicates
@@ -118,9 +98,9 @@ export async function updateLead(id: string, data: UpdateLeadData) {
   // Normalize phone if provided
   let normalizedPhone = data.phone;
   if (data.phone) {
-    const normalized = normalizePhone(data.phone);
+    const normalized = normalizeCrmPhone(data.phone);
     if (!normalized) {
-      return { error: "Invalid phone number" };
+      return { error: "Phone must be in format 8801XXXXXXXXX" };
     }
     normalizedPhone = normalized;
   }
