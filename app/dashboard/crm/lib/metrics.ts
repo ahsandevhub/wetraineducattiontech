@@ -76,7 +76,7 @@ export async function computeCrmMetrics(
       contactedQuery = contactedQuery.lte("created_at", params.toISO);
     }
     const { data: contactedData } = await contactedQuery
-      .in("status", ["CONTACTED", "QUALIFIED", "PROPOSAL", "WON"])
+      .in("status", ["CONTACTED", "INTERESTED", "SOLD"])
       .limit(5000);
     const contacted = contactedData?.length || 0;
 

@@ -22,10 +22,11 @@ interface CrmStatusBreakdownTableProps {
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   NEW: { bg: "bg-blue-100", text: "text-blue-800" },
   CONTACTED: { bg: "bg-yellow-100", text: "text-yellow-800" },
-  QUALIFIED: { bg: "bg-purple-100", text: "text-purple-800" },
-  PROPOSAL: { bg: "bg-indigo-100", text: "text-indigo-800" },
-  WON: { bg: "bg-green-100", text: "text-green-800" },
-  LOST: { bg: "bg-red-100", text: "text-red-800" },
+  INTERESTED: { bg: "bg-purple-100", text: "text-purple-800" },
+  SOLD: { bg: "bg-green-100", text: "text-green-800" },
+  NOT_INTERESTED: { bg: "bg-red-100", text: "text-red-800" },
+  NO_RESPONSE: { bg: "bg-slate-100", text: "text-slate-800" },
+  INVALID_NUMBER: { bg: "bg-orange-100", text: "text-orange-800" },
 };
 
 function getStatusColor(status: string) {

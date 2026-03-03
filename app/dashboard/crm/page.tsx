@@ -44,17 +44,16 @@ export default async function CrmDashboardPage({
   // Quick stats for non-admin users
   const { count: totalLeads } = await supabase
     .from("crm_leads")
-    .select("*", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true });
 
   const { count: activeLeads } = await supabase
     .from("crm_leads")
-    .select("*", { count: "exact", head: true })
-    .in("status", ["NEW", "CONTACTED", "QUALIFIED"]);
+    .select("id", { count: "exact", head: true })
+    .in("status", ["NEW", "CONTACTED", "INTERESTED"]);
 
   const { count: totalUsers } = await supabase
     .from("crm_users")
-    .select("*", { count: "exact", head: true })
-    .eq("is_active", true);
+    .select("id", { count: "exact", head: true });
 
   return (
     <div className="space-y-6">

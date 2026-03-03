@@ -7,6 +7,7 @@ import type {
 import { requireCrmAccess, requireCrmAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 // Normalize phone numbers with flexible validation
@@ -38,7 +39,9 @@ export async function createLead(data: CreateLeadData) {
     return { error: "Unauthorized" };
   }
 
-  const supabase = await createClient();
+  const { userId, crmRole } = userWithRoles;
+  const isAdmin = crmRole === "ADMIN";
+  const supabaseAdmin = createAdminClient();
 
   // Normalize phone
   const normalizedPhone = normalizePhone(data.phone);
@@ -47,17 +50,19 @@ export async function createLead(data: CreateLeadData) {
   }
 
   // Check for duplicates
-  const { data: existing } = await supabase
+  const { data: existing } = await supabaseAdmin
     .from("crm_leads")
     .select("id")
     .eq("phone", normalizedPhone)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     return { error: "Lead with this phone number already exists" };
   }
 
-  const { data: lead, error } = await supabase
+  const ownerId = isAdmin ? (data.owner_id ? data.owner_id : null) : userId;
+
+  const { data: lead, error } = await supabaseAdmin
     .from("crm_leads")
     .insert({
       name: data.name,
@@ -67,7 +72,7 @@ export async function createLead(data: CreateLeadData) {
       status: data.status || "NEW",
       source: data.source || "WEBSITE",
       notes: data.notes || null,
-      owner_id: data.owner_id ? data.owner_id : null,
+      owner_id: ownerId,
     })
     .select()
     .single();
@@ -89,7 +94,27 @@ export async function updateLead(id: string, data: UpdateLeadData) {
     return { error: "Unauthorized" };
   }
 
-  const supabase = await createClient();
+  const { userId, crmRole } = userWithRoles;
+  const isAdmin = crmRole === "ADMIN";
+  const supabaseAdmin = createAdminClient();
+
+  const { data: existingLead, error: existingLeadError } = await supabaseAdmin
+    .from("crm_leads")
+    .select("id, owner_id")
+    .eq("id", id)
+    .single();
+
+  if (existingLeadError || !existingLead) {
+    return { error: "Lead not found" };
+  }
+
+  if (!isAdmin && existingLead.owner_id !== userId) {
+    return { error: "You can only update leads you own" };
+  }
+
+  if (!isAdmin && data.owner_id !== undefined) {
+    return { error: "Only admin can change lead assignment" };
+  }
 
   // Normalize phone if provided
   let normalizedPhone = data.phone;
@@ -111,7 +136,7 @@ export async function updateLead(id: string, data: UpdateLeadData) {
   if (data.notes !== undefined) updateData.notes = data.notes;
   if (data.owner_id !== undefined) updateData.owner_id = data.owner_id;
 
-  const { data: lead, error } = await supabase
+  const { data: lead, error } = await supabaseAdmin
     .from("crm_leads")
     .update(updateData)
     .eq("id", id)
@@ -130,10 +155,9 @@ export async function updateLead(id: string, data: UpdateLeadData) {
 
 export async function deleteLead(id: string) {
   await requireCrmAdmin();
+  const supabaseAdmin = createAdminClient();
 
-  const supabase = await createClient();
-
-  const { error } = await supabase.from("crm_leads").delete().eq("id", id);
+  const { error } = await supabaseAdmin.from("crm_leads").delete().eq("id", id);
 
   if (error) {
     return { error: error.message };
@@ -160,9 +184,10 @@ export async function reassignLead(leadId: string, newOwnerId: string) {
   }
 
   const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
 
   // Fetch the lead to check ownership
-  const { data: lead, error: leadError } = await supabase
+  const { data: lead, error: leadError } = await supabaseAdmin
     .from("crm_leads")
     .select("owner_id")
     .eq("id", leadId)
@@ -184,7 +209,7 @@ export async function reassignLead(leadId: string, newOwnerId: string) {
   }
 
   // Update lead: set new owner and mark source as REASSIGNED
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from("crm_leads")
     .update({
       owner_id: newOwnerId || null,

@@ -228,9 +228,7 @@ export function CrmMarketerKpiCards({
                 <TooltipContent>
                   <div className="space-y-1 text-xs">
                     <p>
-                      <strong>
-                        Statuses: CONTACTED, QUALIFIED, PROPOSAL, WON
-                      </strong>
+                      <strong>Statuses: CONTACTED, INTERESTED, SOLD</strong>
                     </p>
                     <p>Leads you have reached out to</p>
                     <p>Period: {rangeLabel}</p>
