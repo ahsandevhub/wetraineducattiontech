@@ -118,6 +118,7 @@ export function LeadsPageClient({
   const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isPagePending, startPageTransition] = useTransition();
+  const [isFilterPending, setIsFilterPending] = useState(false);
   const { saveScrollPosition } = useScrollRestoration();
 
   // Handle page change - update URL with new page number
@@ -432,7 +433,11 @@ export function LeadsPageClient({
         }
       />
 
-      <LeadFilters marketers={marketers} isAdmin={isAdmin} />
+      <LeadFilters
+        marketers={marketers}
+        isAdmin={isAdmin}
+        onPendingChange={setIsFilterPending}
+      />
 
       <DataTable
         columns={columns}
@@ -442,7 +447,7 @@ export function LeadsPageClient({
         totalCount={totalCount}
         onPageChange={handlePageChange}
         isExternalPagination={true}
-        isLoading={isPagePending}
+        isLoading={isPagePending || isFilterPending}
       />
 
       <LeadDialog
