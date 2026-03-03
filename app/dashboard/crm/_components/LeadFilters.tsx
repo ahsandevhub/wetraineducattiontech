@@ -26,18 +26,24 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { LEAD_STATUS_OPTIONS } from "../_constants/lead-status";
 
 interface LeadFiltersProps {
   marketers: { id: string; full_name: string | null }[];
   isAdmin: boolean;
+  onPendingChange?: (isPending: boolean) => void;
 }
 
-export function LeadFilters({ marketers, isAdmin }: LeadFiltersProps) {
+export function LeadFilters({
+  marketers,
+  isAdmin,
+  onPendingChange,
+}: LeadFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSyncingFromUrlRef = useRef(true);
+  const [isPending, startTransition] = useTransition();
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [status, setStatus] = useState(searchParams.get("status") || "all");
@@ -88,12 +94,15 @@ export function LeadFilters({ marketers, isAdmin }: LeadFiltersProps) {
     });
   }, [searchParams, isAdmin]);
 
+  useEffect(() => {
+    onPendingChange?.(isPending);
+  }, [isPending, onPendingChange]);
+
   const applyFilters = () => {
     const params = new URLSearchParams();
 
-    // Preserve current page number
-    const currentPage = searchParams.get("page");
-    if (currentPage) params.set("page", currentPage);
+    // Always reset to first page when applying search/filters
+    params.set("page", "1");
 
     if (search) params.set("search", search);
     if (status && status !== "all") params.set("status", status);
@@ -102,7 +111,11 @@ export function LeadFilters({ marketers, isAdmin }: LeadFiltersProps) {
     if (fromDate) params.set("from", format(fromDate, "yyyy-MM-dd"));
     if (toDate) params.set("to", format(toDate, "yyyy-MM-dd"));
 
-    router.push(`/dashboard/crm/leads?${params.toString()}`, { scroll: false });
+    startTransition(() => {
+      router.push(`/dashboard/crm/leads?${params.toString()}`, {
+        scroll: false,
+      });
+    });
   };
 
   // Effect 2: Apply filters on user action (immediately on select/date changes)
@@ -133,7 +146,9 @@ export function LeadFilters({ marketers, isAdmin }: LeadFiltersProps) {
     setToDate(undefined);
 
     // Reset to page 1
-    router.push("/dashboard/crm/leads?page=1", { scroll: false });
+    startTransition(() => {
+      router.push("/dashboard/crm/leads?page=1", { scroll: false });
+    });
   };
 
   // Apply filters on Enter key for search (immediate)
