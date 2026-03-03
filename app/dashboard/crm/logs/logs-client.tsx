@@ -14,8 +14,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
 import AdminPageHeader from "../_components/AdminPageHeader";
 import { DataTable, SortableHeader } from "../_components/DataTable";
+import { useScrollRestoration } from "../_hooks/useScrollRestoration";
 import type { ContactLog } from "../_types";
 import { updateSearchParams } from "../lib/url-params";
 
@@ -70,16 +72,21 @@ export function LogsPageClient({
 }: LogsPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPagePending, startPageTransition] = useTransition();
+  const { saveScrollPosition } = useScrollRestoration();
 
   // Handle page change - update URL with new page number
   const handlePageChange = (newPage: number) => {
+    saveScrollPosition();
     const currentParams: Record<string, string | string[] | undefined> = {};
     searchParams.forEach((value, key) => {
       currentParams[key] = value;
     });
 
     const newParams = updateSearchParams(currentParams, { page: newPage });
-    router.replace(`?${newParams.toString()}`);
+    startPageTransition(() => {
+      router.replace(`?${newParams.toString()}`, { scroll: false });
+    });
   };
 
   const columns: ColumnDef<
@@ -138,7 +145,11 @@ export function LogsPageClient({
           <Link
             href={`/dashboard/crm/leads/${original.lead.id}`}
             className="font-medium hover:underline cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              saveScrollPosition();
+            }}
+            scroll={false}
           >
             {original.lead.name}
           </Link>
@@ -191,7 +202,11 @@ export function LogsPageClient({
             asChild
             onClick={(e) => e.stopPropagation()}
           >
-            <Link href={`/dashboard/crm/leads/${log.lead.id}`}>
+            <Link
+              href={`/dashboard/crm/leads/${log.lead.id}`}
+              scroll={false}
+              onClick={() => saveScrollPosition()}
+            >
               <ExternalLink className="h-4 w-4" />
             </Link>
           </Button>
@@ -220,6 +235,7 @@ export function LogsPageClient({
           totalCount={totalCount}
           onPageChange={handlePageChange}
           isExternalPagination={true}
+          isLoading={isPagePending}
         />
       ) : (
         <div className="rounded-md border bg-white p-12">

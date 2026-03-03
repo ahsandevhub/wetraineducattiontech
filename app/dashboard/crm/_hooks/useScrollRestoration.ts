@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 /**
  * useScrollRestoration - Preserves scroll position when navigating back
@@ -27,6 +27,12 @@ export function useScrollRestoration() {
   const storageKey = `crm-scroll:${currentUrl}`;
   const restoredRef = useRef(false); // Track if we've already restored for this mount
 
+  const saveScrollPosition = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    sessionStorage.setItem(storageKey, String(scrollY));
+  }, [storageKey]);
+
   // Auto-save scroll position as user scrolls (throttled)
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -38,8 +44,7 @@ export function useScrollRestoration() {
       if (throttleTimeout) return;
 
       throttleTimeout = setTimeout(() => {
-        const scrollY = window.scrollY || window.pageYOffset || 0;
-        sessionStorage.setItem(storageKey, String(scrollY));
+        saveScrollPosition();
         throttleTimeout = null;
       }, 100); // Throttle to max 10 saves per second
     };
@@ -47,12 +52,13 @@ export function useScrollRestoration() {
     window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
+      saveScrollPosition();
       window.removeEventListener("scroll", handleScroll);
       if (throttleTimeout) {
         clearTimeout(throttleTimeout);
       }
     };
-  }, [storageKey]);
+  }, [saveScrollPosition]);
 
   // Restore scroll position with retry loop (handles late-loading content)
   useEffect(() => {
@@ -121,5 +127,5 @@ export function useScrollRestoration() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
-  return { storageKey };
+  return { storageKey, saveScrollPosition };
 }

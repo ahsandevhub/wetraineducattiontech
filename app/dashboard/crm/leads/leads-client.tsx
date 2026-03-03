@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "react-hot-toast";
 import { deleteLead } from "../_actions/leads";
 import AdminPageHeader from "../_components/AdminPageHeader";
@@ -39,6 +39,7 @@ import { DataTable, SortableHeader } from "../_components/DataTable";
 import { LeadDialog } from "../_components/LeadDialog";
 import { LeadFilters } from "../_components/LeadFilters";
 import { LeadRequestDialog } from "../_components/LeadRequestDialog";
+import { useScrollRestoration } from "../_hooks/useScrollRestoration";
 import {
   LEAD_STATUS_BADGE,
   LEAD_STATUS_LABELS,
@@ -138,9 +139,12 @@ export function LeadsPageClient({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingLeadId, setDeletingLeadId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isPagePending, startPageTransition] = useTransition();
+  const { saveScrollPosition } = useScrollRestoration();
 
   // Handle page change - update URL with new page number
   const handlePageChange = (newPage: number) => {
+    saveScrollPosition();
     const currentParams: Record<string, string | string[] | undefined> = {};
     searchParams.forEach((value, key) => {
       currentParams[key] = value;
@@ -148,7 +152,9 @@ export function LeadsPageClient({
 
     const newParams = updateSearchParams(currentParams, { page: newPage });
     const pathname = "/dashboard/crm/leads";
-    router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
+    startPageTransition(() => {
+      router.replace(`${pathname}?${newParams.toString()}`, { scroll: false });
+    });
   };
 
   const handleEdit = (lead: Lead) => {
@@ -237,7 +243,10 @@ export function LeadsPageClient({
         <Link
           href={`/dashboard/crm/leads/${row.original.id}`}
           className="font-medium hover:underline cursor-pointer"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            saveScrollPosition();
+          }}
           scroll={false}
         >
           {row.getValue("name")}
@@ -386,7 +395,10 @@ export function LeadsPageClient({
               href={`/dashboard/crm/leads/${lead.id}`}
               className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent"
               scroll={false}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                saveScrollPosition();
+              }}
             >
               <Eye className="h-4 w-4" />
               <span className="sr-only">View lead</span>
@@ -456,6 +468,7 @@ export function LeadsPageClient({
         totalCount={totalCount}
         onPageChange={handlePageChange}
         isExternalPagination={true}
+        isLoading={isPagePending}
       />
 
       <LeadDialog

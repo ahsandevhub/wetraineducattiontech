@@ -37,6 +37,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Loader2,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -49,6 +50,7 @@ interface DataTableProps<TData, TValue> {
   totalCount?: number;
   onPageChange?: (newPage: number) => void;
   isExternalPagination?: boolean;
+  isLoading?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -60,6 +62,7 @@ export function DataTable<TData, TValue>({
   totalCount,
   onPageChange,
   isExternalPagination = false,
+  isLoading = false,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -137,6 +140,8 @@ export function DataTable<TData, TValue>({
   const displayPageIndex = isUsingExternal
     ? externalPageIndex
     : internalPageIndex_display;
+  const visibleColumnCount = Math.max(table.getVisibleLeafColumns().length, 1);
+  const skeletonRowCount = Math.max(5, Math.min(pageSize, 10));
 
   return (
     <div className="space-y-4">
@@ -162,7 +167,22 @@ export function DataTable<TData, TValue>({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {isLoading ? (
+                Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
+                  <TableRow key={`skeleton-row-${rowIndex}`}>
+                    {Array.from({ length: visibleColumnCount }).map(
+                      (_, columnIndex) => (
+                        <TableCell
+                          key={`skeleton-cell-${rowIndex}-${columnIndex}`}
+                          className="first:pl-5"
+                        >
+                          <div className="h-4 w-full max-w-[220px] rounded bg-slate-200/80 animate-pulse" />
+                        </TableCell>
+                      ),
+                    )}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
@@ -238,6 +258,12 @@ export function DataTable<TData, TValue>({
         </div>
 
         <div className="flex items-center gap-2">
+          {isLoading && (
+            <span className="text-xs text-muted-foreground inline-flex items-center gap-1 mr-1">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Updating...
+            </span>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -249,9 +275,10 @@ export function DataTable<TData, TValue>({
               }
             }}
             disabled={
-              isUsingExternal
+              isLoading ||
+              (isUsingExternal
                 ? displayPageIndex === 0
-                : !table.getCanPreviousPage()
+                : !table.getCanPreviousPage())
             }
           >
             <ChevronsLeft className="h-4 w-4" />
@@ -267,9 +294,10 @@ export function DataTable<TData, TValue>({
               }
             }}
             disabled={
-              isUsingExternal
+              isLoading ||
+              (isUsingExternal
                 ? displayPageIndex === 0
-                : !table.getCanPreviousPage()
+                : !table.getCanPreviousPage())
             }
           >
             <ChevronLeft className="h-4 w-4" />
@@ -289,9 +317,10 @@ export function DataTable<TData, TValue>({
               }
             }}
             disabled={
-              isUsingExternal
+              isLoading ||
+              (isUsingExternal
                 ? displayPageIndex >= displayPageCount - 1
-                : !table.getCanNextPage()
+                : !table.getCanNextPage())
             }
           >
             <ChevronRight className="h-4 w-4" />
@@ -307,9 +336,10 @@ export function DataTable<TData, TValue>({
               }
             }}
             disabled={
-              isUsingExternal
+              isLoading ||
+              (isUsingExternal
                 ? displayPageIndex >= displayPageCount - 1
-                : !table.getCanNextPage()
+                : !table.getCanNextPage())
             }
           >
             <ChevronsRight className="h-4 w-4" />
