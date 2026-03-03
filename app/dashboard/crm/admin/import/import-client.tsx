@@ -76,6 +76,7 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [allErrors, setAllErrors] = useState<ImportError[]>([]);
   const [results, setResults] = useState<{
@@ -257,6 +258,7 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
 
     setLoading(true);
     setImporting(true);
+    setProgressDialogOpen(true);
     setAllErrors([]);
     setResults(null);
 
@@ -286,6 +288,7 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
       let totalFailed = 0;
       const accumulatedErrors: ImportError[] = [];
       let currentIndex = 0;
+      const UI_BATCH_SIZE = 10;
 
       // Determine which marketers to use
       const marketerIds =
@@ -297,7 +300,12 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
 
       // Process in batches
       while (currentIndex < rows.length) {
-        const result = await importLeadsBatch(rows, currentIndex, marketerIds);
+        const result = await importLeadsBatch(
+          rows,
+          currentIndex,
+          marketerIds,
+          UI_BATCH_SIZE,
+        );
 
         if (result.error) {
           toast.error(result.error);
@@ -342,7 +350,7 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
           break;
         }
 
-        currentIndex += 50; // BATCH_SIZE
+        currentIndex += UI_BATCH_SIZE;
       }
     } catch (error) {
       toast.error("Failed to parse file");
@@ -373,10 +381,14 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
       />
 
       {/* Progress Dialog */}
-      <Dialog open={importing} onOpenChange={() => {}}>
+      <Dialog
+        open={importing && progressDialogOpen}
+        onOpenChange={setProgressDialogOpen}
+      >
         <DialogContent
           className="max-w-2xl"
           onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle>Importing Leads...</DialogTitle>
@@ -765,81 +777,99 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
         </Card>
       </div>
 
-      {results && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Import Results</CardTitle>
-            <CardDescription>Summary of the import operation</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-                <CheckCircle className="h-8 w-8 text-green-500" />
-                <div>
-                  <p className="text-2xl font-bold text-green-700">
-                    {results.success}
-                  </p>
-                  <p className="text-sm text-green-600">Imported</p>
-                </div>
-              </div>
+      <Dialog
+        open={Boolean(results)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResults(null);
+          }
+        }}
+      >
+        <DialogContent
+          className="max-w-3xl"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          {results && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Import Results</DialogTitle>
+                <DialogDescription>
+                  Summary of the import operation
+                </DialogDescription>
+              </DialogHeader>
 
-              <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg">
-                <AlertCircle className="h-8 w-8 text-yellow-500" />
-                <div>
-                  <p className="text-2xl font-bold text-yellow-700">
-                    {results.skipped}
-                  </p>
-                  <p className="text-sm text-yellow-600">
-                    Skipped (Duplicates)
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
-                <XCircle className="h-8 w-8 text-red-500" />
-                <div>
-                  <p className="text-2xl font-bold text-red-700">
-                    {results.failed}
-                  </p>
-                  <p className="text-sm text-red-600">Failed</p>
-                </div>
-              </div>
-            </div>
-
-            {results.errors.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm text-slate-700">
-                  Issues & Errors ({results.errors.length} total):
-                </h4>
-                <ScrollArea className="h-60 rounded-md border bg-slate-50 p-4">
-                  <div className="space-y-2">
-                    {results.errors.map((error, i) => (
-                      <div
-                        key={i}
-                        className="text-sm border-b border-slate-200 pb-2 last:border-0"
-                      >
-                        <div className="flex items-start gap-2">
-                          <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">
-                            Row {error.row}
-                          </span>
-                          <div className="flex-1">
-                            <p className="font-medium text-slate-700">
-                              {error.name}
-                            </p>
-                            <p className="text-xs text-red-600 mt-0.5">
-                              {error.reason}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+              <div className="space-y-4 py-2">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
+                    <CheckCircle className="h-8 w-8 text-green-500" />
+                    <div>
+                      <p className="text-2xl font-bold text-green-700">
+                        {results.success}
+                      </p>
+                      <p className="text-sm text-green-600">Imported</p>
+                    </div>
                   </div>
-                </ScrollArea>
+
+                  <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg">
+                    <AlertCircle className="h-8 w-8 text-yellow-500" />
+                    <div>
+                      <p className="text-2xl font-bold text-yellow-700">
+                        {results.skipped}
+                      </p>
+                      <p className="text-sm text-yellow-600">
+                        Skipped (Duplicates)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
+                    <XCircle className="h-8 w-8 text-red-500" />
+                    <div>
+                      <p className="text-2xl font-bold text-red-700">
+                        {results.failed}
+                      </p>
+                      <p className="text-sm text-red-600">Failed</p>
+                    </div>
+                  </div>
+                </div>
+
+                {results.errors.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm text-slate-700">
+                      Issues & Errors ({results.errors.length} total):
+                    </h4>
+                    <ScrollArea className="h-60 rounded-md border bg-slate-50 p-4">
+                      <div className="space-y-2">
+                        {results.errors.map((error, i) => (
+                          <div
+                            key={i}
+                            className="text-sm border-b border-slate-200 pb-2 last:border-0"
+                          >
+                            <div className="flex items-start gap-2">
+                              <span className="font-mono text-xs bg-slate-200 px-1.5 py-0.5 rounded">
+                                Row {error.row}
+                              </span>
+                              <div className="flex-1">
+                                <p className="font-medium text-slate-700">
+                                  {error.name}
+                                </p>
+                                <p className="text-xs text-red-600 mt-0.5">
+                                  {error.reason}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

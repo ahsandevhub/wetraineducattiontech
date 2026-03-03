@@ -22,12 +22,13 @@ interface ImportProgress {
   errors: Array<{ row: number; name: string; reason: string }>;
 }
 
-const BATCH_SIZE = 50; // Process 50 leads at a time
+const DEFAULT_BATCH_SIZE = 50;
 
 export async function importLeadsBatch(
   rows: ImportRow[],
   startIndex: number = 0,
   marketerIds: string[] = [],
+  batchSize: number = DEFAULT_BATCH_SIZE,
 ): Promise<{ data?: ImportProgress; error?: string; done: boolean }> {
   await requireCrmAdmin();
 
@@ -45,7 +46,8 @@ export async function importLeadsBatch(
   // Create admin client for RLS bypass (safe because requireCrmAdmin already validated)
   const supabaseAdmin = createAdminClient();
 
-  const endIndex = Math.min(startIndex + BATCH_SIZE, rows.length);
+  const safeBatchSize = Math.max(1, Math.min(100, Math.floor(batchSize)));
+  const endIndex = Math.min(startIndex + safeBatchSize, rows.length);
   const batch = rows.slice(startIndex, endIndex);
 
   const progress: ImportProgress = {
