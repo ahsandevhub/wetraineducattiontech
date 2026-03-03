@@ -39,11 +39,11 @@ import { DataTable, SortableHeader } from "../_components/DataTable";
 import { LeadDialog } from "../_components/LeadDialog";
 import { LeadFilters } from "../_components/LeadFilters";
 import { LeadRequestDialog } from "../_components/LeadRequestDialog";
-import { useScrollRestoration } from "../_hooks/useScrollRestoration";
 import {
   LEAD_STATUS_BADGE,
   LEAD_STATUS_LABELS,
 } from "../_constants/lead-status";
+import { useScrollRestoration } from "../_hooks/useScrollRestoration";
 import type { CrmUser, Lead, LeadStatus } from "../_types";
 import { updateSearchParams } from "../lib/url-params";
 
