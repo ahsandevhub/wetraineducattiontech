@@ -87,21 +87,7 @@ export function LeadDialog({
 
       let result;
       if (lead) {
-        // Check if owner_id changed and handle reassignment
-        const newOwnerId = formData.owner_id ?? null;
-        const oldOwnerId = lead.owner_id ?? null;
-
-        if (newOwnerId !== oldOwnerId) {
-          // Owner changed, call reassignLead (server validates permissions)
-          const reassignResult = await reassignLead(lead.id, newOwnerId ?? "");
-          if (reassignResult.error) {
-            toast.error("Failed to reassign lead: " + reassignResult.error);
-            setLoading(false);
-            return;
-          }
-        }
-
-        // Update other fields
+        // Update editable fields first
         result = await updateLead(lead.id, {
           name: formData.name,
           email: formData.email || undefined,
@@ -110,6 +96,25 @@ export function LeadDialog({
           status: formData.status as LeadStatus,
           notes: formData.notes || undefined,
         });
+
+        if (result.error) {
+          toast.error(result.error);
+          setLoading(false);
+          return;
+        }
+
+        // Then handle reassignment (if owner changed)
+        const newOwnerId = formData.owner_id ?? null;
+        const oldOwnerId = lead.owner_id ?? null;
+
+        if (newOwnerId !== oldOwnerId) {
+          const reassignResult = await reassignLead(lead.id, newOwnerId ?? "");
+          if (reassignResult.error) {
+            toast.error("Failed to reassign lead: " + reassignResult.error);
+            setLoading(false);
+            return;
+          }
+        }
       } else {
         result = await createLead({
           name: formData.name,
