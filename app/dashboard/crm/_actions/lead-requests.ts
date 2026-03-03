@@ -1,11 +1,11 @@
 "use server";
 
 import { getValidLeadStatus } from "@/app/dashboard/crm/_constants/lead-status";
-import { normalizeCrmPhone } from "@/app/dashboard/crm/lib/phone";
 import type {
   CreateLeadRequestData,
   LeadRequestWithRequester,
 } from "@/app/dashboard/crm/_types";
+import { normalizeCrmPhone } from "@/app/dashboard/crm/lib/phone";
 import { requireCrmAccess, requireCrmAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
@@ -266,8 +266,7 @@ export async function reviewLeadRequest(options: {
 
     if (!normalizedPhone) {
       return {
-        error:
-          "Lead request has invalid phone format. Expected 8801XXXXXXXXX.",
+        error: "Lead request has invalid phone format. Expected 8801XXXXXXXXX.",
       };
     }
 
