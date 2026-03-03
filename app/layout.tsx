@@ -1,4 +1,6 @@
 // app/layout.tsx
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import type { Metadata, Viewport } from "next";
 import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "react-hot-toast";
@@ -54,6 +56,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const isProduction = process.env.VERCEL_ENV === "production";
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
@@ -62,6 +66,8 @@ export default function RootLayout({
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
         <NextTopLoader color="#facc15" height={3} showSpinner={false} />
         <main id="main-content">{children}</main>
+        {isProduction ? <Analytics /> : null}
+        {isProduction ? <SpeedInsights /> : null}
       </body>
     </html>
   );
