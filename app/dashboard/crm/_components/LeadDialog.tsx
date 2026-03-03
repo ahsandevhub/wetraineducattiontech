@@ -235,13 +235,16 @@ export function LeadDialog({
               </Select>
             </div>
 
-            {!!lead && marketers && (
+            {marketers && (isAdmin || !!lead) && (
               <div className="space-y-2">
                 <Label htmlFor="owner">Assign To</Label>
                 <Select
-                  value={formData.owner_id ?? ""}
+                  value={formData.owner_id ?? "unassigned"}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, owner_id: value })
+                    setFormData({
+                      ...formData,
+                      owner_id: value === "unassigned" ? null : value,
+                    })
                   }
                   disabled={loading}
                 >
@@ -249,6 +252,7 @@ export function LeadDialog({
                     <SelectValue placeholder="Select marketer" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {marketers.map((marketer) => (
                       <SelectItem key={marketer.id} value={marketer.id}>
                         {marketer.full_name || "Unknown"}

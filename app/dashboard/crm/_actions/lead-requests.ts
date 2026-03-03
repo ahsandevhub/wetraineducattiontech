@@ -8,19 +8,22 @@ import type {
 import { requireCrmAccess, requireCrmAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
-// Normalize Bangladesh phone numbers (same as in leads.ts)
-function normalizeBDPhone(phone: string): string | null {
+// Normalize phone numbers with flexible validation
+function normalizePhone(phone: string): string | null {
   if (!phone) return null;
 
-  let cleaned = phone.replace(/\D/g, "");
+  let cleaned = phone.trim().replace(/\D/g, "");
 
-  if (cleaned.startsWith("880")) {
-    cleaned = cleaned.slice(3);
+  // Normalize Bangladesh international format to local mobile format
+  if (cleaned.startsWith("8801") && cleaned.length === 13) {
+    cleaned = cleaned.slice(2);
   }
 
-  if (cleaned.length === 11 && cleaned.startsWith("01")) {
+  // Accept flexible international/local numbers
+  if (cleaned.length >= 7 && cleaned.length <= 15) {
     return cleaned;
   }
 
@@ -42,9 +45,9 @@ export async function createLeadRequest(data: CreateLeadRequestData) {
   const supabase = await createClient();
 
   // Normalize phone
-  const normalizedPhone = normalizeBDPhone(data.phone);
+  const normalizedPhone = normalizePhone(data.phone);
   if (!normalizedPhone) {
-    return { error: "Invalid phone number format" };
+    return { error: "Invalid phone number" };
   }
 
   // In new schema, crm_users.id = auth.users.id directly
@@ -245,6 +248,7 @@ export async function reviewLeadRequest(options: {
 
   const { userId } = userWithRoles;
   const supabase = await createClient();
+  const supabaseAdmin = createAdminClient();
 
   // Get admin's crm_user_id (in new schema, crm_users.id = auth.users.id)
   const { data: adminUser } = await supabase
@@ -275,7 +279,7 @@ export async function reviewLeadRequest(options: {
     // Validate status - force 'NEW' if invalid
     const validatedStatus = getValidLeadStatus(leadPayload.status);
 
-    const { data: newLead, error: leadError } = await supabase
+    const { data: newLead, error: leadError } = await supabaseAdmin
       .from("crm_leads")
       .insert({
         name: leadPayload.name,
@@ -296,7 +300,7 @@ export async function reviewLeadRequest(options: {
     }
 
     // Update request status and save lead_id
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("crm_lead_requests")
       .update({
         status: "APPROVED",
@@ -318,7 +322,7 @@ export async function reviewLeadRequest(options: {
     return { data: { success: true, lead: newLead } };
   } else {
     // Decline the request
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("crm_lead_requests")
       .update({
         status: "DECLINED",

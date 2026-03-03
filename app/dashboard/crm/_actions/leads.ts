@@ -9,20 +9,21 @@ import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
-// Normalize Bangladesh phone numbers
-function normalizeBDPhone(phone: string): string | null {
+// Normalize phone numbers with flexible validation
+function normalizePhone(phone: string): string | null {
   if (!phone) return null;
 
-  // Remove all non-digit characters
-  let cleaned = phone.replace(/\D/g, "");
+  let cleaned = phone.trim().replace(/\D/g, "");
 
-  // Handle international format (+880 or 880)
-  if (cleaned.startsWith("880")) {
-    cleaned = cleaned.slice(3);
+  // Normalize Bangladesh international format to local mobile format
+  // e.g. +8801700000000 -> 01700000000
+  if (cleaned.startsWith("8801") && cleaned.length === 13) {
+    cleaned = cleaned.slice(2);
   }
 
-  // Must be 11 digits starting with 01
-  if (cleaned.length === 11 && cleaned.startsWith("01")) {
+  // Accept flexible international/local numbers
+  // E.164 max length is 15 digits
+  if (cleaned.length >= 7 && cleaned.length <= 15) {
     return cleaned;
   }
 
@@ -37,14 +38,12 @@ export async function createLead(data: CreateLeadData) {
     return { error: "Unauthorized" };
   }
 
-  const { userId } = userWithRoles;
-
   const supabase = await createClient();
 
   // Normalize phone
-  const normalizedPhone = normalizeBDPhone(data.phone);
+  const normalizedPhone = normalizePhone(data.phone);
   if (!normalizedPhone) {
-    return { error: "Invalid phone number format" };
+    return { error: "Invalid phone number" };
   }
 
   // Check for duplicates
@@ -58,17 +57,6 @@ export async function createLead(data: CreateLeadData) {
     return { error: "Lead with this phone number already exists" };
   }
 
-  // Get crm_user_id (in new schema, crm_users.id = auth.users.id)
-  const { data: crmUser } = await supabase
-    .from("crm_users")
-    .select("id")
-    .eq("id", userId)
-    .single();
-
-  if (!crmUser) {
-    return { error: "CRM user profile not found" };
-  }
-
   const { data: lead, error } = await supabase
     .from("crm_leads")
     .insert({
@@ -80,7 +68,6 @@ export async function createLead(data: CreateLeadData) {
       source: data.source || "WEBSITE",
       notes: data.notes || null,
       owner_id: data.owner_id ? data.owner_id : null,
-      created_by: crmUser.id, // Track who created the lead
     })
     .select()
     .single();
@@ -107,9 +94,9 @@ export async function updateLead(id: string, data: UpdateLeadData) {
   // Normalize phone if provided
   let normalizedPhone = data.phone;
   if (data.phone) {
-    const normalized = normalizeBDPhone(data.phone);
+    const normalized = normalizePhone(data.phone);
     if (!normalized) {
-      return { error: "Invalid phone number format" };
+      return { error: "Invalid phone number" };
     }
     normalizedPhone = normalized;
   }
