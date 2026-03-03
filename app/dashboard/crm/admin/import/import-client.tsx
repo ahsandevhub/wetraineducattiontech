@@ -566,7 +566,7 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
                           selectedMarketers.length
                         } selected marketer${
                           selectedMarketers.length !== 1 ? "s" : ""
-                        } using round-robin.`} {" "}
+                        } using round-robin.`}{" "}
                   Phone numbers are normalized to strict format 8801XXXXXXXXX.
                 </AlertDescription>
               </Alert>
