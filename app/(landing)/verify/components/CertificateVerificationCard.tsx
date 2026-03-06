@@ -9,6 +9,8 @@ interface CertificateVerificationCardProps {
 export default function CertificateVerificationCard({
   certificate,
 }: CertificateVerificationCardProps) {
+  type DetailItem = { label: string; value: string; isStatus?: boolean };
+
   const statusColorClass =
     certificate.status === "Verified"
       ? "text-green-600"
@@ -16,11 +18,11 @@ export default function CertificateVerificationCard({
         ? "text-yellow-600"
         : "text-red-600";
 
-  const extraDetails = Object.entries(certificate.extraFields ?? {}).map(
-    ([label, value]) => ({ label, value }),
-  );
+  const extraDetails: DetailItem[] = Object.entries(
+    certificate.extraFields ?? {},
+  ).map(([label, value]) => ({ label, value }));
 
-  const details: Array<{ label: string; value: string; isStatus?: boolean }> = [
+  const details: DetailItem[] = [
     { label: "Certificate Type", value: certificate.certificateType },
     { label: "Name", value: certificate.name },
     { label: "Father's Name", value: certificate.fatherName },
@@ -32,6 +34,8 @@ export default function CertificateVerificationCard({
     { label: "Issue Date", value: certificate.issueDate },
     { label: "Status", value: certificate.status, isStatus: true },
   ];
+
+  const allDetails: DetailItem[] = [...details, ...extraDetails];
 
   return (
     <div className="border border-yellow-300 rounded-lg bg-yellow-50 p-6 md:p-8 shadow-sm">
@@ -55,7 +59,7 @@ export default function CertificateVerificationCard({
       </div>
 
       <dl className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[...details, ...extraDetails].map((detail) => (
+        {allDetails.map((detail) => (
           <div
             key={detail.label}
             className="rounded-lg border border-yellow-200 bg-white p-4"
