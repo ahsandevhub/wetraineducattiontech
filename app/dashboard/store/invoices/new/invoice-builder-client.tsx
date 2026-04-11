@@ -308,7 +308,9 @@ export function InvoiceBuilderClient({ products, currentBalance }: Props) {
 
           try {
             const results = await detectorRef.current.detect(videoRef.current);
-            const firstResult = results.find((result) => result.rawValue?.trim());
+            const firstResult = results.find((result) =>
+              result.rawValue?.trim(),
+            );
             if (firstResult?.rawValue) {
               handleDetectedBarcode(firstResult.rawValue);
             }
@@ -745,6 +747,7 @@ export function InvoiceBuilderClient({ products, currentBalance }: Props) {
                   value={manualBarcode}
                   onChange={(event) => setManualBarcode(event.target.value)}
                   placeholder="Type or paste barcode number"
+                  autoFocus={false}
                 />
                 <Button
                   type="button"
