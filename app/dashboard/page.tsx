@@ -8,7 +8,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Priority: Education > CRM > HRM
+  // Priority: Education > CRM > HRM > Store
   if (roles.hasEducationAccess) {
     // Education takes priority
     redirect(
@@ -31,6 +31,9 @@ export default async function DashboardPage() {
       default:
         redirect("/unauthorized");
     }
+  } else if (roles.hasStoreAccess) {
+    // Store fourth priority
+    redirect("/dashboard/store");
   } else {
     // User has no access to any application
     redirect("/unauthorized");

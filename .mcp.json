@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "next-devtools": {
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
+    },
+    "supabase-local": {
+      "url": "http://localhost:54321/mcp"
+    },
+    "supabase-remote-readonly": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=uvakcxevpuixskqyrgia&read_only=true&features=database,docs"
+    },
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=uvakcxevpuixskqyrgia"
+    }
+  }
+}

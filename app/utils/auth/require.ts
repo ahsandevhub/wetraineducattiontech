@@ -10,11 +10,13 @@ import {
   hasAnyAccess,
   hasCrmAccess,
   hasHrmAccess,
+  hasStoreAccess,
   isCrmAdmin,
   isEducationAdmin,
   isHrmAdmin,
   isHrmEmployee,
   isHrmSuperAdmin,
+  isStoreAdmin,
   type UserWithRoles,
 } from "./roles";
 
@@ -29,7 +31,7 @@ export async function requireAuth(): Promise<UserWithRoles> {
     redirect("/login");
   }
 
-  // User must have access to at least one app (education, CRM, or HRM)
+  // User must have access to at least one app (education, CRM, HRM, or Store)
   if (!hasAnyAccess(roles)) {
     redirect("/unauthorized");
   }
@@ -129,6 +131,34 @@ export async function requireHrmEmployee(): Promise<UserWithRoles> {
   const roles = await requireAuth();
 
   if (!isHrmEmployee(roles)) {
+    redirect("/unauthorized");
+  }
+
+  return roles;
+}
+
+/**
+ * Require Store access (any Store role: USER or ADMIN)
+ * Use in /dashboard/store/* layout
+ */
+export async function requireStoreAccess(): Promise<UserWithRoles> {
+  const roles = await requireAuth();
+
+  if (!hasStoreAccess(roles)) {
+    redirect("/unauthorized");
+  }
+
+  return roles;
+}
+
+/**
+ * Require Store admin role
+ * Use in /dashboard/store/admin/* layout
+ */
+export async function requireStoreAdmin(): Promise<UserWithRoles> {
+  const roles = await requireAuth();
+
+  if (!isStoreAdmin(roles)) {
     redirect("/unauthorized");
   }
 

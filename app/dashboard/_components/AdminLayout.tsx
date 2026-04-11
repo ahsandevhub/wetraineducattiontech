@@ -1,6 +1,6 @@
 "use client";
 
-import type { CrmRole, HrmRole } from "@/app/utils/auth/roles";
+import type { CrmRole, HrmRole, StoreRole } from "@/app/utils/auth/roles";
 import { NotificationBell } from "@/components/hrm/NotificationBell";
 import {
   Breadcrumb,
@@ -84,6 +84,7 @@ type AdminLayoutProps = {
   role: Role;
   crmRole: CrmRole | null;
   hrmRole: HrmRole | null;
+  storeRole: StoreRole | null;
   hasEducationAccess?: boolean;
 };
 
@@ -92,11 +93,13 @@ export default function AdminLayout({
   role,
   crmRole,
   hrmRole,
+  storeRole,
   hasEducationAccess = true,
 }: AdminLayoutProps) {
   const pathname = usePathname();
   const isCrmRoute = pathname.startsWith("/dashboard/crm");
   const isHrmRoute = pathname.startsWith("/dashboard/hrm");
+  const isStoreRoute = pathname.startsWith("/dashboard/store");
 
   const adminBreadcrumbMap: Record<string, string> = {
     "/dashboard/admin": "Dashboard",
@@ -146,7 +149,23 @@ export default function AdminLayout({
     "/dashboard/hrm/notifications": "Notifications",
   };
 
-  const currentTab = isHrmRoute
+  const storeBreadcrumbMap: Record<string, string> = {
+    "/dashboard/store": "Store Dashboard",
+    "/dashboard/store/invoices/new": "New Invoice",
+    "/dashboard/store/purchases": "My Purchases",
+    "/dashboard/store/accounts": "My Account",
+    "/dashboard/store/admin": "Store Admin",
+    "/dashboard/store/admin/employees": "Employees",
+    "/dashboard/store/admin/invoices": "Invoices",
+    "/dashboard/store/admin/products": "Products",
+    "/dashboard/store/admin/stocks": "Stocks",
+    "/dashboard/store/admin/accounts": "Accounts",
+    "/dashboard/store/admin/reports": "Reports",
+  };
+
+  const currentTab = isStoreRoute
+    ? (storeBreadcrumbMap[pathname] ?? "Store")
+    : isHrmRoute
     ? (hrmBreadcrumbMap[pathname] ?? "HRM")
     : isCrmRoute
       ? (crmBreadcrumbMap[pathname] ?? "CRM")
@@ -154,7 +173,9 @@ export default function AdminLayout({
         ? (adminBreadcrumbMap[pathname] ?? "Dashboard")
         : (customerBreadcrumbMap[pathname] ?? "Dashboard");
 
-  const breadcrumbRoot = isHrmRoute
+  const breadcrumbRoot = isStoreRoute
+    ? "Store"
+    : isHrmRoute
     ? "HRM"
     : isCrmRoute
       ? "CRM"
@@ -168,7 +189,9 @@ export default function AdminLayout({
         src: "/favicon.png",
         alt: "WeTrain",
         title: "WeTrain",
-        description: isHrmRoute
+        description: isStoreRoute
+          ? "Store System"
+          : isHrmRoute
           ? "HRM KPI System"
           : isCrmRoute
             ? "CRM System"
@@ -177,6 +200,79 @@ export default function AdminLayout({
               : "Customer workspace",
       },
     };
+
+    // Store Navigation (when on Store routes)
+    if (isStoreRoute) {
+      return {
+        ...base,
+        navGroups: [
+          {
+            title: "Store",
+            items: [
+              {
+                label: "Dashboard",
+                icon: LayoutDashboard,
+                href: "/dashboard/store",
+              },
+              {
+                label: "My Purchases",
+                icon: ShoppingCart,
+                href: "/dashboard/store/purchases",
+              },
+              {
+                label: "My Account",
+                icon: Wallet,
+                href: "/dashboard/store/accounts",
+              },
+            ],
+          },
+          ...(storeRole === "ADMIN"
+            ? [
+                {
+                  title: "Admin",
+                  items: [
+                    {
+                      label: "Store Admin",
+                      icon: Settings,
+                      href: "/dashboard/store/admin",
+                    },
+                    {
+                      label: "Employees",
+                      icon: Users,
+                      href: "/dashboard/store/admin/employees",
+                    },
+                    {
+                      label: "Invoices",
+                      icon: Receipt,
+                      href: "/dashboard/store/admin/invoices",
+                    },
+                    {
+                      label: "Products",
+                      icon: ShoppingCart,
+                      href: "/dashboard/store/admin/products",
+                    },
+                    {
+                      label: "Stocks",
+                      icon: Database,
+                      href: "/dashboard/store/admin/stocks",
+                    },
+                    {
+                      label: "Accounts",
+                      icon: Wallet,
+                      href: "/dashboard/store/admin/accounts",
+                    },
+                    {
+                      label: "Reports",
+                      icon: FileBarChart,
+                      href: "/dashboard/store/admin/reports",
+                    },
+                  ],
+                },
+              ]
+            : []),
+        ],
+      };
+    }
 
     // HRM Navigation (when on HRM routes)
     if (isHrmRoute) {
@@ -428,11 +524,10 @@ export default function AdminLayout({
     };
   })();
 
-  const AppSidebar = ({ className }: { className?: string }) => (
+  const appSidebar = (
     <Sidebar
       className={cn(
         "!bg-[var(--tertiary-yellow)] text-gray-900 border-r border-[var(--primary-yellow)]",
-        className,
       )}
     >
       <SidebarHeader>
@@ -440,6 +535,7 @@ export default function AdminLayout({
           educationRole={role}
           crmRole={crmRole}
           hrmRole={hrmRole}
+          storeRole={storeRole}
           hasEducationAccess={hasEducationAccess}
         />
       </SidebarHeader>
@@ -460,6 +556,7 @@ export default function AdminLayout({
                 item.href !== "/dashboard/customer" &&
                 item.href !== "/dashboard/crm" &&
                 item.href !== "/dashboard/hrm" &&
+                item.href !== "/dashboard/store" &&
                 item.href !== "/dashboard/hrm/super" &&
                 item.href !== "/dashboard/hrm/admin" &&
                 item.href !== "/dashboard/hrm/employee" &&
@@ -517,7 +614,7 @@ export default function AdminLayout({
 
   return (
     <SidebarProvider className="min-h-screen bg-white text-gray-900">
-      <AppSidebar />
+      {appSidebar}
       <SidebarInset className="bg-white text-gray-900 h-svh overflow-y-auto">
         {/* Sticky Header */}
         <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-[var(--primary-yellow)] !bg-[var(--tertiary-yellow)] backdrop-blur-sm px-4">

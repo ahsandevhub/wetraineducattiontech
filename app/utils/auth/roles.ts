@@ -1,6 +1,6 @@
 /**
  * Unified Role Resolver
- * Returns education profile role, CRM role, and HRM role in one call
+ * Returns education profile role, CRM role, HRM role, and Store role in one call
  * to prevent repeated DB hits across layouts, switcher, and guards
  */
 
@@ -9,6 +9,7 @@ import { createClient } from "../supabase/server";
 export type EducationRole = "customer" | "admin";
 export type CrmRole = "ADMIN" | "MARKETER";
 export type HrmRole = "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE";
+export type StoreRole = "USER" | "ADMIN";
 
 export interface UserWithRoles {
   userId: string;
@@ -16,13 +17,28 @@ export interface UserWithRoles {
   profileRole: EducationRole | null;
   crmRole: CrmRole | null;
   hrmRole: HrmRole | null;
+  storeRole: StoreRole | null;
   hasEducationAccess: boolean;
   hasCrmAccess: boolean;
   hasHrmAccess: boolean;
+  hasStoreAccess: boolean;
+}
+
+function isMissingRelationError(
+  error: { code?: string; message?: string } | null,
+): boolean {
+  if (!error) {
+    return false;
+  }
+
+  return (
+    error.code === "42P01" ||
+    error.message?.toLowerCase().includes("could not find the table") === true
+  );
 }
 
 /**
- * Get current user with education, CRM, and HRM roles
+ * Get current user with education, CRM, HRM, and Store roles
  * Optimized queries to prevent repeated lookups
  *
  * Auth.users is the single source of truth for user identity.
@@ -30,6 +46,7 @@ export interface UserWithRoles {
  * - profiles.id (FK to auth.users.id) - Education system
  * - crm_users.id (FK to auth.users.id) - CRM system
  * - hrm_users.id (FK to auth.users.id) - HRM system
+ * - store_users.id (FK to auth.users.id) - Store system
  */
 export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
   const supabase = await createClient();
@@ -66,9 +83,21 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     .eq("id", user.id)
     .maybeSingle();
 
+  // Fetch Store user (optional - table may not exist yet while Store rolls out)
+  const { data: storeUser, error: storeUserError } = await supabase
+    .from("store_users")
+    .select("store_role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (storeUserError && !isMissingRelationError(storeUserError)) {
+    throw storeUserError;
+  }
+
   const hasEducationAccess = profile !== null;
   const hasCrmAccessFlag = crmUser !== null;
   const hasHrmAccessFlag = hrmUser !== null;
+  const hasStoreAccessFlag = storeUser !== null;
 
   return {
     userId: user.id,
@@ -76,9 +105,11 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     profileRole: profile?.role || null,
     crmRole: crmUser?.crm_role || null,
     hrmRole: hrmUser?.hrm_role || null,
+    storeRole: storeUser?.store_role || null,
     hasEducationAccess,
     hasCrmAccess: hasCrmAccessFlag,
     hasHrmAccess: hasHrmAccessFlag,
+    hasStoreAccess: hasStoreAccessFlag,
   };
 }
 
@@ -104,12 +135,24 @@ export function hasHrmAccess(roles: UserWithRoles | null): boolean {
 }
 
 /**
- * Check if user has access to any app (education, CRM, or HRM)
+ * Check if user has Store access (any Store role)
+ */
+export function hasStoreAccess(roles: UserWithRoles | null): boolean {
+  return roles?.hasStoreAccess === true;
+}
+
+/**
+ * Check if user has access to any app (education, CRM, HRM, or Store)
  */
 export function hasAnyAccess(roles: UserWithRoles | null): boolean {
   return (
     roles !== null &&
-    (roles.hasEducationAccess || roles.hasCrmAccess || roles.hasHrmAccess)
+    (
+      roles.hasEducationAccess ||
+      roles.hasCrmAccess ||
+      roles.hasHrmAccess ||
+      roles.hasStoreAccess
+    )
   );
 }
 
@@ -146,4 +189,11 @@ export function isHrmAdmin(roles: UserWithRoles | null): boolean {
  */
 export function isHrmEmployee(roles: UserWithRoles | null): boolean {
   return roles?.hrmRole === "EMPLOYEE";
+}
+
+/**
+ * Check if user is Store admin
+ */
+export function isStoreAdmin(roles: UserWithRoles | null): boolean {
+  return roles?.storeRole === "ADMIN";
 }

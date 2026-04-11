@@ -10,7 +10,7 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  // Use unified role resolver - single DB call for education + CRM + HRM roles
+  // Use unified role resolver - single DB call for education + CRM + HRM + Store roles
   const roles = await getCurrentUserWithRoles();
 
   if (!roles) {
@@ -18,7 +18,12 @@ export default async function DashboardLayout({
   }
 
   // Ensure user has access to at least one app
-  if (!roles.hasEducationAccess && !roles.hasCrmAccess && !roles.hasHrmAccess) {
+  if (
+    !roles.hasEducationAccess &&
+    !roles.hasCrmAccess &&
+    !roles.hasHrmAccess &&
+    !roles.hasStoreAccess
+  ) {
     redirect("/unauthorized");
   }
 
@@ -29,6 +34,7 @@ export default async function DashboardLayout({
       role={educationRole}
       crmRole={roles.crmRole}
       hrmRole={roles.hrmRole}
+      storeRole={roles.storeRole}
       userId={roles.userId}
       hasEducationAccess={roles.hasEducationAccess}
     >

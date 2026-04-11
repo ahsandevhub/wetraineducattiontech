@@ -48,7 +48,7 @@ const ChartContainer = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "flex aspect-auto h-80 w-full flex-col justify-center overflow-hidden rounded-md bg-background p-0 sm:p-4",
+          "flex aspect-auto h-80 min-h-[320px] min-w-0 w-full flex-col justify-center overflow-hidden rounded-md bg-background p-0 sm:p-4",
           className,
         )}
         {...props}

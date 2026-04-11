@@ -16,6 +16,7 @@ import {
   Building2,
   ChevronsUpDown,
   GraduationCap,
+  Store,
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
@@ -34,6 +35,7 @@ type AppSwitcherProps = {
   educationRole: "admin" | "customer";
   crmRole?: "ADMIN" | "MARKETER" | null;
   hrmRole?: "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE" | null;
+  storeRole?: "USER" | "ADMIN" | null;
   hasEducationAccess?: boolean;
 };
 
@@ -41,11 +43,13 @@ export function TeamSwitcher({
   educationRole,
   crmRole,
   hrmRole,
+  storeRole,
   hasEducationAccess = true,
 }: AppSwitcherProps) {
   const pathname = usePathname();
   const isCrmRoute = pathname.startsWith("/dashboard/crm");
   const isHrmRoute = pathname.startsWith("/dashboard/hrm");
+  const isStoreRoute = pathname.startsWith("/dashboard/store");
 
   // Determine available apps based on roles
   const availableApps = useMemo(() => {
@@ -94,8 +98,19 @@ export function TeamSwitcher({
       });
     }
 
+    if (storeRole) {
+      apps.push({
+        name: "Store",
+        logo: "ST",
+        icon: Store,
+        href: "/dashboard/store",
+        description:
+          storeRole === "ADMIN" ? "Store Admin" : "Store Workspace",
+      });
+    }
+
     return apps;
-  }, [educationRole, crmRole, hrmRole, hasEducationAccess]);
+  }, [educationRole, crmRole, hrmRole, storeRole, hasEducationAccess]);
 
   // Determine current app
   const currentApp = useMemo(() => {
@@ -103,6 +118,9 @@ export function TeamSwitcher({
       return (
         availableApps.find((app) => app.name === "HRM KPI") || availableApps[0]
       );
+    }
+    if (isStoreRoute) {
+      return availableApps.find((app) => app.name === "Store") || availableApps[0];
     }
     if (isCrmRoute) {
       return (
@@ -112,7 +130,7 @@ export function TeamSwitcher({
     return (
       availableApps.find((app) => app.name === "Education") || availableApps[0]
     );
-  }, [isHrmRoute, isCrmRoute, availableApps]);
+  }, [isHrmRoute, isStoreRoute, isCrmRoute, availableApps]);
 
   // Only show switcher if multiple apps available
   if (availableApps.length <= 1) {
@@ -172,8 +190,14 @@ export function TeamSwitcher({
               const Icon = app.icon;
               const isActive =
                 (app.name === "HRM KPI" && isHrmRoute) ||
+                (app.name === "Store" && isStoreRoute) ||
                 (app.name === "CRM" && isCrmRoute) ||
-                (app.name === "Education" && !isCrmRoute && !isHrmRoute);
+                (
+                  app.name === "Education" &&
+                  !isCrmRoute &&
+                  !isHrmRoute &&
+                  !isStoreRoute
+                );
 
               return (
                 <Link key={app.name} href={app.href}>

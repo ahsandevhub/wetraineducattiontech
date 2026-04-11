@@ -21,6 +21,10 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const isMissingRelationError = (error: { code?: string; message?: string }) =>
+    error.code === "42P01" ||
+    error.message?.toLowerCase().includes("could not find the table") === true;
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -44,7 +48,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Check education profile, CRM access, and HRM access
+      // Check education profile, CRM access, HRM access, and Store access
       // New schema: crm_users.id = auth.users.id, hrm_users.id = auth.users.id
       const { data: profile } = await supabase
         .from("profiles")
@@ -64,13 +68,30 @@ export default function LoginPage() {
         .eq("id", userId)
         .maybeSingle();
 
+      const { data: storeUser, error: storeUserError } = await supabase
+        .from("store_users")
+        .select("id, store_role")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (storeUserError && !isMissingRelationError(storeUserError)) {
+        setError(storeUserError.message);
+        return;
+      }
+
       const hasEducationAccess = profile !== null;
       const hasCrmAccess = crmUser !== null;
       const hasHrmAccess = hrmUser !== null;
+      const hasStoreAccess = storeUser !== null;
 
       // If user has no access to any application, auto-provision a customer profile
       // so they can access the education dashboard as a customer.
-      if (!hasEducationAccess && !hasCrmAccess && !hasHrmAccess) {
+      if (
+        !hasEducationAccess &&
+        !hasCrmAccess &&
+        !hasHrmAccess &&
+        !hasStoreAccess
+      ) {
         const { error: insertError } = await supabase.from("profiles").insert({
           id: userId,
           email: email.trim().toLowerCase(),
@@ -89,7 +110,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Determine redirect target based on priority: Education > CRM > HRM
+      // Determine redirect target based on priority: Education > CRM > HRM > Store
       if (hasEducationAccess) {
         // Education takes priority
         router.push(
@@ -103,6 +124,9 @@ export default function LoginPage() {
       } else if (hasHrmAccess) {
         // HRM third priority - let middleware handle role-specific redirect
         router.push("/dashboard/hrm");
+      } else if (hasStoreAccess) {
+        // Store fourth priority
+        router.push("/dashboard/store");
       } else {
         // Fallback (shouldn't reach here due to earlier check)
         router.push("/dashboard");

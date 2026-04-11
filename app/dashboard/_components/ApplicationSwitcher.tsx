@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -16,6 +17,7 @@ import {
   Building2,
   ChevronsUpDown,
   GraduationCap,
+  Store,
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
@@ -35,6 +37,7 @@ type ApplicationSwitcherProps = {
   educationRole: "admin" | "customer";
   crmRole?: "ADMIN" | "MARKETER" | null;
   hrmRole?: "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE" | null;
+  storeRole?: "USER" | "ADMIN" | null;
   hasEducationAccess?: boolean;
 };
 
@@ -42,12 +45,14 @@ export function ApplicationSwitcher({
   educationRole,
   crmRole,
   hrmRole,
+  storeRole,
   hasEducationAccess = true,
 }: ApplicationSwitcherProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const isCrmRoute = pathname.startsWith("/dashboard/crm");
   const isHrmRoute = pathname.startsWith("/dashboard/hrm");
+  const isStoreRoute = pathname.startsWith("/dashboard/store");
 
   // Determine available apps based on roles
   const availableApps = useMemo(() => {
@@ -100,8 +105,20 @@ export function ApplicationSwitcher({
       });
     }
 
+    if (storeRole) {
+      apps.push({
+        name: "Store",
+        description:
+          storeRole === "ADMIN" ? "Store Admin" : "Store Workspace",
+        href: "/dashboard/store",
+        icon: Store,
+        color: "from-amber-500 to-orange-500",
+        emoji: "🏪",
+      });
+    }
+
     return apps;
-  }, [educationRole, crmRole, hrmRole, hasEducationAccess]);
+  }, [educationRole, crmRole, hrmRole, storeRole, hasEducationAccess]);
 
   // Determine current app
   const currentApp = useMemo(() => {
@@ -109,6 +126,9 @@ export function ApplicationSwitcher({
       return (
         availableApps.find((app) => app.name === "HRM KPI") || availableApps[0]
       );
+    }
+    if (isStoreRoute) {
+      return availableApps.find((app) => app.name === "Store") || availableApps[0];
     }
     if (isCrmRoute) {
       return (
@@ -118,7 +138,7 @@ export function ApplicationSwitcher({
     return (
       availableApps.find((app) => app.name === "Education") || availableApps[0]
     );
-  }, [isHrmRoute, isCrmRoute, availableApps]);
+  }, [isHrmRoute, isStoreRoute, isCrmRoute, availableApps]);
 
   // Only show switcher if multiple apps available
   if (availableApps.length <= 1) {
@@ -176,6 +196,9 @@ export function ApplicationSwitcher({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl">Switch Application</DialogTitle>
+            <DialogDescription>
+              Choose which WeTrain application you want to open.
+            </DialogDescription>
           </DialogHeader>
 
           <RadioGroup
@@ -188,7 +211,12 @@ export function ApplicationSwitcher({
               const isActive = currentApp?.name === app.name;
 
               return (
-                <Link key={app.name} href={app.href}>
+                <Link
+                  key={app.name}
+                  href={app.href}
+                  onClick={() => setIsOpen(false)}
+                  onNavigate={() => setIsOpen(false)}
+                >
                   <label
                     className={`flex items-center space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                       isActive

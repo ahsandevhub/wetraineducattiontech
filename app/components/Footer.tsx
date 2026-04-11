@@ -87,11 +87,11 @@ export default function Footer() {
         <div className="space-y-4">
           <div className="flex items-center gap-1">
             <Image
-              src="/favicon.png" // update to your actual logo path
+              src="/favicon.png"
               alt="WeTrain Marketing"
-              height={30}
-              width={140}
-              className="h-12 w-auto"
+              width={48}
+              height={48}
+              className="h-12 w-12"
               priority
             />
             <span className="font-bold text-2xl leading-none text-white">

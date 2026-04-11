@@ -1,4 +1,4 @@
-# Architecture Decision Record: Three-System User Model
+# Architecture Decision Record: Multi-System User Model
 
 ## Document Type
 
@@ -10,11 +10,12 @@ Architecture Decision Record (ADR) - Users & Profile Management
 
 ## Context
 
-The WeTrain Education platform needed to support three distinct business operations:
+The WeTrain Education platform needed to support multiple distinct business operations:
 
 1. **Education/E-Commerce** - Course sales and customer management
 2. **CRM** - Sales pipeline and lead tracking
 3. **HRM** - Employee performance management
+4. **Store** - Internal cafeteria and office store operations
 
 Each has completely different:
 
@@ -26,7 +27,7 @@ Each has completely different:
 
 ## Decision
 
-**Implement three separate but interconnected domain-specific user systems**, all anchored to a single Supabase Authentication layer.
+**Implement separate but interconnected domain-specific user systems**, all anchored to a single Supabase Authentication layer.
 
 ### Architecture
 
@@ -36,13 +37,13 @@ Each has completely different:
 │    [Single Source of Truth]     │
 └──────────┬──────────────────────┘
            │
-    ┌──────┼──────┐
-    │      │      │
-    ▼      ▼      ▼
-┌────────┐┌────────┐┌────────┐
-│EDUC    ││CRM     ││HRM     │
-│profiles││crm_*   ││hrm_*   │
-└────────┘└────────┘└────────┘
+    ┌────────┼────────┬───────┐
+    │        │        │       │
+    ▼        ▼        ▼       ▼
+┌────────┐┌────────┐┌────────┐┌──────────┐
+│EDUC    ││CRM     ││HRM     ││STORE     │
+│profiles││crm_*   ││hrm_*   ││store_*   │
+└────────┘└────────┘└────────┘└──────────┘
 ```
 
 ## Rationale
@@ -107,8 +108,8 @@ users (
 
 3. **Role Flexibility**
    - Same person can be:
-     - Education: `customer` + CRM: `MARKETER` + HRM: `EMPLOYEE`
-     - Education: `admin` + CRM: `ADMIN` + HRM: `SUPER_ADMIN`
+     - Education: `customer` + CRM: `MARKETER` + HRM: `EMPLOYEE` + Store: `USER`
+     - Education: `admin` + CRM: `ADMIN` + HRM: `SUPER_ADMIN` + Store: `ADMIN`
    - Roles don't conflict (different namespaces)
 
 4. **Performance**
@@ -135,6 +136,7 @@ users (
    - Education team owns `profiles` table
    - CRM team owns `crm_*` tables
    - HR team owns `hrm_*` tables
+   - Store operations own `store_*` tables
    - Can implement features independently
 
 ---
@@ -153,10 +155,11 @@ AFTER UPDATE OF email ON auth.users
 FOR EACH ROW
 EXECUTE FUNCTION public.sync_profile_email()
 
--- Function syncs to all three systems:
+-- Function syncs to all linked systems:
 UPDATE profiles SET email = NEW.email WHERE id = NEW.id
 UPDATE crm_users SET email = NEW.email WHERE auth_user_id = NEW.id
 UPDATE hrm_users SET email = NEW.email WHERE profile_id = NEW.id
+UPDATE store_users SET email = NEW.email WHERE id = NEW.id
 ```
 
 **Why not app-level?** Triggers guarantee consistency at the database level, even if app fails.
@@ -176,7 +179,8 @@ handle_new_user() runs:
   ├─ Check email domain → role determination
   ├─ Create profiles entry (education)
   ├─ Check if crm-eligible → create crm_users
-  └─ Check pending HRM profile → link & create hrm_users
+  ├─ Check pending HRM profile → link & create hrm_users
+  └─ Check store eligibility/admin assignment → create store_users
     ↓
 USER has accounts in all appropriate systems
 ```
@@ -185,7 +189,7 @@ USER has accounts in all appropriate systems
 
 | Scenario                  | Guarantee                                           |
 | ------------------------- | --------------------------------------------------- |
-| User edits email in auth  | All three systems sync via trigger                  |
+| User edits email in auth  | All linked systems sync via trigger or shared flow  |
 | Auth user deleted         | CASCADE → all profiles deleted                      |
 | Profile.role modified     | RLS policies enforce limits (admin can't overwrite) |
 | CRM user becomes inactive | Leads remain (must reassign or archive)             |
@@ -210,7 +214,7 @@ USER has accounts in all appropriate systems
 
 ### This Project: ✅ Perfect Fit
 
-- ✅ 3 distinct systems (unlikely to merge)
+- ✅ 4 distinct systems (unlikely to merge)
 - ✅ Different roles (customer, MARKETER, EMPLOYEE)
 - ✅ Different data (profiles vs leads vs KPI scores)
 - ✅ Different permissions (self-service vs managed vs hierarchical)
@@ -278,7 +282,7 @@ USER has accounts in all appropriate systems
 
 ### Features 🔄 PLANNED
 
-- [ ] Unified admin dashboard (see all 3 systems)
+- [ ] Unified admin dashboard (see all business systems)
 - [ ] Bulk user imports
 - [ ] Compliance reports (all systems)
 - [ ] User activity timeline
@@ -320,11 +324,12 @@ ALTER TABLE profiles ADD COLUMN department TEXT
 - Education: Manage via `/dashboard/admin`
 - CRM: Manage via `/dashboard/crm/admin/users`
 - HRM: Manage via `/dashboard/hrm/super`
+- Store: Manage via `/dashboard/store/admin`
 
 **Permissions:**
 
-- Education admin ≠ CRM admin ≠ HRM admin
-- Same person can be all three (separate roles)
+- Education admin ≠ CRM admin ≠ HRM admin ≠ Store admin
+- Same person can hold multiple roles across systems
 
 **Bulk Operations:**
 
@@ -391,11 +396,11 @@ update_crm_updated_at() failed
 
 ## Related Documentation
 
-- [Users/Profile Structure Analysis](./USERS_PROFILE_STRUCTURE_ANALYSIS.md) - Detailed schema reference
-- [Architecture Visual](./USERS_PROFILE_ARCHITECTURE_VISUAL.md) - Diagrams & flows
-- [Quick Reference Guide](./USERS_PROFILE_QUICK_REFERENCE.md) - API & SQL examples
-- [Auth Setup Docs](./docs/AUTH_EMAIL_SETUP.md) - Email configuration
-- [Migrations Reference](./docs/MIGRATION_GUIDE.md) - DB schema history
+- [Shared Systems](./modules/shared-systems.md) - Shared auth and cross-module platform concerns
+- [System Design](./product/system-design.md) - Current high-level platform architecture
+- [Authentication Stack](./stack/auth.md) - Auth roles and route protection patterns
+- [Auth Setup Docs](./AUTH_EMAIL_SETUP.md) - Email configuration
+- [Migrations Reference](./MIGRATION_GUIDE.md) - DB schema history
 
 ---
 
@@ -438,10 +443,11 @@ update_crm_updated_at() failed
 
 | Version | Date       | Author | Changes                 |
 | ------- | ---------- | ------ | ----------------------- |
-| 1.0     | 2026-02-25 | AI     | Initial ADR + rationale |
+| 1.1     | 2026-04-10 | AI     | Expanded for Store module |
+| 1.0     | 2026-02-25 | AI     | Initial ADR + rationale   |
 | -       | -          | -      | -                       |
 
 ---
 
-**Architecture Decision Record v1.0** | Last Updated: 2026-02-25
+**Architecture Decision Record v1.1** | Last Updated: 2026-04-10
 **Status: APPROVED & IMPLEMENTED** | Review Period: Annual

@@ -1,0 +1,27 @@
+{
+	"servers": {
+		"next-devtools": {
+			"command": "npx",
+			"args": ["-y", "next-devtools-mcp@latest"]
+		},
+		"supabase-local": {
+			"type": "http",
+			"url": "http://localhost:54321/mcp"
+		},
+		"supabase-remote-readonly": {
+			"type": "http",
+			"url": "https://mcp.supabase.com/mcp?project_ref=${input:supabaseProjectRef}&read_only=true&features=database,docs"
+		},
+		"supabase": {
+			"type": "http",
+			"url": "https://mcp.supabase.com/mcp?project_ref=uvakcxevpuixskqyrgia"
+		}
+	},
+	"inputs": [
+		{
+			"type": "promptString",
+			"id": "supabaseProjectRef",
+			"description": "Supabase project ref for a non-production project"
+		}
+	]
+}

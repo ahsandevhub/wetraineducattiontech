@@ -59,7 +59,7 @@ export default function RootLayout({
   const isProduction = process.env.VERCEL_ENV === "production";
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
         <HashAuthCatcher />
         <EnvironmentSticker />

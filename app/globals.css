@@ -47,7 +47,7 @@
 
   /* UI Element Colors - Premium minimalist */
   --border: oklch(0.92 0 0); /* subtle light gray border */
-  --input: oklch(0.97 0 0); /* light input backgrounds */
+  --input: oklch(91.279% 0.0001 271.152); /* light input backgrounds */
   --ring: oklch(0.782 0.281 98.3); /* yellow focus ring for visibility */
 
   /* Chart Colors - Yellow primary with complementary palette */
@@ -66,7 +66,9 @@
   --sidebar-primary-foreground: oklch(0.145 0 0); /* dark text on yellow */
   --sidebar-accent: oklch(0.945 0.095 97.5); /* soft yellow for hover states */
   --sidebar-accent-foreground: oklch(0.205 0 0); /* dark text */
-  --sidebar-border: oklch(0.92 0 0); /* subtle light border */
+  --sidebar-border: oklch(
+    80.877% 0.17029 75.348 / 0.384
+  ); /* subtle light border */
   --sidebar-ring: oklch(0.782 0.281 98.3); /* yellow focus ring */
 }
 

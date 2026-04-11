@@ -86,9 +86,9 @@ export default function Header() {
               <Image
                 src="/favicon.png"
                 alt="WeTrainEducation & Tech"
+                width={40}
                 height={40}
-                width={140}
-                className="h-10 w-auto"
+                className="h-10 w-10"
                 priority
                 onError={() => handleImageError("logo")}
               />
