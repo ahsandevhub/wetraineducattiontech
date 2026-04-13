@@ -8,6 +8,7 @@ import "./globals.css";
 
 import { EnvironmentSticker } from "../components/EnvironmentSticker";
 import { HashAuthCatcher } from "../components/HashAuthCatcher";
+import { PwaRegistrar } from "../components/PwaRegistrar";
 
 export const metadata: Metadata = {
   title: "WeTrainEducation & Tech — Global IT and Marketing Solutions",
@@ -42,6 +43,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
   metadataBase: new URL("https://wetraineducation.com"),
   category: "Marketing and IT Services",
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
@@ -61,6 +63,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="font-sans antialiased bg-white text-gray-900 scroll-smooth">
+        <PwaRegistrar />
         <HashAuthCatcher />
         <EnvironmentSticker />
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
