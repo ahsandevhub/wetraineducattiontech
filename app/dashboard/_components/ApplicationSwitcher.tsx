@@ -175,6 +175,7 @@ export function ApplicationSwitcher({
         <SidebarMenuItem>
           <SidebarMenuButton
             onClick={() => setIsOpen(true)}
+            closeOnMobileClick={false}
             size="lg"
             className="data-[state=open]:bg-amber-50 data-[state=open]:hover:bg-amber-50 data-[state=open]:text-sidebar-accent-foreground border border-amber-300 hover:border-amber-400 bg-yellow-50 hover:bg-yellow-50 cursor-pointer"
           >
