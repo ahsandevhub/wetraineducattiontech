@@ -41,7 +41,7 @@ The Store module provides an internal cafeteria and office store system for empl
 - Product and pricing management
 - Invoice review and reversal handling
 - Stock additions, deductions, and corrections
-- Account adjustments with category and reason
+- Account adjustments with category and optional reason/notes
 - Month close and reporting workflows
 
 ## Data Models
@@ -104,7 +104,7 @@ The Store module provides an internal cafeteria and office store system for empl
 
 1. Admin selects employee
 2. Admin adds or deducts balance manually
-3. Admin must choose a category and write a reason
+3. Admin chooses a category and may add reason/notes
 4. System creates an immutable account entry
 5. Updated balance appears in employee and admin ledgers
 
@@ -123,7 +123,7 @@ The Store module provides an internal cafeteria and office store system for empl
   - amount
   - direction
   - category
-  - reason
+  - optional reason/notes
   - effective date or month
 - Recommended entry categories:
   - `MONTHLY_ALLOCATION`
@@ -162,7 +162,7 @@ The Store module provides an internal cafeteria and office store system for empl
 - Role-based access for users and store admins
 - Accurate balance deduction on invoice save
 - Accurate stock deduction and reversal behavior
-- Required category and reason for admin adjustments
+- Category validation and optional reason/notes handling for admin adjustments
 - Correct carry-forward on month close
 - Mobile behavior for invoice scan/search flows
 

@@ -198,8 +198,8 @@ export function StoreProductsClient({
         </Card>
       </div>
 
-      <Card className="space-y-4">
-        <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
           <div>
             <CardTitle>Catalog</CardTitle>
           </div>
@@ -207,11 +207,11 @@ export function StoreProductsClient({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by name, SKU, or barcode"
-            className="md:max-w-md"
+            className="w-full md:max-w-md"
           />
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -230,7 +230,7 @@ export function StoreProductsClient({
                   <TableRow>
                     <TableCell
                       colSpan={8}
-                      className="text-center text-muted-foreground"
+                      className="py-8 text-center text-muted-foreground"
                     >
                       {products.length === 0
                         ? "No Store products found"

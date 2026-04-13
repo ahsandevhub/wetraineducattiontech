@@ -191,18 +191,18 @@ export function StoreStocksClient({
         </Card>
       </div>
 
-      <Card className="space-y-4">
-        <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
           <CardTitle>Inventory</CardTitle>
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by name, SKU, or barcode"
-            className="md:max-w-sm"
+            className="w-full md:max-w-sm"
           />
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -219,7 +219,7 @@ export function StoreStocksClient({
                   <TableRow>
                     <TableCell
                       colSpan={6}
-                      className="text-center text-muted-foreground"
+                      className="py-8 text-center text-muted-foreground"
                     >
                       {products.length === 0
                         ? "No tracked stock products found"
@@ -303,12 +303,12 @@ export function StoreStocksClient({
         </CardContent>
       </Card>
 
-      <Card className="space-y-4">
-        <CardHeader>
+      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
           <CardTitle>Recent Stock Movements</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -326,7 +326,7 @@ export function StoreStocksClient({
                   <TableRow>
                     <TableCell
                       colSpan={7}
-                      className="text-center text-muted-foreground"
+                      className="py-8 text-center text-muted-foreground"
                     >
                       No stock movement history found
                     </TableCell>

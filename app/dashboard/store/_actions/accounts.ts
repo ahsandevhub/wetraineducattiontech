@@ -8,17 +8,14 @@ import {
   ensureStoreMonthOpen,
   getStoreMonthClosuresOverview,
 } from "./month-closures";
-
-type StoreAccountCategory =
-  | "MONTHLY_ALLOCATION"
-  | "EMPLOYEE_PAYMENT"
-  | "PURCHASE"
-  | "REFUND"
-  | "REVERSAL"
-  | "CORRECTION"
-  | "PENALTY"
-  | "BONUS_OR_REWARD"
-  | "OTHER";
+import {
+  ensureValidCategory,
+  ensureValidManualCategory,
+  parsePositiveMoney,
+  startOfMonth,
+  STORE_ACCOUNT_CATEGORIES,
+  type StoreAccountCategory,
+} from "../_lib/store-domain";
 
 type AccountEntryDirection = "CREDIT" | "DEBIT";
 
@@ -58,53 +55,6 @@ type StoreAccountEntryRow = {
   actor_name: string;
 };
 
-const STORE_ACCOUNT_CATEGORIES: StoreAccountCategory[] = [
-  "MONTHLY_ALLOCATION",
-  "EMPLOYEE_PAYMENT",
-  "PURCHASE",
-  "REFUND",
-  "REVERSAL",
-  "CORRECTION",
-  "PENALTY",
-  "BONUS_OR_REWARD",
-  "OTHER",
-];
-
-const MANUAL_STORE_ACCOUNT_CATEGORIES: StoreAccountCategory[] = [
-  "MONTHLY_ALLOCATION",
-  "EMPLOYEE_PAYMENT",
-  "REFUND",
-  "CORRECTION",
-  "PENALTY",
-  "BONUS_OR_REWARD",
-  "OTHER",
-];
-
-function startOfMonth(dateString: string) {
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1))
-    .toISOString()
-    .slice(0, 10);
-}
-
-function parsePositiveMoney(value: string) {
-  const normalized = value.trim();
-  if (!normalized) {
-    return { value: null, error: "Amount is required" };
-  }
-
-  const parsed = Number(normalized);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return { value: null, error: "Amount must be greater than zero" };
-  }
-
-  return { value: Number(parsed.toFixed(2)), error: null };
-}
-
 async function ensureStoreAdminAccess() {
   await requireStoreAdmin();
   const roles = await getCurrentUserWithRoles();
@@ -114,16 +64,6 @@ async function ensureStoreAdminAccess() {
   }
 
   return { error: null, roles };
-}
-
-function ensureValidCategory(category: string): category is StoreAccountCategory {
-  return STORE_ACCOUNT_CATEGORIES.includes(category as StoreAccountCategory);
-}
-
-function ensureValidManualCategory(
-  category: string,
-): category is StoreAccountCategory {
-  return MANUAL_STORE_ACCOUNT_CATEGORIES.includes(category as StoreAccountCategory);
 }
 
 export async function getStoreAccountsOverview() {

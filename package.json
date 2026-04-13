@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test:store": "node --test --import tsx tests/store/**/*.test.ts",
     "seed:public": "node scripts/seed-public.mjs",
     "seed:hrm": "node scripts/seed-hrm.mjs",
     "seed:crm": "node scripts/seed-crm.mjs",

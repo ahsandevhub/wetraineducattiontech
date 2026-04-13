@@ -360,11 +360,11 @@ export function StoreReportsClient({ data }: Props) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="space-y-3">
-          <CardHeader>
+        <Card className="space-y-3 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
             <CardTitle>Purchases By Employee</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -407,11 +407,11 @@ export function StoreReportsClient({ data }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="space-y-3">
-          <CardHeader>
+        <Card className="space-y-3 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
             <CardTitle>Purchases By Product</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -454,11 +454,11 @@ export function StoreReportsClient({ data }: Props) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="space-y-3">
-          <CardHeader>
+        <Card className="space-y-3 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
             <CardTitle>Low Stock Products</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
             {filteredLowStock.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No low-stock products found.
@@ -486,11 +486,11 @@ export function StoreReportsClient({ data }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="space-y-3">
-          <CardHeader>
+        <Card className="space-y-3 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
             <CardTitle>Negative Balances</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -530,11 +530,11 @@ export function StoreReportsClient({ data }: Props) {
         </Card>
       </div>
 
-      <Card className="space-y-3">
-        <CardHeader>
+      <Card className="space-y-3 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
           <CardTitle>Ledger Activity By Category</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -585,11 +585,11 @@ export function StoreReportsClient({ data }: Props) {
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card className="space-y-3">
-          <CardHeader>
+        <Card className="space-y-3 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
             <CardTitle>Month Closure Summary</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-0 pb-0 sm:px-6 sm:pb-6">
             {selectedMonthClosure ? (
               <>
                 <div className="flex items-center justify-between rounded-md border p-3">
@@ -675,11 +675,11 @@ export function StoreReportsClient({ data }: Props) {
           </CardContent>
         </Card>
 
-        <Card className="space-y-3">
-          <CardHeader>
+        <Card className="space-y-3 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
             <CardTitle>Month Closure History</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
             <div className="rounded-md border">
               <Table>
                 <TableHeader>

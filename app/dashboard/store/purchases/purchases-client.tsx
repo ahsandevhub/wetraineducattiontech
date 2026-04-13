@@ -114,27 +114,27 @@ export function StorePurchasesClient({ invoices }: Props) {
         </Card>
       </div>
 
-      <Card className="space-y-5">
-        <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+      <Card className="space-y-5 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
           <CardTitle>Purchase History</CardTitle>
           <div className="flex flex-col gap-3 md:flex-row">
             <Input
               type="month"
               value={monthFilter}
               onChange={(event) => setMonthFilter(event.target.value)}
-              className="md:w-44"
+              className="w-full md:w-44"
             />
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search invoice or product"
-              className="md:w-72"
+              className="w-full md:w-72"
             />
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-0 pb-0 sm:px-6 sm:pb-6">
           {filteredInvoices.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
+            <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
               No purchases found for the current filter.
             </div>
           ) : (
@@ -169,7 +169,7 @@ export function StorePurchasesClient({ invoices }: Props) {
                   <div className="mb-3 text-sm text-muted-foreground">
                     Confirmed {new Date(invoice.confirmed_at).toLocaleString()}
                   </div>
-                  <div className="rounded-md border">
+                  <div className="overflow-x-auto rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>

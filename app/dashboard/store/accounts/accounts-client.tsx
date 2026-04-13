@@ -148,18 +148,18 @@ export function StoreAccountsClient({
         </Card>
       </div>
 
-      <Card className="space-y-5">
-        <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+      <Card className="space-y-5 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
           <CardTitle>Account Ledger</CardTitle>
           <div className="flex flex-col gap-3 md:flex-row">
             <Input
               type="month"
               value={monthFilter}
               onChange={(event) => setMonthFilter(event.target.value)}
-              className="md:w-44"
+              className="w-full md:w-44"
             />
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="md:w-56">
+              <SelectTrigger className="w-full md:w-56">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
@@ -175,12 +175,12 @@ export function StoreAccountsClient({
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search reason or invoice"
-              className="md:w-72"
+              className="w-full md:w-72"
             />
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -197,7 +197,7 @@ export function StoreAccountsClient({
                   <TableRow>
                     <TableCell
                       colSpan={6}
-                      className="text-center text-muted-foreground"
+                      className="py-8 text-center text-muted-foreground"
                     >
                       No account entries found
                     </TableCell>

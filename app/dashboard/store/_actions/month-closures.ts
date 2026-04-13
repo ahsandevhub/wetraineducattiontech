@@ -4,6 +4,11 @@ import { requireStoreAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import {
+  getMonthRange,
+  normalizeOptionalText,
+  normalizeStoreMonthKey,
+} from "../_lib/store-domain";
 
 type StoreMonthStatus = "OPEN" | "CLOSED";
 
@@ -23,52 +28,6 @@ type StoreMonthClosureRow = {
   note: string | null;
   closed_by_name: string | null;
 };
-
-function normalizeOptionalText(value?: string) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-}
-
-function normalizeStoreMonthKey(monthKey: string) {
-  const normalized = monthKey.trim();
-  if (!normalized) {
-    return null;
-  }
-
-  const withDay =
-    /^\d{4}-\d{2}$/.test(normalized) ? `${normalized}-01` : normalized;
-  const date = new Date(withDay);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1))
-    .toISOString()
-    .slice(0, 10);
-}
-
-function getMonthRange(monthKey: string) {
-  const normalizedMonth = normalizeStoreMonthKey(monthKey);
-  if (!normalizedMonth) {
-    return null;
-  }
-
-  const start = new Date(`${normalizedMonth}T00:00:00.000Z`);
-  const end = new Date(start);
-  end.setUTCMonth(end.getUTCMonth() + 1);
-  end.setUTCDate(0);
-
-  const nextMonth = new Date(start);
-  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
-
-  return {
-    monthKey: normalizedMonth,
-    startDate: normalizedMonth,
-    endDate: end.toISOString().slice(0, 10),
-    nextMonthKey: nextMonth.toISOString().slice(0, 10),
-  };
-}
 
 async function ensureStoreAdminAccess() {
   await requireStoreAdmin();

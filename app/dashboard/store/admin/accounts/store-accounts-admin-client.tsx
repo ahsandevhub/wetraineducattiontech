@@ -245,8 +245,8 @@ export function StoreAccountsAdminClient({
         </Card>
       </div>
 
-      <Card className="space-y-4">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:pt-6">
           <div className="min-w-0">
             <CardTitle>Month Closures</CardTitle>
             <p className="text-sm text-muted-foreground">
@@ -262,8 +262,8 @@ export function StoreAccountsAdminClient({
             Close Month
           </Button>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -281,7 +281,7 @@ export function StoreAccountsAdminClient({
                   <TableRow>
                     <TableCell
                       colSpan={7}
-                      className="text-center text-muted-foreground"
+                      className="py-8 text-center text-muted-foreground"
                     >
                       No month snapshots have been created yet
                     </TableCell>
@@ -325,12 +325,12 @@ export function StoreAccountsAdminClient({
         </CardContent>
       </Card>
 
-      <Card className="space-y-4">
-        <CardHeader>
+      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
           <CardTitle>Employee Balances</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -345,7 +345,7 @@ export function StoreAccountsAdminClient({
                   <TableRow>
                     <TableCell
                       colSpan={4}
-                      className="text-center text-muted-foreground"
+                      className="py-8 text-center text-muted-foreground"
                     >
                       No Store users found
                     </TableCell>
@@ -388,18 +388,18 @@ export function StoreAccountsAdminClient({
         </CardContent>
       </Card>
 
-      <Card className="space-y-4">
-        <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
           <CardTitle>Ledger Entries</CardTitle>
           <div className="flex flex-col gap-3 md:flex-row">
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search employee, reason, or actor"
-              className="md:w-72"
+              className="w-full md:w-72"
             />
             <Select value={userFilter} onValueChange={setUserFilter}>
-              <SelectTrigger className="md:w-56">
+              <SelectTrigger className="w-full md:w-56">
                 <SelectValue placeholder="All employees" />
               </SelectTrigger>
               <SelectContent>
@@ -412,7 +412,7 @@ export function StoreAccountsAdminClient({
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="md:w-56">
+              <SelectTrigger className="w-full md:w-56">
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
@@ -426,8 +426,8 @@ export function StoreAccountsAdminClient({
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -446,7 +446,7 @@ export function StoreAccountsAdminClient({
                   <TableRow>
                     <TableCell
                       colSpan={8}
-                      className="text-center text-muted-foreground"
+                      className="py-8 text-center text-muted-foreground"
                     >
                       No ledger entries found
                     </TableCell>

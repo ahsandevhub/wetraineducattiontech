@@ -213,6 +213,7 @@ export default function StoreProductDialog({
 
           <DialogFooter>
             <Button
+              className="mt-3 sm:mt-0"
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}

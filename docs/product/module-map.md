@@ -101,7 +101,7 @@ This document provides a visual and structural map of the main business modules 
 
 **Purpose**: Internal cafeteria/store purchasing and balance management
 **Routes**: `/dashboard/store/*`
-**Users**: Employees, store admins, super admins
+**Users**: Employees and store admins
 **Responsibilities**:
 
 - Employee self-service purchases

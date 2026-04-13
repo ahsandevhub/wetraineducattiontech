@@ -187,8 +187,8 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
         </Card>
       </div>
 
-      <Card className="space-y-4">
-        <CardHeader className="gap-4 md:flex-row md:items-center md:justify-between">
+      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
           <CardTitle>Invoice History</CardTitle>
           <div className="flex flex-col gap-3 md:flex-row">
             <Input
@@ -220,7 +220,7 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
             />
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-0 pb-0 sm:px-6 sm:pb-6">
           {filteredInvoices.length === 0 ? (
             <div className="text-sm text-muted-foreground">
               No invoices found for the current filter.

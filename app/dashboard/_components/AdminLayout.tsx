@@ -215,6 +215,11 @@ export default function AdminLayout({
                 href: "/dashboard/store",
               },
               {
+                label: "Create Invoice",
+                icon: Receipt,
+                href: "/dashboard/store/invoices/new",
+              },
+              {
                 label: "My Purchases",
                 icon: ShoppingCart,
                 href: "/dashboard/store/purchases",

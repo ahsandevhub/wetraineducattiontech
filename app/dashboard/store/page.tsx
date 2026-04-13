@@ -118,17 +118,17 @@ export default async function StoreDashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="space-y-5">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="space-y-5 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="flex flex-col gap-2 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
             <CardTitle>Recent Purchases</CardTitle>
             <Link
               href="/dashboard/store/purchases"
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary hover:underline sm:text-right"
             >
               View all
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
             {data.recentInvoices.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No purchases yet. Use New Invoice to record your first purchase.
@@ -138,18 +138,18 @@ export default async function StoreDashboardPage() {
                 {data.recentInvoices.map((invoice) => (
                   <div
                     key={invoice.id}
-                    className="flex items-center justify-between rounded-md border p-3"
+                    className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <div className="font-medium">
                         {new Date(invoice.invoice_date).toLocaleDateString()}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="break-words text-xs text-muted-foreground">
                         Confirmed{" "}
                         {new Date(invoice.confirmed_at).toLocaleString()}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <Badge variant="outline">{invoice.status}</Badge>
                       <div className="mt-1 font-medium">
                         {invoice.total_amount.toFixed(2)} BDT
@@ -162,17 +162,17 @@ export default async function StoreDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="space-y-5">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="space-y-5 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="flex flex-col gap-2 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
             <CardTitle>Recent Account Activity</CardTitle>
             <Link
               href="/dashboard/store/accounts"
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary hover:underline sm:text-right"
             >
               View all
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
             {data.recentAccountEntries.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No account activity yet. Balance entries will appear here.
@@ -182,17 +182,17 @@ export default async function StoreDashboardPage() {
                 {data.recentAccountEntries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="flex items-center justify-between rounded-md border p-3"
+                    className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
                       <div className="font-medium">
                         {formatCategory(entry.category)}
                       </div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {entry.reason}
+                      <div className="break-words text-xs text-muted-foreground">
+                        {entry.reason || "No notes provided"}
                       </div>
                     </div>
-                    <div className="ml-4 text-right">
+                    <div className="sm:ml-4 sm:shrink-0 sm:text-right">
                       <div
                         className={`font-medium ${
                           entry.amount < 0 ? "text-red-600" : "text-emerald-600"

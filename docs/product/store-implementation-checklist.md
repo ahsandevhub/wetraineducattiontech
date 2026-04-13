@@ -93,7 +93,7 @@ Secure Store tables with self-service and admin-safe policies.
   - own invoice items
   - own account entries
 - RLS policies for Store admins to manage Store operational data
-- Restrict `store_users` admin assignment actions to super admins via server path
+- Restrict `store_users` management actions to Store admins via server path
 
 **Acceptance criteria**
 
@@ -105,20 +105,20 @@ Secure Store tables with self-service and admin-safe policies.
 
 **Goal**
 
-Let admins manage employee Store access and let super admins manage Store admin privileges.
+Let Store admins manage Store users and Store roles independently from other modules.
 
 **Deliverables**
 
 - `/dashboard/store/admin/employees`
 - Employee search/list view
 - Add/remove Store access
-- Grant/revoke `STORE_ADMIN` via super-admin-only controls
+- Grant/revoke Store `ADMIN` role within the Store module
 - Role and access status columns
 
 **Acceptance criteria**
 
 - Admin can manage Store users
-- Only super admin can assign or revoke Store admin privileges
+- Store role changes remain fully inside Store’s own access model
 - Access changes are reflected in auth-resolved navigation
 
 ### ST-006: Build product management
@@ -172,7 +172,7 @@ Track product stock through immutable movement records.
 
 **Goal**
 
-Allow admins to add or deduct employee balance with required category and reason.
+Allow admins to add or deduct employee balance with category and optional reason/notes.
 
 **Deliverables**
 
@@ -182,14 +182,14 @@ Allow admins to add or deduct employee balance with required category and reason
   - amount
   - direction
   - category
-  - reason
+  - optional reason/notes
   - effective date/month
 - Admin ledger table
 - Validation schema and server actions
 
 **Acceptance criteria**
 
-- No manual balance change can be saved without category and reason
+- Manual balance changes validate category and signed amount correctly
 - Entries are visible in the employee ledger immediately
 - Balance is calculated from ledger entries
 
@@ -473,7 +473,7 @@ Validate the Store module before broader rollout.
   - non-Store user
   - Store user
   - Store admin
-  - super admin
+  - users with other module access but no Store access
 - Naming consistency review across routes, types, and labels
 - Final doc touch-up if implementation differs from current docs
 
@@ -496,5 +496,5 @@ Validate the Store module before broader rollout.
 - The balance model is manual and ledger-driven:
   - no automatic 600 BDT monthly credit
   - carry-forward only at month rollover
-  - admin-managed balance changes with required category and reason
+  - admin-managed balance changes with category and optional reason/notes
 - Financial and stock-sensitive records should remain append-only wherever possible.

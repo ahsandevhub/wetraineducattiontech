@@ -146,7 +146,7 @@ export function StoreEmployeesClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Store Access Management</h1>
           <p className="text-muted-foreground">
@@ -154,14 +154,16 @@ export function StoreEmployeesClient({
             modules.
           </p>
         </div>
-        <AddStoreUserDialog onUserAdded={() => router.refresh()} />
+        <div className="w-full md:w-auto">
+          <AddStoreUserDialog onUserAdded={() => router.refresh()} />
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
           <CardTitle>Store Users ({users.length})</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
           <div className="rounded-md border">
             <Table>
               <TableHeader>

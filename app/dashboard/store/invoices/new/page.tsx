@@ -21,6 +21,7 @@ export default async function StoreNewInvoicePage() {
     <InvoiceBuilderClient
       products={data.products}
       currentBalance={data.currentBalance}
+      customer={data.customer}
     />
   );
 }

@@ -4,12 +4,12 @@ import { requireStoreAccess, requireStoreAdmin } from "@/app/utils/auth/require"
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import {
+  buildStoreInvoiceReversalReason,
+  normalizeDraftItems,
+  type InvoiceDraftItemInput,
+} from "../_lib/store-domain";
 import { ensureStoreMonthOpen } from "./month-closures";
-
-type InvoiceDraftItemInput = {
-  productId: string;
-  quantity: number;
-};
 
 type CreateStoreInvoiceInput = {
   items: InvoiceDraftItemInput[];
@@ -24,6 +24,12 @@ type StoreInvoiceProduct = {
   barcode: string | null;
   unit_price: number;
   tracks_stock: boolean;
+  stock_quantity: number | null;
+};
+
+type StoreInvoiceCustomer = {
+  name: string;
+  email: string | null;
 };
 
 type StoreAdminInvoiceItem = {
@@ -57,26 +63,6 @@ type ReverseStoreInvoiceInput = {
   reason: string;
 };
 
-function normalizeDraftItems(items: InvoiceDraftItemInput[]) {
-  const grouped = new Map<string, number>();
-
-  for (const item of items) {
-    if (!item.productId || !Number.isInteger(item.quantity) || item.quantity <= 0) {
-      return { items: null, error: "Each invoice item must have a valid quantity" };
-    }
-
-    grouped.set(item.productId, (grouped.get(item.productId) ?? 0) + item.quantity);
-  }
-
-  return {
-    items: Array.from(grouped.entries()).map(([productId, quantity]) => ({
-      productId,
-      quantity,
-    })),
-    error: null,
-  };
-}
-
 async function getCurrentUserForStoreAction() {
   await requireStoreAccess();
   const roles = await getCurrentUserWithRoles();
@@ -107,8 +93,11 @@ export async function getStoreInvoiceBuilderData() {
 
   try {
     const supabaseAdmin = createAdminClient();
-    const [{ data: products, error: productsError }, { data: balanceRows, error: balanceError }] =
-      await Promise.all([
+    const [
+      { data: products, error: productsError },
+      { data: balanceRows, error: balanceError },
+      { data: profile, error: profileError },
+    ] = await Promise.all([
         supabaseAdmin
           .from("store_products")
           .select("id, name, sku, barcode, unit_price, tracks_stock")
@@ -118,6 +107,11 @@ export async function getStoreInvoiceBuilderData() {
           .from("store_account_entries")
           .select("amount")
           .eq("user_id", auth.roles.userId),
+        supabaseAdmin
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", auth.roles.userId)
+          .maybeSingle(),
       ]);
 
     if (productsError) {
@@ -128,18 +122,59 @@ export async function getStoreInvoiceBuilderData() {
       return { data: null, error: balanceError.message };
     }
 
+    if (profileError) {
+      return { data: null, error: profileError.message };
+    }
+
+    const trackedProductIds = (products ?? [])
+      .filter((product) => product.tracks_stock)
+      .map((product) => product.id);
+
+    const { data: stockMovements, error: stockMovementsError } =
+      trackedProductIds.length > 0
+        ? await supabaseAdmin
+            .from("store_stock_movements")
+            .select("product_id, quantity_delta")
+            .in("product_id", trackedProductIds)
+        : { data: [], error: null };
+
+    if (stockMovementsError) {
+      return { data: null, error: stockMovementsError.message };
+    }
+
     const currentBalance = (balanceRows ?? []).reduce(
       (sum, row) => sum + Number(row.amount ?? 0),
       0,
     );
+
+    const stockMap = new Map<string, number>();
+    for (const movement of stockMovements ?? []) {
+      stockMap.set(
+        movement.product_id,
+        (stockMap.get(movement.product_id) ?? 0) +
+          Number(movement.quantity_delta ?? 0),
+      );
+    }
+
+    const customer: StoreInvoiceCustomer = {
+      name:
+        profile?.full_name?.trim() ||
+        profile?.email?.trim() ||
+        "Store User",
+      email: profile?.email?.trim() || null,
+    };
 
     return {
       data: {
         products: ((products ?? []) as StoreInvoiceProduct[]).map((product) => ({
           ...product,
           unit_price: Number(product.unit_price),
+          stock_quantity: product.tracks_stock
+            ? stockMap.get(product.id) ?? 0
+            : null,
         })),
         currentBalance: Number(currentBalance.toFixed(2)),
+        customer,
       },
       error: null,
     };
@@ -601,9 +636,7 @@ export async function reverseStoreInvoice(data: ReverseStoreInvoiceInput) {
   }
 
   const reversalAmount = Math.abs(Number(purchaseEntry.amount));
-  const reversalReason = reason
-    ? `Invoice reversal for ${invoiceId}: ${reason}`
-    : `Invoice reversal for ${invoiceId}`;
+  const reversalReason = buildStoreInvoiceReversalReason(invoiceId, reason);
 
   let createdReversalEntryId: string | null = null;
   let createdStockReversalIds: string[] = [];

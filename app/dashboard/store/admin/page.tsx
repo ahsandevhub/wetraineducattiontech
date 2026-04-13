@@ -64,14 +64,14 @@ export default async function StoreAdminPage() {
 
       {data.summary.lowStockCount > 0 ||
       data.summary.negativeBalanceCount > 0 ? (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+        <Card className="border-0 bg-amber-50/50 py-0 shadow-none sm:border sm:border-amber-200 sm:shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-3 space-y-0 px-0 pt-0 sm:px-6 sm:pt-6">
             <AlertTriangle className="h-5 w-5 text-amber-700" />
             <CardTitle className="text-base text-amber-900">
               Operational Attention Needed
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-amber-900">
+          <CardContent className="px-0 pb-0 text-sm text-amber-900 sm:px-6 sm:pb-6">
             {data.summary.lowStockCount > 0
               ? `${data.summary.lowStockCount} low-stock item(s)`
               : "No low-stock items"}
@@ -155,14 +155,14 @@ export default async function StoreAdminPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <Card className="space-y-4">
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
             <CardTitle className="min-w-0">Quick Links</CardTitle>
             <Badge variant="outline" className="w-fit shrink-0">
               Operations
             </Badge>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2">
+          <CardContent className="grid gap-3 px-0 pb-0 md:grid-cols-2 sm:px-6 sm:pb-6">
             {quickLinks.map((link) => (
               <Link
                 key={link.href}
@@ -183,14 +183,14 @@ export default async function StoreAdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="space-y-4">
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
             <CardTitle className="min-w-0">Low Stock Watchlist</CardTitle>
             <Button asChild size="sm" variant="outline">
               <Link href="/dashboard/store/admin/stocks">Open Stocks</Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
             {data.lowStockItems.length === 0 ? (
               <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
                 No low-stock items right now.
@@ -220,8 +220,8 @@ export default async function StoreAdminPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="space-y-4">
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
             <CardTitle className="min-w-0">
               Negative Balance Employees
             </CardTitle>
@@ -229,7 +229,7 @@ export default async function StoreAdminPage() {
               <Link href="/dashboard/store/admin/accounts">Open Accounts</Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
             {data.negativeBalanceUsers.length === 0 ? (
               <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
                 No employees are below zero balance.
@@ -255,14 +255,14 @@ export default async function StoreAdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="space-y-4">
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+          <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
             <CardTitle className="min-w-0">Recent Ledger Actions</CardTitle>
             <Button asChild size="sm" variant="outline">
               <Link href="/dashboard/store/admin/accounts">View Ledger</Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
             {data.recentLedgerActions.length === 0 ? (
               <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
                 No ledger activity recorded yet.

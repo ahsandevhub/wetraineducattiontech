@@ -4,15 +4,10 @@ import { requireStoreAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-
-type ProductFormData = {
-  name: string;
-  sku?: string;
-  barcode?: string;
-  unitPrice: string;
-  isActive: boolean;
-  tracksStock: boolean;
-};
+import {
+  buildProductPayload,
+  type ProductFormData,
+} from "../_lib/store-domain";
 
 type StoreProductRow = {
   id: string;
@@ -27,30 +22,6 @@ type StoreProductRow = {
   created_by: string | null;
   updated_by: string | null;
 };
-
-function normalizeOptionalText(value?: string) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-}
-
-function parseUnitPrice(value: string) {
-  const normalized = value.trim();
-
-  if (!normalized) {
-    return { value: null, error: "Unit price is required" };
-  }
-
-  const parsed = Number(normalized);
-  if (!Number.isFinite(parsed)) {
-    return { value: null, error: "Unit price must be a valid number" };
-  }
-
-  if (parsed < 0) {
-    return { value: null, error: "Unit price cannot be negative" };
-  }
-
-  return { value: Number(parsed.toFixed(2)), error: null };
-}
 
 async function ensureStoreAdminAccess() {
   await requireStoreAdmin();
@@ -102,36 +73,6 @@ async function ensureUniqueFields(
   }
 
   return { error: null };
-}
-
-function buildProductPayload(
-  currentUserId: string,
-  data: ProductFormData,
-  mode: "create" | "update",
-) {
-  const name = data.name.trim();
-  if (!name) {
-    return { payload: null, error: "Product name is required" };
-  }
-
-  const parsedPrice = parseUnitPrice(data.unitPrice);
-  if (parsedPrice.error || parsedPrice.value === null) {
-    return { payload: null, error: parsedPrice.error ?? "Invalid unit price" };
-  }
-
-  const payload = {
-    name,
-    sku: normalizeOptionalText(data.sku),
-    barcode: normalizeOptionalText(data.barcode),
-    unit_price: parsedPrice.value,
-    is_active: data.isActive,
-    tracks_stock: data.tracksStock,
-    ...(mode === "create"
-      ? { created_by: currentUserId, updated_by: currentUserId }
-      : { updated_by: currentUserId }),
-  };
-
-  return { payload, error: null };
 }
 
 export async function getAllStoreProducts() {

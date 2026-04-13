@@ -4,9 +4,16 @@ import { requireStoreAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import {
+  buildQuantityDelta,
+  isValidStockActionType,
+  normalizeOptionalText,
+  parseNonNegativeInteger,
+  parseOptionalMoney,
+  parsePositiveInteger,
+  type StockActionType,
+} from "../_lib/store-domain";
 import { ensureStoreMonthOpen } from "./month-closures";
-
-type StockActionType = "RESTOCK" | "DEDUCT" | "ADJUST";
 
 type StockActionInput = {
   productId: string;
@@ -43,58 +50,6 @@ type StockMovementRow = {
   created_at: string;
 };
 
-function normalizeOptionalText(value?: string) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-}
-
-function parsePositiveInteger(value: string) {
-  const normalized = value.trim();
-  if (!normalized) {
-    return { value: null, error: "Quantity is required" };
-  }
-
-  const parsed = Number(normalized);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    return {
-      value: null,
-      error: "Quantity must be a whole number greater than zero",
-    };
-  }
-
-  return { value: parsed, error: null };
-}
-
-function parseNonNegativeInteger(value: string) {
-  const normalized = value.trim();
-  if (!normalized) {
-    return { value: null, error: "Quantity is required" };
-  }
-
-  const parsed = Number(normalized);
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    return {
-      value: null,
-      error: "Quantity must be a whole number zero or greater",
-    };
-  }
-
-  return { value: parsed, error: null };
-}
-
-function parseOptionalMoney(value?: string) {
-  const normalized = value?.trim();
-  if (!normalized) {
-    return { value: null, error: null };
-  }
-
-  const parsed = Number(normalized);
-  if (!Number.isFinite(parsed) || parsed < 0) {
-    return { value: null, error: "Unit cost must be zero or a positive number" };
-  }
-
-  return { value: Number(parsed.toFixed(2)), error: null };
-}
 
 async function ensureStoreAdminAccess() {
   await requireStoreAdmin();
@@ -157,26 +112,6 @@ async function getCurrentOnHand(productId: string) {
   );
 
   return { quantity, error: null };
-}
-
-function buildQuantityDelta(
-  actionType: StockActionType,
-  quantity: number,
-  currentOnHand: number,
-) {
-  if (actionType === "RESTOCK") {
-    return quantity;
-  }
-
-  if (actionType === "DEDUCT") {
-    return quantity * -1;
-  }
-
-  return quantity - currentOnHand;
-}
-
-function isValidStockActionType(value: string): value is StockActionType {
-  return value === "RESTOCK" || value === "DEDUCT" || value === "ADJUST";
 }
 
 export async function getStoreStockOverview() {
