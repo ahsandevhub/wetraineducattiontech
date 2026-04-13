@@ -197,7 +197,7 @@ export function StoreStocksClient({
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by name, SKU, or barcode"
+            placeholder="Search by name or barcode"
             className="w-full md:max-w-sm"
           />
         </CardHeader>
@@ -207,7 +207,6 @@ export function StoreStocksClient({
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
-                  <TableHead>SKU</TableHead>
                   <TableHead>Barcode</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>On Hand</TableHead>
@@ -218,7 +217,7 @@ export function StoreStocksClient({
                 {filteredProducts.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={6}
+                      colSpan={5}
                       className="py-8 text-center text-muted-foreground"
                     >
                       {products.length === 0
@@ -232,7 +231,6 @@ export function StoreStocksClient({
                       <TableCell className="font-medium">
                         {product.name}
                       </TableCell>
-                      <TableCell>{product.sku ?? "—"}</TableCell>
                       <TableCell>{product.barcode ?? "—"}</TableCell>
                       <TableCell>
                         <Badge

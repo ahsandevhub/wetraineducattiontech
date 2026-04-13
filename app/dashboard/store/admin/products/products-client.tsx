@@ -206,7 +206,7 @@ export function StoreProductsClient({
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by name, SKU, or barcode"
+            placeholder="Search by name or barcode"
             className="w-full md:max-w-md"
           />
         </CardHeader>
@@ -217,7 +217,6 @@ export function StoreProductsClient({
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Price</TableHead>
-                  <TableHead>SKU</TableHead>
                   <TableHead>Barcode</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Stock</TableHead>
@@ -229,7 +228,7 @@ export function StoreProductsClient({
                 {filteredProducts.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={7}
                       className="py-8 text-center text-muted-foreground"
                     >
                       {products.length === 0
@@ -244,7 +243,6 @@ export function StoreProductsClient({
                         {product.name}
                       </TableCell>
                       <TableCell>{formatPrice(product.unit_price)}</TableCell>
-                      <TableCell>{product.sku ?? "—"}</TableCell>
                       <TableCell>{product.barcode ?? "—"}</TableCell>
                       <TableCell>
                         <Badge

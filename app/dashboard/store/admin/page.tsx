@@ -222,20 +222,18 @@ export default async function StoreAdminPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
           <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
-            <CardTitle className="min-w-0">
-              Negative Balance Employees
-            </CardTitle>
+            <CardTitle className="min-w-0">Employee Balances</CardTitle>
             <Button asChild size="sm" variant="outline">
               <Link href="/dashboard/store/admin/accounts">Open Accounts</Link>
             </Button>
           </CardHeader>
           <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
-            {data.negativeBalanceUsers.length === 0 ? (
+            {data.employeeBalances.length === 0 ? (
               <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                No employees are below zero balance.
+                No Store users found yet.
               </div>
             ) : (
-              data.negativeBalanceUsers.map((user) => (
+              data.employeeBalances.map((user) => (
                 <div
                   key={user.user_id}
                   className="flex items-center justify-between rounded-md border p-3"
@@ -246,7 +244,15 @@ export default async function StoreAdminPage() {
                       {user.user_email}
                     </div>
                   </div>
-                  <div className="text-right text-sm font-medium text-red-600">
+                  <div
+                    className={`text-right text-sm font-medium ${
+                      user.balance < 0
+                        ? "text-red-600"
+                        : user.balance > 0
+                          ? "text-emerald-600"
+                          : "text-foreground"
+                    }`}
+                  >
                     {formatAmount(user.balance)}
                   </div>
                 </div>

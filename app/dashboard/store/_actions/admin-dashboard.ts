@@ -10,7 +10,7 @@ type DashboardLowStockItem = {
   on_hand: number;
 };
 
-type DashboardNegativeBalanceUser = {
+type DashboardEmployeeBalanceUser = {
   user_id: string;
   user_name: string;
   user_email: string;
@@ -170,7 +170,7 @@ export async function getStoreAdminDashboardData() {
       );
     }
 
-    const negativeBalanceUsers: DashboardNegativeBalanceUser[] = (storeUsers ?? [])
+    const allEmployeeBalances: DashboardEmployeeBalanceUser[] = (storeUsers ?? [])
       .map((user) => {
         const profile = profileMap.get(user.id);
         return {
@@ -180,9 +180,11 @@ export async function getStoreAdminDashboardData() {
           balance: Number((balanceMap.get(user.id) ?? 0).toFixed(2)),
         };
       })
-      .filter((user) => user.balance < 0)
-      .sort((a, b) => a.balance - b.balance)
-      .slice(0, 6);
+      .sort((a, b) => a.balance - b.balance);
+
+    const negativeBalanceCount = allEmployeeBalances.filter(
+      (user) => user.balance < 0,
+    ).length;
 
     const recentLedgerActions: DashboardLedgerAction[] = (accountEntries ?? []).map(
       (entry) => {
@@ -213,11 +215,11 @@ export async function getStoreAdminDashboardData() {
         summary: {
           lowStockCount: lowStockItems.length,
           currentMonthSales,
-          negativeBalanceCount: negativeBalanceUsers.length,
+          negativeBalanceCount,
           recentLedgerCount: recentLedgerActions.length,
         },
         lowStockItems,
-        negativeBalanceUsers,
+        employeeBalances: allEmployeeBalances,
         recentLedgerActions,
       },
       error: null,

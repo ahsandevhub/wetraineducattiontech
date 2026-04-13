@@ -20,8 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, PackagePlus } from "lucide-react";
+import { StoreBarcodeScannerDialog } from "@/app/dashboard/store/_components/StoreBarcodeScannerDialog";
+import { Loader2, PackagePlus, ScanBarcode } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 
 type ActionType = "RESTOCK" | "DEDUCT" | "ADJUST";
 
@@ -77,6 +79,7 @@ export default function StoreStockActionDialog({
   );
 
   const [values, setValues] = useState<StockActionFormValues>(initialValues);
+  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
 
   const selectedProduct = products.find(
     (product) => product.id === values.productId,
@@ -119,25 +122,40 @@ export default function StoreStockActionDialog({
         >
           <div className="space-y-2">
             <Label htmlFor="stock-product">Product</Label>
-            <Select
-              value={values.productId}
-              onValueChange={(value) =>
-                setValues((prev) => ({ ...prev, productId: value }))
-              }
-              disabled={isSaving || Boolean(initialProductId)}
-            >
-              <SelectTrigger id="stock-product">
-                <SelectValue placeholder="Select a tracked product" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={product.id}>
-                    {product.name}
-                    {product.sku ? ` (${product.sku})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex-1">
+                <Select
+                  value={values.productId}
+                  onValueChange={(value) =>
+                    setValues((prev) => ({ ...prev, productId: value }))
+                  }
+                  disabled={isSaving || Boolean(initialProductId)}
+                >
+                  <SelectTrigger id="stock-product">
+                    <SelectValue placeholder="Select a tracked product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>
+                        {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {values.actionType === "RESTOCK" && !initialProductId ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setIsBarcodeScannerOpen(true)}
+                  disabled={isSaving}
+                >
+                  <ScanBarcode className="mr-2 h-4 w-4" />
+                  Scan Barcode
+                </Button>
+              ) : null}
+            </div>
             {selectedProduct ? (
               <p className="text-xs text-muted-foreground">
                 Current on-hand stock: {selectedProduct.on_hand}
@@ -295,6 +313,40 @@ export default function StoreStockActionDialog({
             </Button>
           </DialogFooter>
         </form>
+
+        <StoreBarcodeScannerDialog
+          open={isBarcodeScannerOpen}
+          onOpenChange={setIsBarcodeScannerOpen}
+          title="Scan Product Barcode"
+          description="Scan a barcode or enter it manually to select the tracked product for this restock."
+          onBarcodeDetected={(barcode) => {
+            const matchedProduct = products.find(
+              (product) => product.is_active && product.barcode?.trim() === barcode,
+            );
+
+            if (!matchedProduct) {
+              toast.error(
+                `No active tracked product was found for barcode ${barcode}`,
+              );
+              return;
+            }
+
+            setValues((prev) => ({ ...prev, productId: matchedProduct.id }));
+            toast.success(`Selected ${matchedProduct.name}`);
+            setIsBarcodeScannerOpen(false);
+          }}
+          findButtonLabel="Find Product"
+          idleHint="Scanning will select the matching tracked product so you can continue the restock."
+          footer={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBarcodeScannerOpen(false)}
+            >
+              Close
+            </Button>
+          }
+        />
       </DialogContent>
     </Dialog>
   );

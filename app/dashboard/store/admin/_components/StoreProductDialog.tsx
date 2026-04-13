@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus } from "lucide-react";
+import { StoreBarcodeScannerDialog } from "@/app/dashboard/store/_components/StoreBarcodeScannerDialog";
+import { Loader2, Plus, ScanBarcode } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 export type StoreProductFormValues = {
@@ -72,6 +73,7 @@ export default function StoreProductDialog({
   );
 
   const [values, setValues] = useState<StoreProductFormValues>(initialValues);
+  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
 
   useEffect(() => {
     setValues(initialValues);
@@ -121,32 +123,35 @@ export default function StoreProductDialog({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="product-sku">SKU</Label>
-              <Input
-                id="product-sku"
-                value={values.sku}
-                onChange={(event) =>
-                  setValues((prev) => ({ ...prev, sku: event.target.value }))
-                }
-                placeholder="ICE-CONE-001"
-                disabled={isSaving}
-              />
-            </div>
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-2">
               <Label htmlFor="product-barcode">Barcode</Label>
-              <Input
-                id="product-barcode"
-                value={values.barcode}
-                onChange={(event) =>
-                  setValues((prev) => ({
-                    ...prev,
-                    barcode: event.target.value,
-                  }))
-                }
-                placeholder="Optional barcode"
-                disabled={isSaving}
-              />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Input
+                  id="product-barcode"
+                  value={values.barcode}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      barcode: event.target.value,
+                    }))
+                  }
+                  placeholder="Optional barcode"
+                  disabled={isSaving}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setIsBarcodeScannerOpen(true)}
+                  disabled={isSaving}
+                >
+                  <ScanBarcode className="mr-2 h-4 w-4" />
+                  Scan Barcode
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                You can type the barcode manually or scan it with the camera.
+              </p>
             </div>
           </div>
 
@@ -235,6 +240,28 @@ export default function StoreProductDialog({
             </Button>
           </DialogFooter>
         </form>
+
+        <StoreBarcodeScannerDialog
+          open={isBarcodeScannerOpen}
+          onOpenChange={setIsBarcodeScannerOpen}
+          title="Scan Product Barcode"
+          description="Scan a product barcode or enter it manually to populate the product form."
+          onBarcodeDetected={(barcode) => {
+            setValues((prev) => ({ ...prev, barcode }));
+            setIsBarcodeScannerOpen(false);
+          }}
+          findButtonLabel="Use Barcode"
+          idleHint="Scanning will fill the barcode field automatically."
+          footer={
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBarcodeScannerOpen(false)}
+            >
+              Close
+            </Button>
+          }
+        />
       </DialogContent>
     </Dialog>
   );

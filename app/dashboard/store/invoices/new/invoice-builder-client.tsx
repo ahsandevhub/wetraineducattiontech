@@ -43,8 +43,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { StoreBarcodeScannerDialog } from "../../_components/StoreBarcodeScannerDialog";
 import {
-  Camera,
   Check,
   ChevronsUpDown,
   Loader2,
@@ -55,34 +55,9 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "react-hot-toast";
 import { createStoreInvoice } from "../../_actions/invoices";
-
-type BarcodeDetectorResult = {
-  rawValue?: string;
-};
-
-type BarcodeDetectorInstance = {
-  detect: (source: ImageBitmapSource) => Promise<BarcodeDetectorResult[]>;
-};
-
-type BarcodeDetectorConstructor = new (options?: {
-  formats?: string[];
-}) => BarcodeDetectorInstance;
-
-declare global {
-  interface Window {
-    BarcodeDetector?: BarcodeDetectorConstructor;
-  }
-}
 
 type StoreInvoiceProduct = {
   id: string;
@@ -121,26 +96,9 @@ export function InvoiceBuilderClient({
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [isStartingScanner, setIsStartingScanner] = useState(false);
-  const [scannerMessage, setScannerMessage] = useState("");
-  const [manualBarcode, setManualBarcode] = useState("");
   const [scannedProductId, setScannedProductId] = useState("");
   const [scannerQuantity, setScannerQuantity] = useState("1");
   const [isPending, startTransition] = useTransition();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const hasProcessedScanRef = useRef(false);
-  const detectorRef = useRef<BarcodeDetectorInstance | null>(null);
-
-  const isScannerSupported =
-    typeof window !== "undefined" &&
-    typeof window.BarcodeDetector !== "undefined" &&
-    Boolean(navigator.mediaDevices?.getUserMedia);
-
-  const scannerStatusText = !isScannerSupported
-    ? "Barcode scanning is not available on this device. Please use product search instead."
-    : scannerMessage;
 
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? null;
@@ -196,33 +154,6 @@ export function InvoiceBuilderClient({
     );
   }, [products, searchQuery]);
 
-  const cleanupScannerResources = useCallback(() => {
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
-      scanIntervalRef.current = null;
-    }
-
-    if (streamRef.current) {
-      for (const track of streamRef.current.getTracks()) {
-        track.stop();
-      }
-      streamRef.current = null;
-    }
-
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.srcObject = null;
-    }
-
-    detectorRef.current = null;
-    hasProcessedScanRef.current = false;
-  }, []);
-
-  const stopScanner = useCallback(() => {
-    cleanupScannerResources();
-    setIsStartingScanner(false);
-  }, [cleanupScannerResources]);
-
   const handleDetectedBarcode = useCallback(
     (barcode: string) => {
       const normalizedBarcode = barcode.trim();
@@ -233,141 +164,16 @@ export function InvoiceBuilderClient({
       if (!product) {
         setScannedProductId("");
         setScannerQuantity("1");
-        setScannerMessage(
-          `No active product was found for barcode ${normalizedBarcode}. You can still use manual search.`,
-        );
+        toast.error(`No active product was found for barcode ${normalizedBarcode}`);
         return;
       }
 
-      hasProcessedScanRef.current = true;
       setScannedProductId(product.id);
       setScannerQuantity("1");
-      setScannerMessage(`Matched ${product.name}. Set quantity and add it.`);
       toast.success(`Scanned ${product.name}`);
-      stopScanner();
     },
-    [products, stopScanner],
+    [products],
   );
-
-  const handleBarcodeLookup = useCallback(() => {
-    const normalizedBarcode = manualBarcode.trim();
-    if (!normalizedBarcode) {
-      toast.error("Enter a barcode first");
-      return;
-    }
-
-    handleDetectedBarcode(normalizedBarcode);
-  }, [handleDetectedBarcode, manualBarcode]);
-
-  useEffect(() => {
-    if (!isScannerOpen) {
-      cleanupScannerResources();
-      return;
-    }
-
-    if (!isScannerSupported) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const startScanner = async () => {
-      setIsStartingScanner(true);
-      setScannerMessage("Starting camera...");
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: "environment" },
-          },
-          audio: false,
-        });
-
-        if (cancelled) {
-          for (const track of stream.getTracks()) {
-            track.stop();
-          }
-          return;
-        }
-
-        streamRef.current = stream;
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-
-        const Detector = window.BarcodeDetector;
-        if (!Detector) {
-          setScannerMessage(
-            "Barcode scanning is not supported here. Please use product search instead.",
-          );
-          cleanupScannerResources();
-          setIsStartingScanner(false);
-          return;
-        }
-
-        detectorRef.current = new Detector({
-          formats: [
-            "ean_13",
-            "ean_8",
-            "upc_a",
-            "upc_e",
-            "code_128",
-            "code_39",
-            "qr_code",
-          ],
-        });
-
-        setScannerMessage("Point the camera at a product barcode.");
-        setIsStartingScanner(false);
-
-        scanIntervalRef.current = setInterval(async () => {
-          if (
-            cancelled ||
-            hasProcessedScanRef.current ||
-            !videoRef.current ||
-            !detectorRef.current
-          ) {
-            return;
-          }
-
-          try {
-            const results = await detectorRef.current.detect(videoRef.current);
-            const firstResult = results.find((result) =>
-              result.rawValue?.trim(),
-            );
-            if (firstResult?.rawValue) {
-              handleDetectedBarcode(firstResult.rawValue);
-            }
-          } catch {
-            setScannerMessage(
-              "Unable to detect a barcode from the camera feed. Try manual search if this keeps happening.",
-            );
-          }
-        }, 500);
-      } catch (error) {
-        console.error("Failed to start barcode scanner:", error);
-        setScannerMessage(
-          "Camera access was blocked or unavailable. Please use product search instead.",
-        );
-        setIsStartingScanner(false);
-        cleanupScannerResources();
-      }
-    };
-
-    startScanner();
-
-    return () => {
-      cancelled = true;
-      cleanupScannerResources();
-    };
-  }, [
-    cleanupScannerResources,
-    handleDetectedBarcode,
-    isScannerOpen,
-    isScannerSupported,
-  ]);
 
   const resetSearchDialog = useCallback(() => {
     setProductOpen(false);
@@ -377,12 +183,9 @@ export function InvoiceBuilderClient({
   }, []);
 
   const resetScannerDialog = useCallback(() => {
-    setScannerMessage("");
-    setManualBarcode("");
     setScannedProductId("");
     setScannerQuantity("1");
-    stopScanner();
-  }, [stopScanner]);
+  }, []);
 
   const addItemToDraft = useCallback(
     (productId: string, qtyValue: string) => {
@@ -527,11 +330,9 @@ export function InvoiceBuilderClient({
                     <div className="min-w-0">
                       <div className="font-medium">{item.product.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {item.product.sku
-                          ? `SKU: ${item.product.sku}`
-                          : item.product.barcode
-                            ? `# ${item.product.barcode}`
-                            : "No SKU or barcode"}
+                        {item.product.barcode
+                          ? `Barcode: ${item.product.barcode}`
+                          : "No barcode"}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         In stock: {item.product.stock_quantity ?? "N/A"}
@@ -693,7 +494,7 @@ export function InvoiceBuilderClient({
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                   <Command shouldFilter={false}>
                     <CommandInput
-                      placeholder="Search by name, SKU, or barcode..."
+                      placeholder="Search by name or barcode..."
                       value={searchQuery}
                       onValueChange={setSearchQuery}
                     />
@@ -706,7 +507,6 @@ export function InvoiceBuilderClient({
                             key={product.id}
                             value={[
                               product.name,
-                              product.sku ?? "",
                               product.barcode ?? "",
                             ]
                               .join(" ")
@@ -730,7 +530,6 @@ export function InvoiceBuilderClient({
                               </span>
                               <span className="text-xs text-muted-foreground">
                                 {product.unit_price.toFixed(2)} BDT
-                                {product.sku ? ` • ${product.sku}` : ""}
                                 {product.barcode ? ` • ${product.barcode}` : ""}
                               </span>
                             </div>
@@ -949,7 +748,7 @@ export function InvoiceBuilderClient({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog
+      <StoreBarcodeScannerDialog
         open={isScannerOpen}
         onOpenChange={(open) => {
           setIsScannerOpen(open);
@@ -957,106 +756,11 @@ export function InvoiceBuilderClient({
             resetScannerDialog();
           }
         }}
-      >
-        <DialogContent
-          className="max-w-xl"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle>Scan or Enter Barcode</DialogTitle>
-            <DialogDescription>
-              Scan a product barcode or enter it manually, then confirm quantity
-              before adding the product to the invoice.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-lg border bg-black">
-              {isScannerSupported ? (
-                <video
-                  ref={videoRef}
-                  className="aspect-video w-full object-cover"
-                  muted
-                  playsInline
-                />
-              ) : (
-                <div className="flex aspect-video w-full items-center justify-center text-sm text-white/80">
-                  <div className="flex flex-col items-center gap-2 text-center">
-                    <Camera className="h-8 w-8" />
-                    Barcode scanning is unavailable on this device.
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="manual-barcode">Barcode</Label>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input
-                  id="manual-barcode"
-                  value={manualBarcode}
-                  onChange={(event) => setManualBarcode(event.target.value)}
-                  placeholder="Type or paste barcode number"
-                />
-                <Button
-                  type="button"
-                  onClick={handleBarcodeLookup}
-                  className="w-full sm:w-auto"
-                >
-                  Find Product
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Use this fallback if camera scanning is unavailable or misses
-                the barcode.
-              </p>
-            </div>
-
-            {scannedProduct ? (
-              <div className="space-y-4 rounded-lg border p-4">
-                <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground">
-                    Matched Product
-                  </div>
-                  <div className="font-medium">{scannedProduct.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {scannedProduct.unit_price.toFixed(2)} BDT
-                    {scannedProduct.barcode
-                      ? ` • ${scannedProduct.barcode}`
-                      : ""}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="scanner-qty">Qty</Label>
-                  <Input
-                    id="scanner-qty"
-                    type="number"
-                    min="1"
-                    step="1"
-                    inputMode="numeric"
-                    value={scannerQuantity}
-                    onChange={(event) => setScannerQuantity(event.target.value)}
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-              {isStartingScanner ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {scannerStatusText || "Starting scanner..."}
-                </span>
-              ) : scannerStatusText ? (
-                scannerStatusText
-              ) : (
-                "If scanning does not work, close this dialog and use the search field instead."
-              )}
-            </div>
-          </div>
-
-          <DialogFooter>
+        title="Scan or Enter Barcode"
+        description="Scan a product barcode or enter it manually, then confirm quantity before adding the product to the invoice."
+        onBarcodeDetected={handleDetectedBarcode}
+        footer={
+          <>
             <Button
               className="mt-3 sm:mt-0"
               type="button"
@@ -1073,9 +777,37 @@ export function InvoiceBuilderClient({
               <Plus className="mr-2 h-4 w-4" />
               Add Item
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </>
+        }
+      >
+        {scannedProduct ? (
+          <div className="space-y-4 rounded-lg border p-4">
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">
+                Matched Product
+              </div>
+              <div className="font-medium">{scannedProduct.name}</div>
+              <div className="text-xs text-muted-foreground">
+                {scannedProduct.unit_price.toFixed(2)} BDT
+                {scannedProduct.barcode ? ` • ${scannedProduct.barcode}` : ""}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="scanner-qty">Qty</Label>
+              <Input
+                id="scanner-qty"
+                type="number"
+                min="1"
+                step="1"
+                inputMode="numeric"
+                value={scannerQuantity}
+                onChange={(event) => setScannerQuantity(event.target.value)}
+              />
+            </div>
+          </div>
+        ) : null}
+      </StoreBarcodeScannerDialog>
     </div>
   );
 }
