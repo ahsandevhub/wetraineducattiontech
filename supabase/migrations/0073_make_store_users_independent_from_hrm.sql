@@ -6,6 +6,9 @@
 DROP POLICY IF EXISTS "store_users_super_admin_insert" ON public.store_users;
 DROP POLICY IF EXISTS "store_users_super_admin_update" ON public.store_users;
 DROP POLICY IF EXISTS "store_users_super_admin_delete" ON public.store_users;
+DROP POLICY IF EXISTS "store_users_admin_insert" ON public.store_users;
+DROP POLICY IF EXISTS "store_users_admin_update" ON public.store_users;
+DROP POLICY IF EXISTS "store_users_admin_delete" ON public.store_users;
 
 CREATE POLICY "store_users_admin_insert"
   ON public.store_users

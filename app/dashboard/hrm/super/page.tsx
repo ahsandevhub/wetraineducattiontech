@@ -13,6 +13,7 @@ import {
   CalendarCheck,
   ClipboardList,
   Coins,
+  FileBarChart,
   Settings,
   UserCheck,
   UserCog,
@@ -105,6 +106,12 @@ export default function HrmSuperAdminPage() {
       icon: Coins,
       title: "Fund Management",
       description: "Track fine collection and bonus payouts",
+    },
+    {
+      href: "/dashboard/hrm/super/reporting",
+      icon: FileBarChart,
+      title: "Task Reporting",
+      description: "Review and manage team task reports",
     },
   ];
 

@@ -18,7 +18,13 @@ import {
   getMonthKeyFromWeekKey,
   getMonthOptions,
 } from "@/lib/hrm/week-utils";
-import { AlertCircle, Calendar, CheckCircle, Clock } from "lucide-react";
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  Clock,
+  FileBarChart,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -225,6 +231,24 @@ export default function AdminDashboardPage() {
           </Card>
         </div>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileBarChart className="h-5 w-5" />
+            Task Reporting
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            Log your own regular tasks and review entries from employees
+            assigned to you.
+          </p>
+          <Link href="/dashboard/hrm/admin/reporting">
+            <Button variant="outline">Open Task Reporting</Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Action Button */}
       <div className="flex justify-center">

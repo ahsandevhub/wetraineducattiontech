@@ -21,6 +21,9 @@ The internal cafeteria/store system is a separate Store module under `/dashboard
 - `/dashboard/hrm/employee` - Employee self-service
 - `/dashboard/hrm/super` - Super admin functions
 - `/dashboard/hrm/notifications` - Notification management
+- `/dashboard/hrm/employee/reporting` - Employee regular task reporting
+- `/dashboard/hrm/admin/reporting` - Admin task reporting and assigned employee visibility
+- `/dashboard/hrm/super/reporting` - Super admin task reporting oversight
 
 ## Key Components
 
@@ -37,6 +40,7 @@ The internal cafeteria/store system is a separate Store module under `/dashboard
 - Performance evaluation forms
 - KPI configuration and tracking
 - Hierarchical approval workflows
+- Task reporting with role-based visibility and management
 
 ## Data Models
 
@@ -48,6 +52,7 @@ The internal cafeteria/store system is a separate Store module under `/dashboard
 - `hrm_weeks` - Weekly performance data
 - `hrm_notifications` - System notifications
 - `hrm_email_logs` - Communication tracking
+- `hrm_task_reports` - Regular task/activity reporting entries
 
 ### Key Relationships
 

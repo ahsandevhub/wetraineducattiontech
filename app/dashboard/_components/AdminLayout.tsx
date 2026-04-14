@@ -142,10 +142,13 @@ export default function AdminLayout({
     "/dashboard/hrm/super/weeks": "Weeks",
     "/dashboard/hrm/super/submissions": "Submissions",
     "/dashboard/hrm/super/reports/monthly": "Monthly Report",
+    "/dashboard/hrm/super/reporting": "Task Reporting",
     "/dashboard/hrm/super/funds": "Fund Management",
     "/dashboard/hrm/admin": "Admin Dashboard",
+    "/dashboard/hrm/admin/reporting": "Task Reporting",
     "/dashboard/hrm/admin/marking": "Marking List",
     "/dashboard/hrm/employee": "My KPI",
+    "/dashboard/hrm/employee/reporting": "Task Reporting",
     "/dashboard/hrm/notifications": "Notifications",
   };
 
@@ -336,6 +339,11 @@ export default function AdminLayout({
                       href: "/dashboard/hrm/super/reports/monthly",
                     },
                     {
+                      label: "Task Reporting",
+                      icon: FileBarChart,
+                      href: "/dashboard/hrm/super/reporting",
+                    },
+                    {
                       label: "Fund Management",
                       icon: Wallet,
                       href: "/dashboard/hrm/super/funds",
@@ -359,6 +367,11 @@ export default function AdminLayout({
                       icon: ClipboardList,
                       href: "/dashboard/hrm/admin/marking",
                     },
+                    {
+                      label: "Task Reporting",
+                      icon: FileBarChart,
+                      href: "/dashboard/hrm/admin/reporting",
+                    },
                   ]
                 : []),
               ...(hrmRole === "EMPLOYEE"
@@ -367,6 +380,11 @@ export default function AdminLayout({
                       label: "My KPI Dashboard",
                       icon: TrendingUp,
                       href: "/dashboard/hrm/employee",
+                    },
+                    {
+                      label: "Task Reporting",
+                      icon: FileBarChart,
+                      href: "/dashboard/hrm/employee/reporting",
                     },
                   ]
                 : []),
