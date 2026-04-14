@@ -69,7 +69,7 @@ export default function StoreStockActionDialog({
     () => ({
       productId: initialProductId ?? "",
       actionType: initialActionType,
-      quantity: "",
+      quantity: initialActionType === "RESTOCK" ? "0" : "",
       unitCost: "",
       reason: "",
       referenceType: "",
@@ -96,12 +96,20 @@ export default function StoreStockActionDialog({
     values.actionType === "ADJUST" ? "Final On-Hand Quantity" : "Quantity";
   const parsedQuantity = Number(values.quantity);
   const normalizedQuantity =
-    Number.isInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+    values.actionType === "RESTOCK"
+      ? Number.isInteger(parsedQuantity) && parsedQuantity >= 0
+        ? parsedQuantity
+        : 0
+      : Number.isInteger(parsedQuantity) && parsedQuantity > 0
+        ? parsedQuantity
+        : 1;
 
   const adjustDialogQuantity = (delta: number) => {
     setValues((prev) => ({
       ...prev,
-      quantity: String(Math.max(1, normalizedQuantity + delta)),
+      quantity: String(
+        Math.max(prev.actionType === "RESTOCK" ? 0 : 1, normalizedQuantity + delta),
+      ),
     }));
   };
 
@@ -210,7 +218,7 @@ export default function StoreStockActionDialog({
                   size="sm"
                   className="h-8 sm:h-10 w-full rounded-none rounded-l-full p-0"
                   onClick={() => adjustDialogQuantity(-1)}
-                  disabled={normalizedQuantity <= 1 || isSaving}
+                  disabled={normalizedQuantity <= 0 || isSaving}
                   aria-label="Decrease restock quantity"
                 >
                   <Minus className="h-4 w-4" />
@@ -218,7 +226,7 @@ export default function StoreStockActionDialog({
                 <Input
                   id="stock-quantity"
                   type="number"
-                  min="1"
+                  min="0"
                   step="1"
                   inputMode="numeric"
                   value={values.quantity}
