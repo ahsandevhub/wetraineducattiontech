@@ -160,6 +160,7 @@ export default function AdminLayout({
     "/dashboard/store/admin/products": "Products",
     "/dashboard/store/admin/stocks": "Stocks",
     "/dashboard/store/admin/accounts": "Accounts",
+    "/dashboard/store/admin/owner-purchases": "Owner Purchases",
     "/dashboard/store/admin/reports": "Reports",
   };
 
@@ -265,6 +266,11 @@ export default function AdminLayout({
                       label: "Accounts",
                       icon: Wallet,
                       href: "/dashboard/store/admin/accounts",
+                    },
+                    {
+                      label: "Owner Purchases",
+                      icon: ShoppingCart,
+                      href: "/dashboard/store/admin/owner-purchases",
                     },
                     {
                       label: "Reports",

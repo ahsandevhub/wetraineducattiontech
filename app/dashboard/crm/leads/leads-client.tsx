@@ -94,7 +94,7 @@ interface LeadsPageClientProps {
       user?: { id: string; full_name: string | null };
     }[];
   })[];
-  marketers: CrmUser[];
+  owners: CrmUser[];
   isAdmin: boolean;
   currentPage: number;
   pageSize: number;
@@ -103,7 +103,7 @@ interface LeadsPageClientProps {
 
 export function LeadsPageClient({
   leads,
-  marketers,
+  owners,
   isAdmin,
   currentPage,
   pageSize,
@@ -289,6 +289,23 @@ export function LeadsPageClient({
       },
     },
     {
+      accessorKey: "updated_at",
+      header: ({ column }) => (
+        <SortableHeader column={column}>Last Updated</SortableHeader>
+      ),
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("updated_at"));
+        return (
+          <div className="text-sm">
+            <div>{format(date, "MMM dd, yyyy")}</div>
+            <div className="text-xs text-muted-foreground">
+              {format(date, "HH:mm:ss")}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
       id: "last_interaction",
       header: ({ column }) => (
         <SortableHeader column={column}>Last Interaction</SortableHeader>
@@ -434,7 +451,7 @@ export function LeadsPageClient({
       />
 
       <LeadFilters
-        marketers={marketers}
+        owners={owners}
         isAdmin={isAdmin}
         onPendingChange={setIsFilterPending}
       />
@@ -454,7 +471,7 @@ export function LeadsPageClient({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         lead={editingLead}
-        marketers={marketers}
+        owners={owners}
         isAdmin={isAdmin}
         onSuccess={() => router.refresh()}
       />

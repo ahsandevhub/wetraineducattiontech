@@ -12,6 +12,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   Building2,
@@ -50,9 +51,18 @@ export function ApplicationSwitcher({
 }: ApplicationSwitcherProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const { isMobile, setOpenMobile } = useSidebar();
   const isCrmRoute = pathname.startsWith("/dashboard/crm");
   const isHrmRoute = pathname.startsWith("/dashboard/hrm");
   const isStoreRoute = pathname.startsWith("/dashboard/store");
+
+  const handleApplicationSelect = () => {
+    setIsOpen(false);
+
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   // Determine available apps based on roles
   const availableApps = useMemo(() => {
@@ -204,7 +214,7 @@ export function ApplicationSwitcher({
 
           <RadioGroup
             value={currentApp?.name}
-            onValueChange={() => setIsOpen(false)}
+            onValueChange={handleApplicationSelect}
             className="space-y-3 py-4"
           >
             {availableApps.map((app) => {
@@ -215,8 +225,8 @@ export function ApplicationSwitcher({
                 <Link
                   key={app.name}
                   href={app.href}
-                  onClick={() => setIsOpen(false)}
-                  onNavigate={() => setIsOpen(false)}
+                  onClick={handleApplicationSelect}
+                  onNavigate={handleApplicationSelect}
                 >
                   <label
                     className={`flex items-center space-x-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${

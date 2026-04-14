@@ -1,15 +1,5 @@
 "use client";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -43,9 +33,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { StoreBarcodeScannerDialog } from "../../_components/StoreBarcodeScannerDialog";
 import {
   Check,
+  CheckCircle,
   ChevronsUpDown,
   Loader2,
   Minus,
@@ -55,9 +45,12 @@ import {
   Trash2,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { toast } from "react-hot-toast";
 import { createStoreInvoice } from "../../_actions/invoices";
+import { StoreBarcodeScannerDialog } from "../../_components/StoreBarcodeScannerDialog";
+import { formatStoreDateTime } from "../../_lib/date-format";
 
 type StoreInvoiceProduct = {
   id: string;
@@ -88,13 +81,13 @@ export function InvoiceBuilderClient({
   currentBalance,
   customer,
 }: Props) {
+  const router = useRouter();
   const [productOpen, setProductOpen] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannedProductId, setScannedProductId] = useState("");
   const [scannerQuantity, setScannerQuantity] = useState("1");
@@ -130,15 +123,15 @@ export function InvoiceBuilderClient({
   );
 
   const projectedBalance = Number((currentBalance - invoiceTotal).toFixed(2));
-  const todayLabel = useMemo(
-    () =>
-      new Intl.DateTimeFormat("en-BD", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }).format(new Date()),
-    [],
-  );
+  const todayLabel = useMemo(() => formatStoreDateTime(new Date()), []);
+  const parsedQuantity = Number(quantity);
+  const normalizedQuantity =
+    Number.isInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+  const parsedScannerQuantity = Number(scannerQuantity);
+  const normalizedScannerQuantity =
+    Number.isInteger(parsedScannerQuantity) && parsedScannerQuantity > 0
+      ? parsedScannerQuantity
+      : 1;
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -164,7 +157,9 @@ export function InvoiceBuilderClient({
       if (!product) {
         setScannedProductId("");
         setScannerQuantity("1");
-        toast.error(`No active product was found for barcode ${normalizedBarcode}`);
+        toast.error(
+          `No active product was found for barcode ${normalizedBarcode}`,
+        );
         return;
       }
 
@@ -186,6 +181,16 @@ export function InvoiceBuilderClient({
     setScannedProductId("");
     setScannerQuantity("1");
   }, []);
+
+  const closeSearchDialog = useCallback(() => {
+    resetSearchDialog();
+    setIsSearchDialogOpen(false);
+  }, [resetSearchDialog]);
+
+  const closeScannerDialog = useCallback(() => {
+    resetScannerDialog();
+    setIsScannerOpen(false);
+  }, [resetScannerDialog]);
 
   const addItemToDraft = useCallback(
     (productId: string, qtyValue: string) => {
@@ -270,6 +275,14 @@ export function InvoiceBuilderClient({
     );
   };
 
+  const adjustDialogQuantity = (
+    setter: (value: string) => void,
+    currentValue: number,
+    delta: number,
+  ) => {
+    setter(String(Math.max(1, currentValue + delta)));
+  };
+
   const handleConfirmSave = async () => {
     if (draftItems.length === 0) {
       toast.error("Add at least one item before saving");
@@ -286,7 +299,7 @@ export function InvoiceBuilderClient({
 
       toast.success("Invoice saved successfully");
       setDraftItems([]);
-      setIsConfirmOpen(false);
+      router.push("/dashboard/store/purchases");
     });
   };
 
@@ -316,9 +329,9 @@ export function InvoiceBuilderClient({
           ) : (
             draftRows.map((item) => (
               <TableRow key={item.productId}>
-                <TableCell>
-                  <div className="flex min-w-[220px] items-center gap-3">
-                    <div className="relative h-14 w-14 overflow-hidden rounded-lg border bg-muted/30">
+                <TableCell className="max-w-[350px]">
+                  <div className="flex min-w-[180px] max-w-[240px] sm:max-w-[350px] items-center gap-3">
+                    <div className="relative shrink-0 h-14 w-14 overflow-hidden rounded-lg border bg-muted/30">
                       <Image
                         src="/product-placeholder.png"
                         alt=""
@@ -328,10 +341,12 @@ export function InvoiceBuilderClient({
                       />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-medium">{item.product.name}</div>
+                      <div className="font-medium truncate">
+                        {item.product.name}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {item.product.barcode
-                          ? `Barcode: ${item.product.barcode}`
+                          ? `#${item.product.barcode}`
                           : "No barcode"}
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -505,10 +520,7 @@ export function InvoiceBuilderClient({
                         filteredProducts.map((product) => (
                           <CommandItem
                             key={product.id}
-                            value={[
-                              product.name,
-                              product.barcode ?? "",
-                            ]
+                            value={[product.name, product.barcode ?? ""]
                               .join(" ")
                               .trim()}
                             onSelect={() => {
@@ -524,14 +536,29 @@ export function InvoiceBuilderClient({
                                   : "opacity-0",
                               )}
                             />
-                            <div className="flex flex-col">
-                              <span className="font-medium">
-                                {product.name}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {product.unit_price.toFixed(2)} BDT
-                                {product.barcode ? ` • ${product.barcode}` : ""}
-                              </span>
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="relative h-12 w-12 overflow-hidden rounded-lg border bg-muted/30">
+                                <Image
+                                  src="/product-placeholder.png"
+                                  alt=""
+                                  width={48}
+                                  height={48}
+                                  className="h-full w-full object-cover"
+                                />
+                              </div>
+                              <div className="flex min-w-0 flex-col">
+                                <span className="truncate font-medium">
+                                  {product.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {product.unit_price.toFixed(2)} BDT
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {product.barcode
+                                    ? `#${product.barcode}`
+                                    : "#N/A"}
+                                </span>
+                              </div>
                             </div>
                           </CommandItem>
                         ))
@@ -544,15 +571,43 @@ export function InvoiceBuilderClient({
 
             <div className="space-y-2">
               <Label htmlFor="manual-invoice-qty">Qty</Label>
-              <Input
-                id="manual-invoice-qty"
-                type="number"
-                min="1"
-                step="1"
-                inputMode="numeric"
-                value={quantity}
-                onChange={(event) => setQuantity(event.target.value)}
-              />
+              <div className="grid w-full grid-cols-3 items-center rounded-full border bg-muted/20">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 sm:h-10 w-full rounded-none rounded-l-full p-0"
+                  onClick={() =>
+                    adjustDialogQuantity(setQuantity, normalizedQuantity, -1)
+                  }
+                  disabled={normalizedQuantity <= 1}
+                  aria-label="Decrease search item quantity"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  id="manual-invoice-qty"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  value={quantity}
+                  onChange={(event) => setQuantity(event.target.value)}
+                  className="h-8 sm:h-10 w-full rounded-none border-y-0 border-x border-border bg-transparent px-2 text-center text-sm font-medium shadow-none focus-visible:ring-0"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 sm:h-10 w-full rounded-none rounded-r-full p-0"
+                  onClick={() =>
+                    adjustDialogQuantity(setQuantity, normalizedQuantity, 1)
+                  }
+                  aria-label="Increase search item quantity"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -561,7 +616,7 @@ export function InvoiceBuilderClient({
               className="mt-3 sm:mt-0"
               type="button"
               variant="outline"
-              onClick={() => setIsSearchDialogOpen(false)}
+              onClick={closeSearchDialog}
             >
               Cancel
             </Button>
@@ -575,8 +630,8 @@ export function InvoiceBuilderClient({
 
       <Card className="mx-auto py-3 w-full max-w-5xl border-0 bg-transparent shadow-none md:border md:border-border/70 md:bg-card md:shadow-md">
         <CardContent className="space-y-6 px-0 py-0 sm:px-2 sm:py-2 md:px-6 md:py-6 lg:px-8">
-          <div className="flex flex-col gap-5 border-b border-dashed pb-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="hidden md:block space-y-2">
+          <div className="hidden md:flex flex-col gap-5 border-b border-dashed pb-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-2">
               <div className="inline-flex rounded-full border border-amber-200 bg-yellow-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-yellow-800">
                 Draft Invoice
               </div>
@@ -635,9 +690,6 @@ export function InvoiceBuilderClient({
                 <div className="font-medium text-foreground">
                   {draftRows.length} line{draftRows.length === 1 ? "" : "s"}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Quantity can be adjusted until save
-                </div>
               </div>
             </div>
           </div>
@@ -677,76 +729,19 @@ export function InvoiceBuilderClient({
               </div>
               <Button
                 type="button"
-                onClick={() => setIsConfirmOpen(true)}
+                onClick={handleConfirmSave}
                 disabled={draftRows.length === 0 || isPending}
                 className={cn("min-w-[180px]", "w-full sm:w-auto")}
               >
                 {isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Review & Save
+                Confirm & Save
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Invoice</AlertDialogTitle>
-            <AlertDialogDescription>
-              Review the summary below before saving. This will create a
-              purchase record and deduct your balance.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <div className="space-y-3 text-sm">
-            {draftRows.map((item) => (
-              <div
-                key={item.productId}
-                className="flex items-center justify-between rounded-md border p-3"
-              >
-                <div>
-                  <div className="font-medium">{item.product.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Qty {item.quantity} × {item.product.unit_price.toFixed(2)}{" "}
-                    BDT
-                  </div>
-                </div>
-                <div className="font-medium">
-                  {item.lineTotal.toFixed(2)} BDT
-                </div>
-              </div>
-            ))}
-
-            <div className="rounded-md bg-muted p-3">
-              <div>
-                Total:{" "}
-                <span className="font-medium">
-                  {invoiceTotal.toFixed(2)} BDT
-                </span>
-              </div>
-              <div>
-                New balance:{" "}
-                <span className="font-medium">
-                  {projectedBalance.toFixed(2)} BDT
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSave} disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Confirm Save
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <StoreBarcodeScannerDialog
         open={isScannerOpen}
@@ -759,13 +754,14 @@ export function InvoiceBuilderClient({
         title="Scan or Enter Barcode"
         description="Scan a product barcode or enter it manually, then confirm quantity before adding the product to the invoice."
         onBarcodeDetected={handleDetectedBarcode}
+        hideScannerUi={Boolean(scannedProduct)}
         footer={
           <>
             <Button
               className="mt-3 sm:mt-0"
               type="button"
               variant="outline"
-              onClick={() => setIsScannerOpen(false)}
+              onClick={closeScannerDialog}
             >
               Close
             </Button>
@@ -781,29 +777,79 @@ export function InvoiceBuilderClient({
         }
       >
         {scannedProduct ? (
-          <div className="space-y-4 rounded-lg border p-4">
-            <div className="space-y-1">
-              <div className="text-sm text-muted-foreground">
-                Matched Product
+          <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50/60 p-4">
+            <div className="flex items-center font-medium text-emerald-700">
+              <CheckCircle className="mr-2 size-4" />
+              Scanned successfully
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative h-14 w-14 overflow-hidden rounded-lg border bg-muted/30">
+                <Image
+                  src="/product-placeholder.png"
+                  alt=""
+                  width={56}
+                  height={56}
+                  className="h-full w-full object-cover"
+                />
               </div>
-              <div className="font-medium">{scannedProduct.name}</div>
-              <div className="text-xs text-muted-foreground">
-                {scannedProduct.unit_price.toFixed(2)} BDT
-                {scannedProduct.barcode ? ` • ${scannedProduct.barcode}` : ""}
+              <div className="min-w-0">
+                <div className="font-medium">{scannedProduct.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {scannedProduct.unit_price.toFixed(2)} BDT
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {scannedProduct.barcode ? ` #${scannedProduct.barcode}` : ""}
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="scanner-qty">Qty</Label>
-              <Input
-                id="scanner-qty"
-                type="number"
-                min="1"
-                step="1"
-                inputMode="numeric"
-                value={scannerQuantity}
-                onChange={(event) => setScannerQuantity(event.target.value)}
-              />
+              <div className="grid w-full grid-cols-3 items-center rounded-full border bg-muted/20">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 sm:h-10 w-full rounded-none rounded-l-full p-0"
+                  onClick={() =>
+                    adjustDialogQuantity(
+                      setScannerQuantity,
+                      normalizedScannerQuantity,
+                      -1,
+                    )
+                  }
+                  disabled={normalizedScannerQuantity <= 1}
+                  aria-label="Decrease scanned item quantity"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  id="scanner-qty"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  value={scannerQuantity}
+                  onChange={(event) => setScannerQuantity(event.target.value)}
+                  className="h-8 sm:h-10 w-full rounded-none border-y-0 border-x border-border bg-transparent px-2 text-center text-sm font-medium shadow-none focus-visible:ring-0"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 sm:h-10 w-full rounded-none rounded-r-full p-0"
+                  onClick={() =>
+                    adjustDialogQuantity(
+                      setScannerQuantity,
+                      normalizedScannerQuantity,
+                      1,
+                    )
+                  }
+                  aria-label="Increase scanned item quantity"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         ) : null}

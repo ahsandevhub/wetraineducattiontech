@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import { useMemo, useState } from "react";
 
 type ReportsData = {
@@ -658,7 +659,7 @@ export function StoreReportsClient({ data }: Props) {
                   {" · "}
                   Closed at:{" "}
                   {selectedMonthClosure.closed_at
-                    ? new Date(selectedMonthClosure.closed_at).toLocaleString()
+                    ? formatStoreDateTime(selectedMonthClosure.closed_at)
                     : "—"}
                 </div>
                 {selectedMonthClosure.note ? (
@@ -730,7 +731,7 @@ export function StoreReportsClient({ data }: Props) {
                         <TableCell>{closure.closed_by_name ?? "—"}</TableCell>
                         <TableCell>
                           {closure.closed_at
-                            ? new Date(closure.closed_at).toLocaleString()
+                            ? formatStoreDateTime(closure.closed_at)
                             : "—"}
                         </TableCell>
                       </TableRow>

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, ShoppingCart, Wallet } from "lucide-react";
 import Link from "next/link";
 import { getStoreDashboardData } from "./_actions/dashboard";
+import { formatStoreDateTime } from "./_lib/date-format";
 
 function formatCategory(category: string) {
   return category
@@ -142,11 +143,10 @@ export default async function StoreDashboardPage() {
                   >
                     <div className="min-w-0">
                       <div className="font-medium">
-                        {new Date(invoice.invoice_date).toLocaleDateString()}
+                        {formatStoreDateTime(invoice.confirmed_at)}
                       </div>
                       <div className="break-words text-xs text-muted-foreground">
-                        Confirmed{" "}
-                        {new Date(invoice.confirmed_at).toLocaleString()}
+                        Confirmed {formatStoreDateTime(invoice.confirmed_at)}
                       </div>
                     </div>
                     <div className="sm:text-right">
@@ -202,7 +202,7 @@ export default async function StoreDashboardPage() {
                         {entry.amount.toFixed(2)} BDT
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(entry.entry_date).toLocaleDateString()}
+                        {formatStoreDateTime(entry.created_at)}
                       </div>
                     </div>
                   </div>

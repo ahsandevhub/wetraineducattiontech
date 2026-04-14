@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatStoreDateTime } from "../_lib/date-format";
 import { useMemo, useState } from "react";
 
 type StoreAccountCategory =
@@ -206,7 +207,7 @@ export function StoreAccountsClient({
                   filteredEntries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell>
-                        {new Date(entry.entry_date).toLocaleDateString()}
+                        {formatStoreDateTime(entry.created_at)}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">

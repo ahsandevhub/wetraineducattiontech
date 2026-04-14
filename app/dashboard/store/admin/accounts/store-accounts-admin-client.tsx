@@ -19,6 +19,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -310,7 +312,7 @@ export function StoreAccountsAdminClient({
                       <TableCell>{closure.closed_by_name ?? "—"}</TableCell>
                       <TableCell>
                         {closure.closed_at
-                          ? new Date(closure.closed_at).toLocaleString()
+                          ? formatStoreDateTime(closure.closed_at)
                           : "—"}
                       </TableCell>
                       <TableCell className="max-w-[280px] truncate">
@@ -325,176 +327,189 @@ export function StoreAccountsAdminClient({
         </CardContent>
       </Card>
 
-      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
-        <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
-          <CardTitle>Employee Balances</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Store Role</TableHead>
-                  <TableHead className="text-right">Current Balance</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className="py-8 text-center text-muted-foreground"
-                    >
-                      No Store users found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">
-                        {user.full_name}
-                      </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            user.store_role === "ADMIN"
-                              ? "default"
-                              : "secondary"
-                          }
-                        >
-                          {user.store_role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-medium ${
-                          user.current_balance < 0
-                            ? "text-red-600"
-                            : user.current_balance > 0
-                              ? "text-emerald-600"
-                              : ""
-                        }`}
-                      >
-                        {user.current_balance.toFixed(2)} BDT
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="balances" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 sm:w-fit">
+          <TabsTrigger value="balances">Employee Balances</TabsTrigger>
+          <TabsTrigger value="ledger">Ledger Entries</TabsTrigger>
+        </TabsList>
 
-      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
-        <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
-          <CardTitle>Ledger Entries</CardTitle>
-          <div className="flex flex-col gap-3 md:flex-row">
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search employee, reason, or actor"
-              className="w-full md:w-72"
-            />
-            <Select value={userFilter} onValueChange={setUserFilter}>
-              <SelectTrigger className="w-full md:w-56">
-                <SelectValue placeholder="All employees" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All employees</SelectItem>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full md:w-56">
-                <SelectValue placeholder="All categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {formatCategory(category)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Month</TableHead>
-                  <TableHead>Actor</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEntries.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="py-8 text-center text-muted-foreground"
-                    >
-                      No ledger entries found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredEntries.map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell>
-                        {new Date(entry.entry_date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{entry.user_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {entry.user_email}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {formatCategory(entry.category)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[320px] truncate">
-                        {entry.reason}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {entry.invoice_id
-                          ? `Invoice: ${entry.invoice_id}`
-                          : entry.reversed_from_entry_id
-                            ? `Reversal of: ${entry.reversed_from_entry_id}`
-                            : "—"}
-                      </TableCell>
-                      <TableCell>{entry.month_key}</TableCell>
-                      <TableCell>{entry.actor_name}</TableCell>
-                      <TableCell
-                        className={`text-right font-medium ${
-                          entry.amount < 0 ? "text-red-600" : "text-emerald-600"
-                        }`}
-                      >
-                        {formatAmount(entry.amount)}
-                      </TableCell>
+        <TabsContent value="balances">
+          <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+            <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
+              <CardTitle>Employee Balances</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Store Role</TableHead>
+                      <TableHead className="text-right">Current Balance</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {users.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={4}
+                          className="py-8 text-center text-muted-foreground"
+                        >
+                          No Store users found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">
+                            {user.full_name}
+                          </TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                user.store_role === "ADMIN"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {user.store_role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell
+                            className={`text-right font-medium ${
+                              user.current_balance < 0
+                                ? "text-red-600"
+                                : user.current_balance > 0
+                                  ? "text-emerald-600"
+                                  : ""
+                            }`}
+                          >
+                            {user.current_balance.toFixed(2)} BDT
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ledger">
+          <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+            <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
+              <CardTitle>Ledger Entries</CardTitle>
+              <div className="flex flex-col gap-3 md:flex-row">
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search employee, reason, or actor"
+                  className="w-full md:w-72"
+                />
+                <Select value={userFilter} onValueChange={setUserFilter}>
+                  <SelectTrigger className="w-full md:w-56">
+                    <SelectValue placeholder="All employees" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All employees</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-full md:w-56">
+                    <SelectValue placeholder="All categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {formatCategory(category)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+              <div className="overflow-x-auto rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Employee</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Month</TableHead>
+                      <TableHead>Actor</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEntries.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={8}
+                          className="py-8 text-center text-muted-foreground"
+                        >
+                          No ledger entries found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredEntries.map((entry) => (
+                        <TableRow key={entry.id}>
+                          <TableCell>
+                            {formatStoreDateTime(entry.created_at)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">{entry.user_name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {entry.user_email}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {formatCategory(entry.category)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[320px] truncate">
+                            {entry.reason}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {entry.invoice_id
+                              ? `Invoice: ${entry.invoice_id}`
+                              : entry.reversed_from_entry_id
+                                ? `Reversal of: ${entry.reversed_from_entry_id}`
+                                : "—"}
+                          </TableCell>
+                          <TableCell>{entry.month_key}</TableCell>
+                          <TableCell>{entry.actor_name}</TableCell>
+                          <TableCell
+                            className={`text-right font-medium ${
+                              entry.amount < 0
+                                ? "text-red-600"
+                                : "text-emerald-600"
+                            }`}
+                          >
+                            {formatAmount(entry.amount)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <StoreMonthCloseDialog
         open={monthCloseOpen}

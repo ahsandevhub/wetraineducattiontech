@@ -79,10 +79,23 @@ export default function StoreProductDialog({
     setValues(initialValues);
   }, [initialValues]);
 
+  const reset = () => {
+    setValues(initialValues);
+    setIsBarcodeScannerOpen(false);
+  };
+
   const isEdit = Boolean(product);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        onOpenChange(nextOpen);
+        if (!nextOpen) {
+          reset();
+        }
+      }}
+    >
       {!isEdit && showTrigger ? (
         <DialogTrigger asChild>
           <Button>
@@ -221,7 +234,10 @@ export default function StoreProductDialog({
               className="mt-3 sm:mt-0"
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                onOpenChange(false);
+                reset();
+              }}
               disabled={isSaving}
             >
               Cancel

@@ -27,29 +27,38 @@ import { format } from "date-fns";
 import { CalendarIcon, Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
-import { LEAD_STATUS_OPTIONS } from "../_constants/lead-status";
 
-interface LeadFiltersProps {
-  owners: { id: string; full_name: string | null }[];
+interface LogsFiltersProps {
+  creators: { id: string; full_name: string | null }[];
   isAdmin: boolean;
   onPendingChange?: (isPending: boolean) => void;
 }
 
-export function LeadFilters({
-  owners,
+const CONTACT_TYPE_OPTIONS = [
+  { value: "CALL", label: "Phone Call" },
+  { value: "EMAIL", label: "Email" },
+  { value: "MEETING", label: "Meeting" },
+  { value: "WHATSAPP", label: "WhatsApp" },
+  { value: "NOTE", label: "Note" },
+  { value: "OTHER", label: "Other" },
+];
+
+export function LogsFilters({
+  creators,
   isAdmin,
   onPendingChange,
-}: LeadFiltersProps) {
+}: LogsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isSyncingFromUrlRef = useRef(true);
   const [isPending, startTransition] = useTransition();
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [status, setStatus] = useState(searchParams.get("status") || "all");
-  const [source, setSource] = useState(searchParams.get("source") || "all");
-  const [owner, setOwner] = useState(
-    isAdmin ? searchParams.get("owner") || "all" : "all",
+  const [contactType, setContactType] = useState(
+    searchParams.get("type") || "all",
+  );
+  const [createdBy, setCreatedBy] = useState(
+    isAdmin ? searchParams.get("user") || "all" : "all",
   );
   const [fromDate, setFromDate] = useState<Date | undefined>(() => {
     const dateParam = searchParams.get("from");
@@ -65,21 +74,18 @@ export function LeadFilters({
 
   const hasFilters =
     search ||
-    status !== "all" ||
-    source !== "all" ||
-    owner !== "all" ||
+    contactType !== "all" ||
+    createdBy !== "all" ||
     fromDate ||
     toDate;
 
-  // Effect 1: Sync state from URL (never triggers navigation)
   useEffect(() => {
     setSearch(searchParams.get("search") || "");
-    setStatus(searchParams.get("status") || "all");
-    setSource(searchParams.get("source") || "all");
+    setContactType(searchParams.get("type") || "all");
     if (isAdmin) {
-      setOwner(searchParams.get("owner") || "all");
+      setCreatedBy(searchParams.get("user") || "all");
     } else {
-      setOwner("all");
+      setCreatedBy("all");
     }
 
     const dateParam = searchParams.get("from");
@@ -88,7 +94,6 @@ export function LeadFilters({
     const toDateParam = searchParams.get("to");
     setToDate(toDateParam ? new Date(toDateParam + "T00:00:00") : undefined);
 
-    // Mark the end of URL sync so user action effects can run
     requestAnimationFrame(() => {
       isSyncingFromUrlRef.current = false;
     });
@@ -101,37 +106,35 @@ export function LeadFilters({
   const applyFilters = () => {
     const params = new URLSearchParams();
 
-    // Always reset to first page when applying search/filters
     params.set("page", "1");
 
     if (search) params.set("search", search);
-    if (status && status !== "all") params.set("status", status);
-    if (source && source !== "all") params.set("source", source);
-    if (isAdmin && owner && owner !== "all") params.set("owner", owner);
+    if (contactType && contactType !== "all") params.set("type", contactType);
+    if (isAdmin && createdBy && createdBy !== "all") {
+      params.set("user", createdBy);
+    }
     if (fromDate) params.set("from", format(fromDate, "yyyy-MM-dd"));
     if (toDate) params.set("to", format(toDate, "yyyy-MM-dd"));
 
     startTransition(() => {
-      router.push(`/dashboard/crm/leads?${params.toString()}`, {
+      router.push(`/dashboard/crm/logs?${params.toString()}`, {
         scroll: false,
       });
     });
   };
 
-  // Effect 2: Apply filters on user action (immediately on select/date changes)
   useEffect(() => {
     if (isSyncingFromUrlRef.current) return;
     applyFilters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, source, owner, fromDate, toDate]);
+  }, [contactType, createdBy, fromDate, toDate]);
 
-  // Effect 3: Debounced search - apply filters after user stops typing
   useEffect(() => {
     if (isSyncingFromUrlRef.current) return;
 
     const debounceTimer = setTimeout(() => {
       applyFilters();
-    }, 500); // 500ms delay after user stops typing
+    }, 500);
 
     return () => clearTimeout(debounceTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,19 +142,16 @@ export function LeadFilters({
 
   const clearFilters = () => {
     setSearch("");
-    setStatus("all");
-    setSource("all");
-    setOwner("all");
+    setContactType("all");
+    setCreatedBy("all");
     setFromDate(undefined);
     setToDate(undefined);
 
-    // Reset to page 1
     startTransition(() => {
-      router.push("/dashboard/crm/leads?page=1", { scroll: false });
+      router.push("/dashboard/crm/logs?page=1", { scroll: false });
     });
   };
 
-  // Apply filters on Enter key for search (immediate)
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       applyFilters();
@@ -163,16 +163,15 @@ export function LeadFilters({
       <CardHeader>
         <CardTitle>Filters</CardTitle>
         <CardDescription>
-          Use the options below to search and filter leads
+          Use the options below to search and filter contact logs
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Search Bar */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, phone, email, or company..."
+              placeholder="Search by lead name, phone, or company..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -187,7 +186,6 @@ export function LeadFilters({
           )}
         </div>
 
-        {/* Filter Options */}
         <div
           className={cn(
             "grid gap-4",
@@ -196,14 +194,13 @@ export function LeadFilters({
               : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4",
           )}
         >
-          {/* Status Filter */}
-          <Select value={status} onValueChange={setStatus}>
+          <Select value={contactType} onValueChange={setContactType}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Contact Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {LEAD_STATUS_OPTIONS.map((option) => (
+              <SelectItem value="all">All Types</SelectItem>
+              {CONTACT_TYPE_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -211,41 +208,22 @@ export function LeadFilters({
             </SelectContent>
           </Select>
 
-          {/* Source Filter */}
-          <Select value={source} onValueChange={setSource}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Source" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sources</SelectItem>
-              <SelectItem value="WEBSITE">Website</SelectItem>
-              <SelectItem value="REFERRAL">Referral</SelectItem>
-              <SelectItem value="ADMIN">Admin Import</SelectItem>
-              <SelectItem value="SOCIAL_MEDIA">Social Media</SelectItem>
-              <SelectItem value="REASSIGNED">Reassigned</SelectItem>
-              <SelectItem value="OTHER">Other</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Owner Filter (Admin Only) */}
           {isAdmin && (
-            <Select value={owner} onValueChange={setOwner}>
+            <Select value={createdBy} onValueChange={setCreatedBy}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Owner" />
+                <SelectValue placeholder="Created By" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Owners</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {owners.map((ownerOption) => (
-                  <SelectItem key={ownerOption.id} value={ownerOption.id}>
-                    {ownerOption.full_name || "Unknown"}
+                <SelectItem value="all">All Creators</SelectItem>
+                {creators.map((creator) => (
+                  <SelectItem key={creator.id} value={creator.id}>
+                    {creator.full_name || "Unknown"}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
 
-          {/* From Date Picker */}
           <Popover
             open={isFromDatePickerOpen}
             onOpenChange={setIsFromDatePickerOpen}
@@ -275,7 +253,6 @@ export function LeadFilters({
             </PopoverContent>
           </Popover>
 
-          {/* To Date Picker */}
           <Popover
             open={isToDatePickerOpen}
             onOpenChange={setIsToDatePickerOpen}

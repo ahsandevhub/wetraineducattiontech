@@ -14,11 +14,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import AdminPageHeader from "../_components/AdminPageHeader";
 import { DataTable, SortableHeader } from "../_components/DataTable";
+import { LogsFilters } from "../_components/LogsFilters";
 import { useScrollRestoration } from "../_hooks/useScrollRestoration";
-import type { ContactLog } from "../_types";
+import type { ContactLog, CrmUser } from "../_types";
 import { updateSearchParams } from "../lib/url-params";
 
 const contactTypeMeta: Record<
@@ -45,6 +46,11 @@ const contactTypeMeta: Record<
     icon: <MessageSquare className="h-4 w-4" />,
     colorClass: "text-green-600",
   },
+  NOTE: {
+    label: "Note",
+    icon: <FileText className="h-4 w-4" />,
+    colorClass: "text-amber-600",
+  },
   OTHER: {
     label: "Other",
     icon: <FileText className="h-4 w-4" />,
@@ -57,6 +63,7 @@ interface LogsPageClientProps {
     user?: { full_name: string; email: string };
     lead?: { id: string; name: string; phone: string; company: string | null };
   })[];
+  creators: CrmUser[];
   isAdmin: boolean;
   currentPage: number;
   pageSize: number;
@@ -65,6 +72,7 @@ interface LogsPageClientProps {
 
 export function LogsPageClient({
   logs,
+  creators,
   isAdmin,
   currentPage,
   pageSize,
@@ -73,6 +81,7 @@ export function LogsPageClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPagePending, startPageTransition] = useTransition();
+  const [isFilterPending, setIsFilterPending] = useState(false);
   const { saveScrollPosition } = useScrollRestoration();
 
   // Handle page change - update URL with new page number
@@ -226,6 +235,12 @@ export function LogsPageClient({
         }
       />
 
+      <LogsFilters
+        creators={creators}
+        isAdmin={isAdmin}
+        onPendingChange={setIsFilterPending}
+      />
+
       {logs.length > 0 ? (
         <DataTable
           columns={columns}
@@ -235,7 +250,7 @@ export function LogsPageClient({
           totalCount={totalCount}
           onPageChange={handlePageChange}
           isExternalPagination={true}
-          isLoading={isPagePending}
+          isLoading={isPagePending || isFilterPending}
         />
       ) : (
         <div className="rounded-md border bg-white p-12">

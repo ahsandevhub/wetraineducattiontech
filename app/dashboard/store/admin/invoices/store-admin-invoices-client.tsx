@@ -19,10 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { CheckCheck, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { reverseStoreInvoice } from "../../_actions/invoices";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import StoreInvoiceReversalDialog from "../_components/StoreInvoiceReversalDialog";
 
 type StoreAdminInvoiceItem = {
@@ -54,10 +57,6 @@ type StoreAdminInvoice = {
 type Props = {
   invoices: StoreAdminInvoice[];
 };
-
-function formatStatus(status: StoreAdminInvoice["status"]) {
-  return status === "REVERSED" ? "Reversed" : "Confirmed";
-}
 
 export function StoreAdminInvoicesClient({ invoices }: Props) {
   const router = useRouter();
@@ -110,6 +109,22 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
     }),
     [invoices],
   );
+
+  const getInvoiceStatusUi = (status: StoreAdminInvoice["status"]) => {
+    if (status === "CONFIRMED") {
+      return {
+        icon: CheckCheck,
+        label: "Confirmed",
+        className: "border-emerald-300 bg-emerald-500/10 text-emerald-700",
+      };
+    }
+
+    return {
+      icon: RotateCcw,
+      label: "Reversed",
+      className: "border-red-200 bg-red-500/10 text-red-700",
+    };
+  };
 
   const handleReverse = async (reason: string) => {
     if (!selectedInvoice) {
@@ -227,34 +242,63 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
             </div>
           ) : (
             filteredInvoices.map((invoice) => (
-              <details key={invoice.id} className="rounded-md border">
-                <summary className="cursor-pointer list-none p-4">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <details
+                key={invoice.id}
+                className={cn(
+                  "rounded-md overflow-hidden border bg-gray-50",
+                  invoice.status === "CONFIRMED"
+                    ? "border-emerald-200"
+                    : "border-red-200",
+                )}
+              >
+                <summary
+                  className={cn(
+                    "cursor-pointer list-none p-4",
+                    invoice.status === "CONFIRMED"
+                      ? "bg-emerald-50 border-emerald-400"
+                      : "bg-red-50 border-red-300",
+                  )}
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:justify-between">
                     <div>
-                      <div className="font-medium">{invoice.user_name}</div>
+                      {(() => {
+                        const statusUi = getInvoiceStatusUi(invoice.status);
+                        const StatusIcon = statusUi.icon;
+
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "mb-2 inline-flex items-center gap-1.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em]",
+                              statusUi.className,
+                            )}
+                          >
+                            <StatusIcon className="h-3.5 w-3.5" />
+                            {statusUi.label}
+                          </Badge>
+                        );
+                      })()}
+                      <div className="font-medium">
+                        {formatStoreDateTime(invoice.confirmed_at)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {invoice.user_name}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {invoice.user_email}
                       </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        Invoice ID: {invoice.id}
+                      <div className="text-xs text-muted-foreground">
+                        ID: {invoice.id}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge
-                        variant={
-                          invoice.status === "REVERSED"
-                            ? "secondary"
-                            : "outline"
-                        }
-                      >
-                        {formatStatus(invoice.status)}
-                      </Badge>
-                      <div className="text-right">
+                      <div className="md:text-right">
                         <div className="font-medium">
                           {invoice.total_amount.toFixed(2)} BDT
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {new Date(invoice.invoice_date).toLocaleDateString()}
+                          {invoice.items.length} item
+                          {invoice.items.length === 1 ? "" : "s"}
                         </div>
                       </div>
                     </div>
@@ -264,8 +308,7 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
                 <div className="space-y-4 border-t p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="text-sm text-muted-foreground">
-                      Confirmed{" "}
-                      {new Date(invoice.confirmed_at).toLocaleString()}
+                      Confirmed {formatStoreDateTime(invoice.confirmed_at)}
                     </div>
                     <Button
                       type="button"
@@ -286,7 +329,7 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
                       <div className="font-medium">
                         Reversed{" "}
                         {invoice.reversed_at
-                          ? new Date(invoice.reversed_at).toLocaleString()
+                          ? formatStoreDateTime(invoice.reversed_at)
                           : "previously"}
                       </div>
                       <div className="text-muted-foreground">
@@ -297,7 +340,7 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
                       </div>
                     </div>
                   ) : (
-                    <div className="rounded-md border bg-amber-50/60 p-4 text-sm text-amber-900">
+                    <div className="rounded-md border border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-900">
                       Confirmed invoices are immutable. If there is a mistake,
                       reverse the invoice instead of editing or deleting it.
                     </div>

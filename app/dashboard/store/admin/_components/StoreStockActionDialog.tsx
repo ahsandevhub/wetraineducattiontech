@@ -1,5 +1,6 @@
 "use client";
 
+import { StoreBarcodeScannerDialog } from "@/app/dashboard/store/_components/StoreBarcodeScannerDialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,8 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { StoreBarcodeScannerDialog } from "@/app/dashboard/store/_components/StoreBarcodeScannerDialog";
-import { Loader2, PackagePlus, ScanBarcode } from "lucide-react";
+import { Loader2, Minus, PackagePlus, Plus, ScanBarcode } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 
@@ -89,11 +89,21 @@ export default function StoreStockActionDialog({
     values.actionType === "RESTOCK"
       ? "Restock"
       : values.actionType === "DEDUCT"
-      ? "Deduct"
-      : "Adjust";
+        ? "Deduct"
+        : "Adjust";
 
   const quantityLabel =
     values.actionType === "ADJUST" ? "Final On-Hand Quantity" : "Quantity";
+  const parsedQuantity = Number(values.quantity);
+  const normalizedQuantity =
+    Number.isInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1;
+
+  const adjustDialogQuantity = (delta: number) => {
+    setValues((prev) => ({
+      ...prev,
+      quantity: String(Math.max(1, normalizedQuantity + delta)),
+    }));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -192,92 +202,75 @@ export default function StoreStockActionDialog({
 
           <div className="space-y-2">
             <Label htmlFor="stock-quantity">{quantityLabel}</Label>
-            <Input
-              id="stock-quantity"
-              type="number"
-              min={values.actionType === "ADJUST" ? "0" : "1"}
-              step="1"
-              inputMode="numeric"
-              value={values.quantity}
-              onChange={(event) =>
-                setValues((prev) => ({
-                  ...prev,
-                  quantity: event.target.value,
-                }))
-              }
-              placeholder="0"
-              disabled={isSaving}
-              required
-            />
+            {values.actionType === "RESTOCK" ? (
+              <div className="grid w-full grid-cols-3 items-center rounded-full border bg-muted/20">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 sm:h-10 w-full rounded-none rounded-l-full p-0"
+                  onClick={() => adjustDialogQuantity(-1)}
+                  disabled={normalizedQuantity <= 1 || isSaving}
+                  aria-label="Decrease restock quantity"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <Input
+                  id="stock-quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputMode="numeric"
+                  value={values.quantity}
+                  onChange={(event) =>
+                    setValues((prev) => ({
+                      ...prev,
+                      quantity: event.target.value,
+                    }))
+                  }
+                  className="h-8 sm:h-10 w-full rounded-none border-y-0 border-x border-border bg-transparent px-2 text-center text-sm font-medium shadow-none focus-visible:ring-0"
+                  disabled={isSaving}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 sm:h-10 w-full rounded-none rounded-r-full p-0"
+                  onClick={() => adjustDialogQuantity(1)}
+                  disabled={isSaving}
+                  aria-label="Increase restock quantity"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Input
+                id="stock-quantity"
+                type="number"
+                min={values.actionType === "ADJUST" ? "0" : "1"}
+                step="1"
+                inputMode="numeric"
+                value={values.quantity}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    quantity: event.target.value,
+                  }))
+                }
+                placeholder="0"
+                disabled={isSaving}
+                required
+              />
+            )}
             <p className="text-xs text-muted-foreground">
               {values.actionType === "DEDUCT"
                 ? "Deduction cannot reduce the product below zero stock."
                 : values.actionType === "ADJUST"
-                ? "Adjustment sets the final on-hand stock after a physical count or correction."
-                : "Restock creates both a stock entry and a stock movement record."}
+                  ? "Adjustment sets the final on-hand stock after a physical count or correction."
+                  : "Restock creates both a stock entry and a stock movement record."}
             </p>
           </div>
-
-          {values.actionType === "RESTOCK" ? (
-            <>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="stock-unit-cost">Unit Cost (optional)</Label>
-                  <Input
-                    id="stock-unit-cost"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    inputMode="decimal"
-                    value={values.unitCost}
-                    onChange={(event) =>
-                      setValues((prev) => ({
-                        ...prev,
-                        unitCost: event.target.value,
-                      }))
-                    }
-                    placeholder="0.00"
-                    disabled={isSaving}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock-reference-type">
-                    Reference Type (optional)
-                  </Label>
-                  <Input
-                    id="stock-reference-type"
-                    value={values.referenceType}
-                    onChange={(event) =>
-                      setValues((prev) => ({
-                        ...prev,
-                        referenceType: event.target.value,
-                      }))
-                    }
-                    placeholder="Invoice, cash memo, supplier"
-                    disabled={isSaving}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="stock-reference-number">
-                  Reference Number (optional)
-                </Label>
-                <Input
-                  id="stock-reference-number"
-                  value={values.referenceNumber}
-                  onChange={(event) =>
-                    setValues((prev) => ({
-                      ...prev,
-                      referenceNumber: event.target.value,
-                    }))
-                  }
-                  placeholder="Memo or voucher number"
-                  disabled={isSaving}
-                />
-              </div>
-            </>
-          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor="stock-reason">Reason/Notes</Label>
@@ -294,6 +287,7 @@ export default function StoreStockActionDialog({
 
           <DialogFooter>
             <Button
+              className="mt-3 sm:mt-0"
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -321,7 +315,8 @@ export default function StoreStockActionDialog({
           description="Scan a barcode or enter it manually to select the tracked product for this restock."
           onBarcodeDetected={(barcode) => {
             const matchedProduct = products.find(
-              (product) => product.is_active && product.barcode?.trim() === barcode,
+              (product) =>
+                product.is_active && product.barcode?.trim() === barcode,
             );
 
             if (!matchedProduct) {
