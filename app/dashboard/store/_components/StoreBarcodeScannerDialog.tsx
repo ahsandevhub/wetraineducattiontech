@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -39,6 +40,7 @@ type StoreBarcodeScannerDialogProps = {
   description: string;
   onBarcodeDetected: (barcode: string) => void;
   children?: React.ReactNode;
+  hideScannerUi?: boolean;
   manualLabel?: string;
   manualPlaceholder?: string;
   findButtonLabel?: string;
@@ -54,6 +56,7 @@ export function StoreBarcodeScannerDialog({
   description,
   onBarcodeDetected,
   children,
+  hideScannerUi = false,
   manualLabel = "Barcode",
   manualPlaceholder = "Type or paste barcode number",
   findButtonLabel = "Find Product",
@@ -64,6 +67,7 @@ export function StoreBarcodeScannerDialog({
   const [manualBarcode, setManualBarcode] = useState("");
   const [scannerMessage, setScannerMessage] = useState("");
   const [isStartingScanner, setIsStartingScanner] = useState(false);
+  const [activeTab, setActiveTab] = useState<"scan" | "manual">("scan");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -77,7 +81,7 @@ export function StoreBarcodeScannerDialog({
 
   const scannerStatusText = useMemo(() => {
     if (!isScannerSupported) {
-      return "Barcode scanning is not available on this device. You can still enter a barcode manually below.";
+      return "Barcode scanning is not available on this device. You can still enter a barcode manually.";
     }
 
     return scannerMessage;
@@ -141,15 +145,18 @@ export function StoreBarcodeScannerDialog({
         cleanupScannerResources();
         setManualBarcode("");
         setScannerMessage("");
+        setActiveTab(isScannerSupported ? "scan" : "manual");
       }
 
       onOpenChange(nextOpen);
     },
-    [cleanupScannerResources, onOpenChange],
+    [cleanupScannerResources, isScannerSupported, onOpenChange],
   );
 
   useEffect(() => {
-    if (!open || !isScannerSupported) {
+    if (!open || !isScannerSupported || hideScannerUi || activeTab !== "scan") {
+      cleanupScannerResources();
+      setIsStartingScanner(false);
       return;
     }
 
@@ -247,7 +254,20 @@ export function StoreBarcodeScannerDialog({
       cancelled = true;
       cleanupScannerResources();
     };
-  }, [cleanupScannerResources, handleDetectedBarcode, isScannerSupported, open]);
+  }, [
+    activeTab,
+    cleanupScannerResources,
+    handleDetectedBarcode,
+    hideScannerUi,
+    isScannerSupported,
+    open,
+  ]);
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab(isScannerSupported ? "scan" : "manual");
+    }
+  }, [isScannerSupported, open]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -261,58 +281,81 @@ export function StoreBarcodeScannerDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-lg border bg-black">
-            {isScannerSupported ? (
-              <video
-                ref={videoRef}
-                className="aspect-video w-full object-cover"
-                muted
-                playsInline
-              />
-            ) : (
-              <div className="flex aspect-video w-full items-center justify-center text-sm text-white/80">
-                <div className="flex flex-col items-center gap-2 text-center">
-                  <Camera className="h-8 w-8" />
-                  Barcode scanning is unavailable on this device.
-                </div>
-              </div>
-            )}
-          </div>
+          {!hideScannerUi ? (
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as "scan" | "manual")}
+              className="space-y-4"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="scan" disabled={!isScannerSupported}>
+                  Auto Scan
+                </TabsTrigger>
+                <TabsTrigger value="manual">Manual Input</TabsTrigger>
+              </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="shared-manual-barcode">{manualLabel}</Label>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Input
-                id="shared-manual-barcode"
-                value={manualBarcode}
-                onChange={(event) => setManualBarcode(event.target.value)}
-                placeholder={manualPlaceholder}
-              />
-              <Button
-                type="button"
-                onClick={handleManualLookup}
-                className="w-full sm:w-auto"
-              >
-                {findButtonLabel}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">{fallbackHint}</p>
-          </div>
+              <TabsContent value="scan" className="space-y-4">
+                <div className="overflow-hidden rounded-lg border bg-black">
+                  {isScannerSupported ? (
+                    <video
+                      ref={videoRef}
+                      className="aspect-video w-full object-cover"
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <div className="flex aspect-video w-full items-center justify-center text-sm text-white/80">
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <Camera className="h-8 w-8" />
+                        Barcode scanning is unavailable on this device.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+                  {isStartingScanner ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {scannerStatusText || "Starting scanner..."}
+                    </span>
+                  ) : scannerStatusText ? (
+                    scannerStatusText
+                  ) : (
+                    idleHint
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="manual" className="space-y-2">
+                <Label htmlFor="shared-manual-barcode">{manualLabel}</Label>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Input
+                    id="shared-manual-barcode"
+                    value={manualBarcode}
+                    onChange={(event) => setManualBarcode(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleManualLookup();
+                      }
+                    }}
+                    placeholder={manualPlaceholder}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleManualLookup}
+                    className="w-full sm:w-auto"
+                  >
+                    {findButtonLabel}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">{fallbackHint}</p>
+              </TabsContent>
+            </Tabs>
+          ) : null}
 
           {children}
-
-          <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-            {isStartingScanner ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {scannerStatusText || "Starting scanner..."}
-              </span>
-            ) : scannerStatusText ? (
-              scannerStatusText
-            ) : (
-              idleHint
-            )}
-          </div>
         </div>
 
         {footer ? <DialogFooter>{footer}</DialogFooter> : null}

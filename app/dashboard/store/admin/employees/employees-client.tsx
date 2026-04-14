@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import { Edit, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -202,7 +203,7 @@ export function StoreEmployeesClient({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(user.created_at).toLocaleDateString()}
+                        {formatStoreDateTime(user.created_at)}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button

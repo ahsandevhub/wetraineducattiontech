@@ -215,28 +215,28 @@ export default async function LeadsPage({
     })),
   }));
 
-  // Fetch all marketers for admin and marketer reassignment
-  type MarketerRow = {
+  // Fetch all CRM users for owner filter and reassignment options
+  type CrmUserRow = {
     id: string;
     crm_role: "ADMIN" | "MARKETER";
     created_at: string;
     updated_at: string;
   };
-  const { data: marketerUsers } = await supabase
+  const { data: crmUsers } = await supabase
     .from("crm_users")
     .select("id, crm_role, created_at, updated_at")
-    .eq("crm_role", "MARKETER");
+    .in("crm_role", ["ADMIN", "MARKETER"]);
 
-  const marketerIds = (marketerUsers || []).map((user) => user.id);
-  const { data: marketerProfiles } = marketerIds.length
+  const crmUserIds = (crmUsers || []).map((user) => user.id);
+  const { data: crmUserProfiles } = crmUserIds.length
     ? await supabase
         .from("profiles")
         .select("id, full_name, email")
-        .in("id", marketerIds)
+        .in("id", crmUserIds)
     : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
 
-  const marketerProfileMap = new Map(
-    (marketerProfiles || []).map((profile) => [
+  const crmUserProfileMap = new Map(
+    (crmUserProfiles || []).map((profile) => [
       profile.id,
       {
         full_name: profile.full_name ?? null,
@@ -245,12 +245,12 @@ export default async function LeadsPage({
     ]),
   );
 
-  const marketers = ((marketerUsers || []) as MarketerRow[])
+  const owners = ((crmUsers || []) as CrmUserRow[])
     .map((u) => ({
       id: u.id,
       crm_role: u.crm_role as "ADMIN" | "MARKETER",
-      full_name: marketerProfileMap.get(u.id)?.full_name ?? null,
-      email: marketerProfileMap.get(u.id)?.email ?? null,
+      full_name: crmUserProfileMap.get(u.id)?.full_name ?? null,
+      email: crmUserProfileMap.get(u.id)?.email ?? null,
       created_at: u.created_at,
       updated_at: u.updated_at,
     }))
@@ -259,7 +259,7 @@ export default async function LeadsPage({
   return (
     <LeadsPageClient
       leads={leads || []}
-      marketers={marketers}
+      owners={owners}
       isAdmin={isAdmin}
       currentPage={pageNumber}
       pageSize={pageSize}

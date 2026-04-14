@@ -285,7 +285,7 @@ export function UsersPageClient({
             <AlertDialogAction
               onClick={confirmDeleteUser}
               disabled={loading}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Remove from CRM

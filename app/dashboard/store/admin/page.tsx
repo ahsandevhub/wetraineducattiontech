@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   ArrowRight,
   FileBarChart,
+  Landmark,
   PackageSearch,
   ShoppingCart,
   Wallet,
@@ -46,6 +47,11 @@ export default async function StoreAdminPage() {
       description: "Adjust balances and close months",
     },
     {
+      href: "/dashboard/store/admin/owner-purchases",
+      label: "Owner Purchases",
+      description: "Track owner-level monthly store costs",
+    },
+    {
       href: "/dashboard/store/admin/reports",
       label: "Reports",
       description: "Open the reporting area",
@@ -84,7 +90,7 @@ export default async function StoreAdminPage() {
         </Card>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -149,6 +155,21 @@ export default async function StoreAdminPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               Latest visible balance mutations
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Owner Purchases
+            </CardTitle>
+            <Landmark className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Monthly</div>
+            <p className="text-xs text-muted-foreground">
+              Separate owner cost tracking area
             </p>
           </CardContent>
         </Card>

@@ -29,7 +29,7 @@ interface LeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead?: Lead;
-  marketers?: CrmUser[];
+  owners?: CrmUser[];
   isAdmin: boolean;
   onSuccess: () => void;
 }
@@ -38,7 +38,7 @@ export function LeadDialog({
   open,
   onOpenChange,
   lead,
-  marketers,
+  owners,
   isAdmin,
   onSuccess,
 }: LeadDialogProps) {
@@ -243,7 +243,7 @@ export function LeadDialog({
               </Select>
             </div>
 
-            {marketers && (isAdmin || !!lead) && (
+            {owners && (isAdmin || !!lead) && (
               <div className="space-y-2">
                 <Label htmlFor="owner">Assign To</Label>
                 <Select
@@ -257,13 +257,13 @@ export function LeadDialog({
                   disabled={loading}
                 >
                   <SelectTrigger id="owner">
-                    <SelectValue placeholder="Select marketer" />
+                    <SelectValue placeholder="Select owner" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {marketers.map((marketer) => (
-                      <SelectItem key={marketer.id} value={marketer.id}>
-                        {marketer.full_name || "Unknown"}
+                    {owners.map((ownerOption) => (
+                      <SelectItem key={ownerOption.id} value={ownerOption.id}>
+                        {ownerOption.full_name || "Unknown"}
                       </SelectItem>
                     ))}
                   </SelectContent>

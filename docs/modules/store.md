@@ -24,6 +24,7 @@ The Store module provides an internal cafeteria and office store system for empl
 - `/dashboard/store/admin/products` - Product management
 - `/dashboard/store/admin/stocks` - Stock management
 - `/dashboard/store/admin/accounts` - Balance and ledger management
+- `/dashboard/store/admin/owner-purchases` - Owner-level monthly cost tracking
 - `/dashboard/store/admin/reports` - Reporting and summaries
 
 ## Key Components
@@ -42,6 +43,7 @@ The Store module provides an internal cafeteria and office store system for empl
 - Invoice review and reversal handling
 - Stock additions, deductions, and corrections
 - Account adjustments with category and optional reason/notes
+- Owner purchase tracking with monthly carry-forward
 - Month close and reporting workflows
 
 ## Data Models
@@ -56,6 +58,8 @@ The Store module provides an internal cafeteria and office store system for empl
 - `store_invoice_items` - Invoice line items
 - `store_account_entries` - Immutable balance ledger
 - `store_month_closures` - Monthly open/close snapshots and carry-forward records
+- `store_owner_purchases` - Standalone owner-level purchase entries
+- `store_owner_month_closures` - Owner purchase opening/closing carry-forward snapshots
 
 ### Key Relationships
 

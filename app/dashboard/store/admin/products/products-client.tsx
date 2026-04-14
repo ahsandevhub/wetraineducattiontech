@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import { Edit, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -261,7 +262,7 @@ export function StoreProductsClient({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(product.updated_at).toLocaleDateString()}
+                        {formatStoreDateTime(product.updated_at)}
                       </TableCell>
                       <TableCell className="space-x-2 text-right">
                         <Button

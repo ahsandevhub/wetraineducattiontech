@@ -11,7 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { CheckCheck, RotateCcw } from "lucide-react";
 import { useMemo, useState } from "react";
+import { formatStoreDateTime } from "../_lib/date-format";
 
 type StorePurchaseItem = {
   id: string;
@@ -62,9 +65,26 @@ export function StorePurchasesClient({ invoices }: Props) {
   }, [invoices, monthFilter, search]);
 
   const totalSpent = filteredInvoices.reduce(
-    (sum, invoice) => sum + invoice.total_amount,
+    (sum, invoice) =>
+      invoice.status === "CONFIRMED" ? sum + invoice.total_amount : sum,
     0,
   );
+
+  const getInvoiceStatusUi = (status: StorePurchaseInvoice["status"]) => {
+    if (status === "CONFIRMED") {
+      return {
+        icon: CheckCheck,
+        label: "Confirmed",
+        className: "border-emerald-300 bg-emerald-500/10 text-emerald-700",
+      };
+    }
+
+    return {
+      icon: RotateCcw,
+      label: "Reversed",
+      className: "border-red-200 bg-red-500/10 text-red-700",
+    };
+  };
 
   return (
     <div className="space-y-6">
@@ -139,20 +159,51 @@ export function StorePurchasesClient({ invoices }: Props) {
             </div>
           ) : (
             filteredInvoices.map((invoice) => (
-              <details key={invoice.id} className="rounded-md border">
-                <summary className="cursor-pointer list-none p-4">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <details
+                key={invoice.id}
+                className={cn(
+                  "rounded-md overflow-hidden border bg-gray-50",
+                  invoice.status === "CONFIRMED"
+                    ? "border-emerald-200"
+                    : "border-red-200",
+                )}
+              >
+                <summary
+                  className={cn(
+                    "cursor-pointer list-none p-4",
+                    invoice.status === "CONFIRMED"
+                      ? "bg-emerald-50 border-emerald-400"
+                      : "bg-red-50 border-red-300",
+                  )}
+                >
+                  <div className="flex flex-col gap-3 md:flex-row md:justify-between">
                     <div>
+                      {(() => {
+                        const statusUi = getInvoiceStatusUi(invoice.status);
+                        const StatusIcon = statusUi.icon;
+
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "mb-2 inline-flex items-center gap-1.5 rounded-full text-[11px] font-semibold uppercase tracking-[0.14em]",
+                              statusUi.className,
+                            )}
+                          >
+                            <StatusIcon className="h-3.5 w-3.5" />
+                            {statusUi.label}
+                          </Badge>
+                        );
+                      })()}
                       <div className="font-medium">
-                        {new Date(invoice.invoice_date).toLocaleDateString()}
+                        {formatStoreDateTime(invoice.confirmed_at)}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Invoice ID: {invoice.id}
+                        ID: {invoice.id}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline">{invoice.status}</Badge>
-                      <div className="text-right">
+                      <div className="md:text-right">
                         <div className="font-medium">
                           {invoice.total_amount.toFixed(2)} BDT
                         </div>
@@ -167,7 +218,7 @@ export function StorePurchasesClient({ invoices }: Props) {
 
                 <div className="border-t p-4">
                   <div className="mb-3 text-sm text-muted-foreground">
-                    Confirmed {new Date(invoice.confirmed_at).toLocaleString()}
+                    Confirmed {formatStoreDateTime(invoice.confirmed_at)}
                   </div>
                   <div className="overflow-x-auto rounded-md border">
                     <Table>
