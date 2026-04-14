@@ -32,10 +32,14 @@ type StoreOwnerPurchaseDialogProps = {
   onSave: (values: StoreOwnerPurchaseFormValues) => void;
 };
 
-function buildInitialValues(defaultMonth: string): StoreOwnerPurchaseFormValues {
+function buildInitialValues(
+  defaultMonth: string,
+): StoreOwnerPurchaseFormValues {
   const monthValue = defaultMonth.slice(0, 7);
   const today = new Date().toISOString().slice(0, 10);
-  const purchaseDate = today.startsWith(monthValue) ? today : `${monthValue}-01`;
+  const purchaseDate = today.startsWith(monthValue)
+    ? today
+    : `${monthValue}-01`;
 
   return {
     purchaseDate,
@@ -124,7 +128,10 @@ export default function StoreOwnerPurchaseDialog({
                 type="month"
                 value={values.monthKey}
                 onChange={(event) =>
-                  setValues((prev) => ({ ...prev, monthKey: event.target.value }))
+                  setValues((prev) => ({
+                    ...prev,
+                    monthKey: event.target.value,
+                  }))
                 }
                 disabled={isSaving}
                 required
@@ -179,6 +186,7 @@ export default function StoreOwnerPurchaseDialog({
 
           <DialogFooter>
             <Button
+              className="mt-3 sm:mt-0"
               type="button"
               variant="outline"
               onClick={() => {
