@@ -9,6 +9,7 @@ import type {
   HrmReportingScope,
   HrmTaskReportListItem,
 } from "@/app/dashboard/hrm/_lib/task-reporting-shared";
+import { HRM_TASK_REPORT_CATEGORY_SECTIONS } from "@/app/dashboard/hrm/_lib/task-reporting-shared";
 import { DataTableToolbar } from "@/components/hrm/DataTableToolbar";
 import { EmptyState } from "@/components/hrm/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,10 @@ import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -50,6 +54,7 @@ function formatDateTime(value: string) {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    second: "2-digit",
   });
 }
 
@@ -173,19 +178,21 @@ export function TaskReportingClient({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All categories</SelectItem>
-                {[
-                  "Customer Handling",
-                  "KYC Check",
-                  "Review",
-                  "Follow-up",
-                  "Documentation",
-                  "Meeting",
-                  "Support",
-                  "Other",
-                ].map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
+                <SelectSeparator />
+                {HRM_TASK_REPORT_CATEGORY_SECTIONS.map((section, index) => (
+                  <div key={section.label}>
+                    <SelectGroup>
+                      <SelectLabel>{section.label}</SelectLabel>
+                      {section.categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                    {index < HRM_TASK_REPORT_CATEGORY_SECTIONS.length - 1 ? (
+                      <SelectSeparator />
+                    ) : null}
+                  </div>
                 ))}
               </SelectContent>
             </Select>

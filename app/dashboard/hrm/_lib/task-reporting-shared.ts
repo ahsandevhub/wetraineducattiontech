@@ -1,72 +1,87 @@
 import type { HrmRole } from "@/app/utils/auth/roles";
 
-export const HRM_TASK_REPORT_CATEGORIES = [
-  // Operational Tasks
-  "General Ticket Handling",
-  "Create Discount/AP Code",
-  "Create GA/BOGO Account",
-  "Create Payout Ticket",
-  "Checking Payment & Send Contract",
-  "Checking Account Reset",
-  "Checking Payout",
-  "Update Withdraw Status",
-
-  // Core CS Work
-  "Customer Handling",
-  "Replied Customer",
-  "Re-assigned Tickets",
-  "Ticket Create",
-  "Ticket Management",
-
-  // Platform Handling
-  "HubSpot Help Desk",
-  "Meta (Facebook/Instagram)",
-  "Telegram Support",
-  "Social Media Engagement",
-  "Facebook Community Engagement",
-
-  // Customer Support Activities
-  "Customer Query Handling",
-  "Customer Issue Resolution",
-  "Phone Call Support",
-  "Follow-up",
-  "Support",
-  "Customer Communication",
-
-  // Trading & Account Support
-  "Trading Support",
-  "Payout & Account Checking",
-  "KYC Check",
-
-  // Review & Feedback
-  "Review Check",
-
-  // Internal Work
-  "Internal Coordination",
-  "Documentation",
-  "Meeting",
-
-  // Content & Marketing
-  "Content Writing",
-  "Script Writing",
-  "Social Media Post",
-  "Video Shoot",
-  "Video Edit",
-
-  // Store & Ops
-  "Store Management",
-
-  // Technical & System
-  "IT Task",
-  "Process Documentation",
-  "Training Materials",
-
-  // Misc
-  "Maintain Customer Relationship",
-  "Other",
+export const HRM_TASK_REPORT_CATEGORY_SECTIONS = [
+  {
+    label: "Marketing",
+    categories: [
+      "Social Media Engagement",
+      "Facebook Community Engagement",
+    ],
+  },
+  {
+    label: "Customer Service",
+    categories: [
+      "Customer Handling",
+      "Replied Customer",
+      "Re-assigned Tickets",
+      "Ticket Create",
+      "Ticket Management",
+      "HubSpot Help Desk",
+      "Meta (Facebook/Instagram)",
+      "Telegram Support",
+      "Customer Query Handling",
+      "Customer Issue Resolution",
+      "Phone Call Support",
+      "Follow-up",
+      "Support",
+      "Customer Communication",
+      "Maintain Customer Relationship",
+    ],
+  },
+  {
+    label: "Operations",
+    categories: [
+      "General Ticket Handling",
+      "Create Discount/AP Code",
+      "Create GA/BOGO Account",
+      "Create Payout Ticket",
+      "Checking Payment & Send Contract",
+      "Checking Account Reset",
+      "Checking Payout",
+      "Update Withdraw Status",
+      "Trading Support",
+      "Payout & Account Checking",
+      "KYC Check",
+      "Store Management",
+    ],
+  },
+  {
+    label: "Content Creation",
+    categories: [
+      "Content Writing",
+      "Script Writing",
+      "Social Media Post",
+      "Video Shoot",
+      "Video Edit",
+    ],
+  },
+  {
+    label: "Administrative",
+    categories: [
+      "Review Check",
+      "Internal Coordination",
+      "Documentation",
+      "Meeting",
+      "Process Documentation",
+      "Training Materials",
+    ],
+  },
+  {
+    label: "Technical",
+    categories: ["IT Task"],
+  },
+  {
+    label: "Other",
+    categories: ["Other"],
+  },
 ] as const;
 
+export const HRM_TASK_REPORT_CATEGORIES =
+  HRM_TASK_REPORT_CATEGORY_SECTIONS.flatMap((section) => section.categories);
+
 export type HrmTaskReportCategory = (typeof HRM_TASK_REPORT_CATEGORIES)[number];
+export type HrmTaskReportCategorySection =
+  (typeof HRM_TASK_REPORT_CATEGORY_SECTIONS)[number]["label"];
 export type HrmReportingScope = "EMPLOYEE" | "ADMIN" | "SUPER_ADMIN";
 
 export type HrmTaskReportRow = {

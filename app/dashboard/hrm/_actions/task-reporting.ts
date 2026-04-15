@@ -21,6 +21,24 @@ type ReportingInput = {
   notes?: string;
 };
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message
+  ) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 function normalizeOptionalText(value?: string) {
   const normalized = value?.trim() ?? "";
   return normalized.length > 0 ? normalized : null;
@@ -96,7 +114,7 @@ export async function createTaskReport(
     return { success: true };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Failed to create report",
+      error: getErrorMessage(error, "Failed to create report"),
     };
   }
 }
@@ -145,7 +163,7 @@ export async function updateTaskReport(
     return { success: true };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Failed to update report",
+      error: getErrorMessage(error, "Failed to update report"),
     };
   }
 }
@@ -184,7 +202,7 @@ export async function deleteTaskReport(
     return { success: true };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Failed to delete report",
+      error: getErrorMessage(error, "Failed to delete report"),
     };
   }
 }

@@ -5,7 +5,7 @@ import {
   updateTaskReport,
 } from "@/app/dashboard/hrm/_actions/task-reporting";
 import {
-  HRM_TASK_REPORT_CATEGORIES,
+  HRM_TASK_REPORT_CATEGORY_SECTIONS,
   type HrmTaskReportListItem,
 } from "@/app/dashboard/hrm/_lib/task-reporting-shared";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,10 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -53,6 +56,7 @@ function formatDateTime(value: string) {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    second: "2-digit",
   });
 }
 
@@ -86,6 +90,38 @@ function FormFields({
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="category">Category</Label>
+        <Select
+          value={values.category}
+          onValueChange={(value) =>
+            setValues((current) => ({ ...current, category: value }))
+          }
+          disabled={pending}
+        >
+          <SelectTrigger id="category">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {HRM_TASK_REPORT_CATEGORY_SECTIONS.map((section, index) => (
+              <div key={section.label}>
+                <SelectGroup>
+                  <SelectLabel>{section.label}</SelectLabel>
+                  {section.categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                {index < HRM_TASK_REPORT_CATEGORY_SECTIONS.length - 1 ? (
+                  <SelectSeparator />
+                ) : null}
+              </div>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="taskTitle">Task Title</Label>
         <Input
           id="taskTitle"
@@ -99,28 +135,6 @@ function FormFields({
           placeholder="What task did you complete?"
           disabled={pending}
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="category">Category</Label>
-        <Select
-          value={values.category}
-          onValueChange={(value) =>
-            setValues((current) => ({ ...current, category: value }))
-          }
-          disabled={pending}
-        >
-          <SelectTrigger id="category">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {HRM_TASK_REPORT_CATEGORIES.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="space-y-2">
