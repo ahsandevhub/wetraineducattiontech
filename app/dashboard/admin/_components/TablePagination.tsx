@@ -22,6 +22,7 @@ type TablePaginationProps = {
   totalRows: number;
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rows: number) => void;
+  pageSizeOptions?: number[];
 };
 
 export default function TablePagination({
@@ -31,7 +32,13 @@ export default function TablePagination({
   totalRows,
   onPageChange,
   onRowsPerPageChange,
+  pageSizeOptions = [10, 25, 50],
 }: TablePaginationProps) {
+  const safeTotalPages = Math.max(1, totalPages);
+  const fromRow = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+  const toRow =
+    totalRows === 0 ? 0 : Math.min(currentPage * rowsPerPage, totalRows);
+
   return (
     <div className="flex items-center justify-between pt-4 border-t">
       <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -44,17 +51,18 @@ export default function TablePagination({
             <SelectValue placeholder="Rows" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="25">25</SelectItem>
-            <SelectItem value="50">50</SelectItem>
+            {pageSizeOptions.map((option) => (
+              <SelectItem key={option} value={String(option)}>
+                {option}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
       <div className="flex items-center gap-1">
         <span className="text-sm text-gray-600">
-          {currentPage === 1 ? 1 : (currentPage - 1) * rowsPerPage + 1} of{" "}
-          {totalRows}
+          Showing {fromRow}-{toRow} of {totalRows}
         </span>
 
         <Button
@@ -78,13 +86,13 @@ export default function TablePagination({
         </Button>
 
         <span className="text-sm text-gray-600 px-2">
-          Page {currentPage} of {totalPages}
+          Page {currentPage} of {safeTotalPages}
         </span>
 
         <Button
           size="sm"
           variant="outline"
-          disabled={currentPage === totalPages}
+          disabled={currentPage === safeTotalPages}
           onClick={() => onPageChange(currentPage + 1)}
           className="h-8 w-8 p-0"
         >
@@ -94,8 +102,8 @@ export default function TablePagination({
         <Button
           size="sm"
           variant="outline"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === safeTotalPages}
+          onClick={() => onPageChange(safeTotalPages)}
           className="h-8 w-8 p-0"
         >
           <ChevronsRight className="h-4 w-4" />

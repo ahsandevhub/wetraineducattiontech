@@ -1,5 +1,6 @@
 "use client";
 
+import TablePagination from "@/app/dashboard/admin/_components/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,6 +123,10 @@ export function StoreAccountsAdminClient({
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [userFilter, setUserFilter] = useState("all");
+  const [balancesPage, setBalancesPage] = useState(1);
+  const [balancesRowsPerPage, setBalancesRowsPerPage] = useState(50);
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerRowsPerPage, setLedgerRowsPerPage] = useState(50);
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const filteredEntries = useMemo(() => {
@@ -148,6 +153,24 @@ export function StoreAccountsAdminClient({
       );
     });
   }, [categoryFilter, entries, search, userFilter]);
+  const balanceTotalPages = Math.max(
+    1,
+    Math.ceil(users.length / balancesRowsPerPage),
+  );
+  const safeBalancesPage = Math.min(balancesPage, balanceTotalPages);
+  const paginatedUsers = users.slice(
+    (safeBalancesPage - 1) * balancesRowsPerPage,
+    safeBalancesPage * balancesRowsPerPage,
+  );
+  const ledgerTotalPages = Math.max(
+    1,
+    Math.ceil(filteredEntries.length / ledgerRowsPerPage),
+  );
+  const safeLedgerPage = Math.min(ledgerPage, ledgerTotalPages);
+  const paginatedEntries = filteredEntries.slice(
+    (safeLedgerPage - 1) * ledgerRowsPerPage,
+    safeLedgerPage * ledgerRowsPerPage,
+  );
 
   const handleSave = async (values: StoreAccountEntryFormValues) => {
     setLoading(true);
@@ -360,7 +383,7 @@ export function StoreAccountsAdminClient({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      users.map((user) => (
+                      paginatedUsers.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">
                             {user.full_name}
@@ -394,6 +417,18 @@ export function StoreAccountsAdminClient({
                   </TableBody>
                 </Table>
               </div>
+              <TablePagination
+                currentPage={safeBalancesPage}
+                totalPages={balanceTotalPages}
+                rowsPerPage={balancesRowsPerPage}
+                totalRows={users.length}
+                pageSizeOptions={[50, 100, 500]}
+                onPageChange={setBalancesPage}
+                onRowsPerPageChange={(rows) => {
+                  setBalancesRowsPerPage(rows);
+                  setBalancesPage(1);
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -405,11 +440,20 @@ export function StoreAccountsAdminClient({
               <div className="flex flex-col gap-3 md:flex-row">
                 <Input
                   value={search}
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    setLedgerPage(1);
+                  }}
                   placeholder="Search employee, reason, or actor"
                   className="w-full md:w-72"
                 />
-                <Select value={userFilter} onValueChange={setUserFilter}>
+                <Select
+                  value={userFilter}
+                  onValueChange={(value) => {
+                    setUserFilter(value);
+                    setLedgerPage(1);
+                  }}
+                >
                   <SelectTrigger className="w-full md:w-56">
                     <SelectValue placeholder="All employees" />
                   </SelectTrigger>
@@ -422,7 +466,13 @@ export function StoreAccountsAdminClient({
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <Select
+                  value={categoryFilter}
+                  onValueChange={(value) => {
+                    setCategoryFilter(value);
+                    setLedgerPage(1);
+                  }}
+                >
                   <SelectTrigger className="w-full md:w-56">
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
@@ -463,7 +513,7 @@ export function StoreAccountsAdminClient({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredEntries.map((entry) => (
+                      paginatedEntries.map((entry) => (
                         <TableRow key={entry.id}>
                           <TableCell>
                             {formatStoreDateTime(entry.created_at)}
@@ -506,6 +556,18 @@ export function StoreAccountsAdminClient({
                   </TableBody>
                 </Table>
               </div>
+              <TablePagination
+                currentPage={safeLedgerPage}
+                totalPages={ledgerTotalPages}
+                rowsPerPage={ledgerRowsPerPage}
+                totalRows={filteredEntries.length}
+                pageSizeOptions={[50, 100, 500]}
+                onPageChange={setLedgerPage}
+                onRowsPerPageChange={(rows) => {
+                  setLedgerRowsPerPage(rows);
+                  setLedgerPage(1);
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>

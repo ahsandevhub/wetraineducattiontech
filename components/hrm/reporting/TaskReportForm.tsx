@@ -19,16 +19,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
@@ -91,34 +81,23 @@ function FormFields({
 
       <div className="space-y-2">
         <Label htmlFor="category">Category</Label>
-        <Select
+        <Input
+          id="category"
+          list="task-report-category-list"
           value={values.category}
-          onValueChange={(value) =>
-            setValues((current) => ({ ...current, category: value }))
+          onChange={(event) =>
+            setValues((current) => ({ ...current, category: event.target.value }))
           }
+          placeholder="Select or type a category"
           disabled={pending}
-        >
-          <SelectTrigger id="category">
-            <SelectValue placeholder="Select category" />
-          </SelectTrigger>
-          <SelectContent>
-            {HRM_TASK_REPORT_CATEGORY_SECTIONS.map((section, index) => (
-              <div key={section.label}>
-                <SelectGroup>
-                  <SelectLabel>{section.label}</SelectLabel>
-                  {section.categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-                {index < HRM_TASK_REPORT_CATEGORY_SECTIONS.length - 1 ? (
-                  <SelectSeparator />
-                ) : null}
-              </div>
-            ))}
-          </SelectContent>
-        </Select>
+        />
+        <datalist id="task-report-category-list">
+          {HRM_TASK_REPORT_CATEGORY_SECTIONS.flatMap((section) =>
+            section.categories.map((category) => (
+              <option key={`${section.label}-${category}`} value={category} />
+            )),
+          )}
+        </datalist>
       </div>
 
       <div className="space-y-2">

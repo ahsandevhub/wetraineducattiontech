@@ -46,8 +46,8 @@ import {
   FileText,
   Loader2,
   Mail,
-  MessageSquarePlus,
   MessageSquare,
+  MessageSquarePlus,
   Phone,
   PhoneCall,
   Plus,
@@ -171,11 +171,7 @@ const contactTypes = (Object.keys(contactTypeMeta) as ContactType[]).map(
   }),
 );
 
-function InlineLeadStatusCell({
-  lead,
-}: {
-  lead: LeadRow;
-}) {
+function InlineLeadStatusCell({ lead }: { lead: LeadRow }) {
   const router = useRouter();
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus>(lead.status);
   const [isPending, startTransition] = useTransition();
@@ -229,7 +225,9 @@ function InlineLeadStatusCell({
           ))}
         </SelectContent>
       </Select>
-      {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />}
+      {isPending && (
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />
+      )}
     </div>
   );
 }
@@ -326,13 +324,15 @@ function InlineLeadOwnerCell({
         <SelectContent align="start">
           <SelectItem value="unassigned">Unassigned</SelectItem>
           {assignableOwners.map((owner) => (
-          <SelectItem key={owner.id} value={owner.id}>
+            <SelectItem key={owner.id} value={owner.id}>
               {getCrmUserDisplayName(owner)}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      {isPending && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />}
+      {isPending && (
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-500" />
+      )}
     </div>
   );
 }
@@ -545,9 +545,7 @@ export function LeadsPageClient({
     setDeletingLeadId(null);
   };
 
-  const columns: ColumnDef<
-    LeadRow
-  >[] = [
+  const columns: ColumnDef<LeadRow>[] = [
     {
       accessorKey: "phone",
       header: "Phone",
@@ -730,28 +728,18 @@ export function LeadsPageClient({
       },
       enableSorting: false,
     },
-    ...(isAdmin
-      ? [
-          {
-            accessorKey: "owner",
-            header: "Owner",
-            cell: ({
-              row,
-            }: {
-              row: Row<
-                LeadRow
-              >;
-            }) => {
-              return (
-                <InlineLeadOwnerCell
-                  lead={row.original}
-                  assignableOwners={assignableOwners}
-                />
-              );
-            },
-          },
-        ]
-      : []),
+    {
+      accessorKey: "owner",
+      header: "Owner",
+      cell: ({ row }: { row: Row<LeadRow> }) => {
+        return (
+          <InlineLeadOwnerCell
+            lead={row.original}
+            assignableOwners={assignableOwners}
+          />
+        );
+      },
+    },
     {
       id: "actions",
       cell: ({ row }) => {

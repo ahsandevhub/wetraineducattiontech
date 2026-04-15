@@ -1,5 +1,6 @@
 "use client";
 
+import TablePagination from "@/app/dashboard/admin/_components/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,8 +23,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatStoreDateTime } from "../../_lib/date-format";
 import { Minus, PencilLine, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "react-hot-toast";
 import { recordStoreStockAction } from "../../_actions/stocks";
 import StoreStockActionDialog, {
@@ -59,9 +66,30 @@ type StockMovement = {
   reference_id?: string | null;
 };
 
+type MovementFilters = {
+  q: string;
+  movementType: "all" | StockMovement["movement_type"];
+  actor: string;
+  page: number;
+  pageSize: number;
+};
+
+type MovementPage = {
+  items: StockMovement[];
+  totalRows: number;
+  totalPages: number;
+  page: number;
+  pageSize: number;
+};
+
 type StoreStocksClientProps = {
   products: StockProduct[];
-  movementHistory: StockMovement[];
+  movementPage: MovementPage;
+  movementFilters: MovementFilters;
+  movementActors: Array<{
+    id: string;
+    name: string;
+  }>;
 };
 
 type DialogState = {
@@ -91,15 +119,18 @@ function formatMoney(amount: number) {
 
 export function StoreStocksClient({
   products,
-  movementHistory,
+  movementPage,
+  movementFilters,
+  movementActors,
 }: StoreStocksClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isNavigating, startTransition] = useTransition();
   const [inventorySearch, setInventorySearch] = useState("");
-  const [movementSearch, setMovementSearch] = useState("");
-  const [movementTypeFilter, setMovementTypeFilter] = useState<
-    "all" | StockMovement["movement_type"]
-  >("all");
-  const [movementActorFilter, setMovementActorFilter] = useState("all");
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const [inventoryRowsPerPage, setInventoryRowsPerPage] = useState(50);
+  const [movementSearch, setMovementSearch] = useState(movementFilters.q);
   const [loading, setLoading] = useState(false);
   const [dialogState, setDialogState] = useState<DialogState>({
     open: false,
@@ -119,57 +150,15 @@ export function StoreStocksClient({
         .some((value) => value!.toLowerCase().includes(query)),
     );
   }, [inventorySearch, products]);
-
-  const movementActors = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          movementHistory
-            .map((movement) => movement.actor_name)
-            .filter((actorName) => actorName.trim().length > 0),
-        ),
-      ).sort((left, right) => left.localeCompare(right)),
-    [movementHistory],
+  const inventoryTotalPages = Math.max(
+    1,
+    Math.ceil(filteredProducts.length / inventoryRowsPerPage),
   );
-
-  const filteredMovementHistory = useMemo(() => {
-    const query = movementSearch.trim().toLowerCase();
-
-    return movementHistory.filter((movement) => {
-      if (
-        movementTypeFilter !== "all" &&
-        movement.movement_type !== movementTypeFilter
-      ) {
-        return false;
-      }
-
-      if (
-        movementActorFilter !== "all" &&
-        movement.actor_name !== movementActorFilter
-      ) {
-        return false;
-      }
-
-      if (!query) {
-        return true;
-      }
-
-      return (
-        movement.product_name.toLowerCase().includes(query) ||
-        movement.actor_name.toLowerCase().includes(query) ||
-        formatMovementType(movement.movement_type)
-          .toLowerCase()
-          .includes(query) ||
-        (movement.reason ?? "").toLowerCase().includes(query) ||
-        (movement.reference_id ?? "").toLowerCase().includes(query)
-      );
-    });
-  }, [
-    movementActorFilter,
-    movementHistory,
-    movementSearch,
-    movementTypeFilter,
-  ]);
+  const safeInventoryPage = Math.min(inventoryPage, inventoryTotalPages);
+  const paginatedProducts = filteredProducts.slice(
+    (safeInventoryPage - 1) * inventoryRowsPerPage,
+    safeInventoryPage * inventoryRowsPerPage,
+  );
 
   const totalOnHand = products.reduce(
     (sum, product) => sum + product.on_hand,
@@ -182,6 +171,61 @@ export function StoreStocksClient({
   const outOfStockCount = products.filter(
     (product) => product.on_hand <= 0,
   ).length;
+  const activeTab =
+    searchParams.get("tab") === "movements" ? "movements" : "inventory";
+
+  useEffect(() => {
+    setMovementSearch(movementFilters.q);
+  }, [movementFilters.q]);
+
+  const updateQueryParams = useCallback(
+    (updates: Record<string, string | number | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      for (const [key, value] of Object.entries(updates)) {
+        if (
+          value === null ||
+          value === "" ||
+          (key === "page" && String(value) === "1") ||
+          (key === "pageSize" && String(value) === "50") ||
+          (key === "movementType" && String(value) === "all") ||
+          (key === "actor" && String(value) === "all") ||
+          (key === "tab" && String(value) === "inventory")
+        ) {
+          params.delete(key);
+          continue;
+        }
+
+        params.set(key, String(value));
+      }
+
+      const query = params.toString();
+      startTransition(() => {
+        router.replace(query ? `${pathname}?${query}` : pathname, {
+          scroll: false,
+        });
+      });
+    },
+    [pathname, router, searchParams],
+  );
+
+  useEffect(() => {
+    const normalizedSearch = movementSearch.trim();
+
+    if (normalizedSearch === movementFilters.q) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      updateQueryParams({
+        q: normalizedSearch || null,
+        page: 1,
+        tab: "movements",
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [movementFilters.q, movementSearch, updateQueryParams]);
 
   const handleSave = async (values: StockActionFormValues) => {
     setLoading(true);
@@ -276,7 +320,15 @@ export function StoreStocksClient({
         </Card>
       </div>
 
-      <Tabs defaultValue="inventory" className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) =>
+          updateQueryParams({
+            tab: value === "movements" ? "movements" : null,
+          })
+        }
+        className="space-y-4"
+      >
         <TabsList className="grid w-full grid-cols-2 sm:w-fit">
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="movements">Stock Movements</TabsTrigger>
@@ -288,7 +340,10 @@ export function StoreStocksClient({
               <CardTitle>Inventory</CardTitle>
               <Input
                 value={inventorySearch}
-                onChange={(event) => setInventorySearch(event.target.value)}
+                onChange={(event) => {
+                  setInventorySearch(event.target.value);
+                  setInventoryPage(1);
+                }}
                 placeholder="Search by name or barcode"
                 className="w-full md:max-w-sm"
               />
@@ -318,7 +373,7 @@ export function StoreStocksClient({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredProducts.map((product) => (
+                      paginatedProducts.map((product) => (
                         <TableRow key={product.id}>
                           <TableCell className="font-medium">
                             {product.name}
@@ -392,6 +447,18 @@ export function StoreStocksClient({
                   </TableBody>
                 </Table>
               </div>
+              <TablePagination
+                currentPage={safeInventoryPage}
+                totalPages={inventoryTotalPages}
+                rowsPerPage={inventoryRowsPerPage}
+                totalRows={filteredProducts.length}
+                pageSizeOptions={[50, 100, 500]}
+                onPageChange={setInventoryPage}
+                onRowsPerPageChange={(rows) => {
+                  setInventoryRowsPerPage(rows);
+                  setInventoryPage(1);
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -399,20 +466,22 @@ export function StoreStocksClient({
         <TabsContent value="movements">
           <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
             <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
-              <CardTitle>Recent Stock Movements</CardTitle>
+              <CardTitle>Stock Movements</CardTitle>
               <div className="flex flex-col gap-3 md:flex-row">
                 <Input
                   value={movementSearch}
                   onChange={(event) => setMovementSearch(event.target.value)}
-                  placeholder="Search product, reason, reference, or actor"
+                  placeholder="Search by product name, SKU, or barcode"
                   className="w-full md:w-80"
                 />
                 <Select
-                  value={movementTypeFilter}
+                  value={movementFilters.movementType}
                   onValueChange={(value) =>
-                    setMovementTypeFilter(
-                      value as "all" | StockMovement["movement_type"],
-                    )
+                    updateQueryParams({
+                      movementType: value,
+                      page: 1,
+                      tab: "movements",
+                    })
                   }
                 >
                   <SelectTrigger className="w-full md:w-48">
@@ -427,17 +496,23 @@ export function StoreStocksClient({
                   </SelectContent>
                 </Select>
                 <Select
-                  value={movementActorFilter}
-                  onValueChange={setMovementActorFilter}
+                  value={movementFilters.actor}
+                  onValueChange={(value) =>
+                    updateQueryParams({
+                      actor: value,
+                      page: 1,
+                      tab: "movements",
+                    })
+                  }
                 >
                   <SelectTrigger className="w-full md:w-56">
                     <SelectValue placeholder="All actors" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All actors</SelectItem>
-                    {movementActors.map((actorName) => (
-                      <SelectItem key={actorName} value={actorName}>
-                        {actorName}
+                    {movementActors.map((actor) => (
+                      <SelectItem key={actor.id} value={actor.id}>
+                        {actor.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -459,19 +534,19 @@ export function StoreStocksClient({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredMovementHistory.length === 0 ? (
+                    {movementPage.items.length === 0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={7}
                           className="py-8 text-center text-muted-foreground"
                         >
-                          {movementHistory.length === 0
+                          {movementPage.totalRows === 0
                             ? "No stock movement history found"
                             : "No stock movements match your filters"}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredMovementHistory.map((movement) => (
+                      movementPage.items.map((movement) => (
                         <TableRow key={movement.id}>
                           <TableCell>
                             {formatStoreDateTime(movement.created_at)}
@@ -507,6 +582,31 @@ export function StoreStocksClient({
                   </TableBody>
                 </Table>
               </div>
+              <TablePagination
+                currentPage={movementPage.page}
+                totalPages={movementPage.totalPages}
+                rowsPerPage={movementPage.pageSize}
+                totalRows={movementPage.totalRows}
+                pageSizeOptions={[50, 100, 500]}
+                onPageChange={(page) =>
+                  updateQueryParams({
+                    page,
+                    tab: "movements",
+                  })
+                }
+                onRowsPerPageChange={(rows) =>
+                  updateQueryParams({
+                    pageSize: rows,
+                    page: 1,
+                    tab: "movements",
+                  })
+                }
+              />
+              {isNavigating ? (
+                <p className="text-xs text-muted-foreground">
+                  Updating movement history...
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import TablePagination from "@/app/dashboard/admin/_components/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,8 @@ type Props = {
 export function StorePurchasesClient({ invoices }: Props) {
   const [monthFilter, setMonthFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   const filteredInvoices = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -63,6 +66,15 @@ export function StorePurchasesClient({ invoices }: Props) {
       );
     });
   }, [invoices, monthFilter, search]);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredInvoices.length / rowsPerPage),
+  );
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedInvoices = filteredInvoices.slice(
+    (safeCurrentPage - 1) * rowsPerPage,
+    safeCurrentPage * rowsPerPage,
+  );
 
   const totalSpent = filteredInvoices.reduce(
     (sum, invoice) =>
@@ -141,12 +153,18 @@ export function StorePurchasesClient({ invoices }: Props) {
             <Input
               type="month"
               value={monthFilter}
-              onChange={(event) => setMonthFilter(event.target.value)}
+              onChange={(event) => {
+                setMonthFilter(event.target.value);
+                setCurrentPage(1);
+              }}
               className="w-full md:w-44"
             />
             <Input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Search invoice or product"
               className="w-full md:w-72"
             />
@@ -158,7 +176,7 @@ export function StorePurchasesClient({ invoices }: Props) {
               No purchases found for the current filter.
             </div>
           ) : (
-            filteredInvoices.map((invoice) => (
+            paginatedInvoices.map((invoice) => (
               <details
                 key={invoice.id}
                 className={cn(
@@ -254,6 +272,18 @@ export function StorePurchasesClient({ invoices }: Props) {
               </details>
             ))
           )}
+          <TablePagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            rowsPerPage={rowsPerPage}
+            totalRows={filteredInvoices.length}
+            pageSizeOptions={[50, 100, 500]}
+            onPageChange={setCurrentPage}
+            onRowsPerPageChange={(rows) => {
+              setRowsPerPage(rows);
+              setCurrentPage(1);
+            }}
+          />
         </CardContent>
       </Card>
     </div>

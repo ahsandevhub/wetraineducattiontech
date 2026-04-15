@@ -1,5 +1,6 @@
 "use client";
 
+import TablePagination from "@/app/dashboard/admin/_components/TablePagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +56,8 @@ export function StoreProductsClient({
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [loading, setLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(
     null,
@@ -84,6 +87,15 @@ export function StoreProductsClient({
   const trackedCount = products.filter(
     (product) => product.tracks_stock,
   ).length;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredProducts.length / rowsPerPage),
+  );
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedProducts = filteredProducts.slice(
+    (safeCurrentPage - 1) * rowsPerPage,
+    safeCurrentPage * rowsPerPage,
+  );
 
   const handleCreateProduct = async (values: StoreProductFormValues) => {
     setLoading(true);
@@ -206,7 +218,10 @@ export function StoreProductsClient({
           </div>
           <Input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search by name or barcode"
             className="w-full md:max-w-md"
           />
@@ -238,7 +253,7 @@ export function StoreProductsClient({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredProducts.map((product) => (
+                  paginatedProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">
                         {product.name}
@@ -294,6 +309,18 @@ export function StoreProductsClient({
               </TableBody>
             </Table>
           </div>
+          <TablePagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            rowsPerPage={rowsPerPage}
+            totalRows={filteredProducts.length}
+            pageSizeOptions={[50, 100, 500]}
+            onPageChange={setCurrentPage}
+            onRowsPerPageChange={(rows) => {
+              setRowsPerPage(rows);
+              setCurrentPage(1);
+            }}
+          />
         </CardContent>
       </Card>
 

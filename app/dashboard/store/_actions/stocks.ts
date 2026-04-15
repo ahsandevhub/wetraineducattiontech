@@ -50,6 +50,63 @@ type StockMovementRow = {
   created_at: string;
 };
 
+type RawStockOverviewFilters = {
+  q?: string | string[] | undefined;
+  movementType?: string | string[] | undefined;
+  actor?: string | string[] | undefined;
+  page?: string | string[] | undefined;
+  pageSize?: string | string[] | undefined;
+};
+
+type StockOverviewFilters = {
+  q: string;
+  movementType: "all" | StockMovementRow["movement_type"];
+  actor: string;
+  page: number;
+  pageSize: number;
+};
+
+function normalizeFilterValue(
+  value: string | string[] | undefined,
+  fallback = "",
+) {
+  if (Array.isArray(value)) {
+    return value[0] ?? fallback;
+  }
+
+  return value ?? fallback;
+}
+
+function clampPage(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function normalizePageSize(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return [50, 100, 500].includes(parsed) ? parsed : 50;
+}
+
+function parseStockOverviewFilters(
+  rawFilters: RawStockOverviewFilters = {},
+): StockOverviewFilters {
+  const rawMovementType = normalizeFilterValue(rawFilters.movementType, "all");
+  const movementType =
+    rawMovementType === "RESTOCK" ||
+    rawMovementType === "SALE" ||
+    rawMovementType === "ADJUSTMENT" ||
+    rawMovementType === "REVERSAL"
+      ? rawMovementType
+      : "all";
+
+  return {
+    q: normalizeFilterValue(rawFilters.q).trim(),
+    movementType,
+    actor: normalizeFilterValue(rawFilters.actor, "all").trim() || "all",
+    page: clampPage(normalizeFilterValue(rawFilters.page, "1")),
+    pageSize: normalizePageSize(normalizeFilterValue(rawFilters.pageSize, "50")),
+  };
+}
 
 async function ensureStoreAdminAccess() {
   await requireStoreAdmin();
@@ -114,18 +171,21 @@ async function getCurrentOnHand(productId: string) {
   return { quantity, error: null };
 }
 
-export async function getStoreStockOverview() {
+export async function getStoreStockOverview(
+  rawFilters: RawStockOverviewFilters = {},
+) {
   const auth = await ensureStoreAdminAccess();
   if (auth.error || !auth.roles) {
     return { data: null, error: auth.error ?? "Not authorized" };
   }
 
   try {
+    const filters = parseStockOverviewFilters(rawFilters);
     const supabaseAdmin = createAdminClient();
     const [
       { data: products, error: productsError },
       { data: allMovements, error: allMovementsError },
-      { data: recentMovements, error: recentMovementsError },
+      { data: actorRows, error: actorRowsError },
     ] =
       await Promise.all([
         supabaseAdmin
@@ -140,11 +200,7 @@ export async function getStoreStockOverview() {
           .select("product_id, quantity_delta"),
         supabaseAdmin
           .from("store_stock_movements")
-          .select(
-            "id, product_id, stock_entry_id, invoice_item_id, reversed_from_movement_id, movement_type, quantity_delta, reason, actor_user_id, created_at",
-          )
-          .order("created_at", { ascending: false })
-          .limit(100),
+          .select("actor_user_id"),
       ]);
 
     if (productsError) {
@@ -155,12 +211,11 @@ export async function getStoreStockOverview() {
       return { data: null, error: allMovementsError.message };
     }
 
-    if (recentMovementsError) {
-      return { data: null, error: recentMovementsError.message };
+    if (actorRowsError) {
+      return { data: null, error: actorRowsError.message };
     }
 
     const typedProducts = (products ?? []) as StockProductRow[];
-    const typedRecentMovements = (recentMovements ?? []) as StockMovementRow[];
 
     const movementSums = new Map<string, number>();
     for (const movement of allMovements ?? []) {
@@ -177,9 +232,23 @@ export async function getStoreStockOverview() {
       }
     }
 
+    const matchingProductIds =
+      filters.q.length > 0
+        ? (() => {
+            const query = filters.q.toLowerCase();
+            return typedProducts
+              .filter((product) =>
+                [product.name, product.sku, product.barcode]
+                  .filter(Boolean)
+                  .some((value) => value!.toLowerCase().includes(query)),
+              )
+              .map((product) => product.id);
+          })()
+        : null;
+
     const actorIds = Array.from(
       new Set(
-        typedRecentMovements
+        (actorRows ?? [])
           .map((movement) => movement.actor_user_id)
           .filter((value): value is string => Boolean(value)),
       ),
@@ -208,28 +277,124 @@ export async function getStoreStockOverview() {
       typedProducts.map((product) => [product.id, product]),
     );
 
+    let movementHistory: Array<
+      StockMovementRow & {
+        product_name: string;
+        actor_name: string;
+        reference_id: string | null;
+      }
+    > = [];
+    let movementTotalRows = 0;
+
+    if (matchingProductIds === null || matchingProductIds.length > 0) {
+      let countQuery = supabaseAdmin
+        .from("store_stock_movements")
+        .select("id", { count: "exact", head: true });
+
+      let dataQuery = supabaseAdmin
+        .from("store_stock_movements")
+        .select(
+          "id, product_id, stock_entry_id, invoice_item_id, reversed_from_movement_id, movement_type, quantity_delta, reason, actor_user_id, created_at",
+        )
+        .order("created_at", { ascending: false });
+
+      if (matchingProductIds) {
+        countQuery = countQuery.in("product_id", matchingProductIds);
+        dataQuery = dataQuery.in("product_id", matchingProductIds);
+      }
+
+      if (filters.movementType !== "all") {
+        countQuery = countQuery.eq("movement_type", filters.movementType);
+        dataQuery = dataQuery.eq("movement_type", filters.movementType);
+      }
+
+      if (filters.actor !== "all") {
+        if (filters.actor === "system") {
+          countQuery = countQuery.is("actor_user_id", null);
+          dataQuery = dataQuery.is("actor_user_id", null);
+        } else {
+          countQuery = countQuery.eq("actor_user_id", filters.actor);
+          dataQuery = dataQuery.eq("actor_user_id", filters.actor);
+        }
+      }
+
+      const { count: movementCount, error: movementCountError } = await countQuery;
+
+      if (movementCountError) {
+        return { data: null, error: movementCountError.message };
+      }
+
+      movementTotalRows = movementCount ?? 0;
+
+      const totalPages = Math.max(
+        1,
+        Math.ceil(movementTotalRows / filters.pageSize),
+      );
+      const safePage = Math.min(filters.page, totalPages);
+      const from = (safePage - 1) * filters.pageSize;
+      const to = from + filters.pageSize - 1;
+
+      const { data: movementRows, error: movementRowsError } = await dataQuery.range(
+        from,
+        to,
+      );
+
+      if (movementRowsError) {
+        return { data: null, error: movementRowsError.message };
+      }
+
+      movementHistory = ((movementRows ?? []) as StockMovementRow[]).map(
+        (movement) => ({
+          ...movement,
+          product_name:
+            productMap.get(movement.product_id)?.name ?? "Unknown product",
+          actor_name: movement.actor_user_id
+            ? (actorMap.get(movement.actor_user_id) ?? "Unknown user")
+            : "System",
+          reference_id:
+            movement.stock_entry_id ??
+            movement.invoice_item_id ??
+            movement.reversed_from_movement_id ??
+            null,
+        }),
+      );
+    }
+
     const productStock = typedProducts.map((product) => ({
       ...product,
       on_hand: movementSums.get(product.id) ?? 0,
     }));
 
-    const movementHistory = typedRecentMovements.map((movement) => ({
-      ...movement,
-      product_name: productMap.get(movement.product_id)?.name ?? "Unknown product",
-      actor_name: movement.actor_user_id
-        ? (actorMap.get(movement.actor_user_id) ?? "Unknown user")
-        : "System",
-      reference_id:
-        movement.stock_entry_id ??
-        movement.invoice_item_id ??
-        movement.reversed_from_movement_id ??
-        null,
-    }));
+    const movementActors = [
+      ...(actorRows && actorRows.some((row) => !row.actor_user_id)
+        ? [{ id: "system", name: "System" }]
+        : []),
+      ...actorIds
+        .map((id) => ({
+          id,
+          name: actorMap.get(id) ?? "Unknown user",
+        }))
+        .sort((left, right) => left.name.localeCompare(right.name)),
+    ];
+
+    const totalPages = Math.max(1, Math.ceil(movementTotalRows / filters.pageSize));
+    const safePage = Math.min(filters.page, totalPages);
 
     return {
       data: {
         products: productStock,
-        movementHistory,
+        movementPage: {
+          items: movementHistory,
+          totalRows: movementTotalRows,
+          totalPages,
+          page: safePage,
+          pageSize: filters.pageSize,
+        },
+        movementFilters: {
+          ...filters,
+          page: safePage,
+        },
+        movementActors,
       },
       error: null,
     };

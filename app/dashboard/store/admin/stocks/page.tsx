@@ -1,8 +1,12 @@
 import { getStoreStockOverview } from "../../_actions/stocks";
 import { StoreStocksClient } from "./stocks-client";
 
-export default async function StoreStocksPage() {
-  const { data, error } = await getStoreStockOverview();
+export default async function StoreStocksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { data, error } = await getStoreStockOverview(await searchParams);
 
   if (error || !data) {
     return (
@@ -17,7 +21,9 @@ export default async function StoreStocksPage() {
   return (
     <StoreStocksClient
       products={data.products}
-      movementHistory={data.movementHistory}
+      movementPage={data.movementPage}
+      movementFilters={data.movementFilters}
+      movementActors={data.movementActors}
     />
   );
 }

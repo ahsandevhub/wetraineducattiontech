@@ -2,10 +2,7 @@
 
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
-import {
-  HRM_TASK_REPORT_CATEGORIES,
-  type HrmTaskReportCategory,
-} from "../_lib/task-reporting-shared";
+import { HRM_TASK_REPORT_CATEGORIES } from "../_lib/task-reporting-shared";
 import { revalidatePath } from "next/cache";
 
 type ReportingActionState = {
@@ -50,8 +47,8 @@ function validateInput(input: ReportingInput) {
   const proofUrl = normalizeOptionalText(input.proofUrl);
   const notes = normalizeOptionalText(input.notes);
 
-  if (!HRM_TASK_REPORT_CATEGORIES.includes(category as HrmTaskReportCategory)) {
-    throw new Error("Please choose a valid category");
+  if (!category) {
+    throw new Error("Category is required");
   }
 
   if (!taskTitle) {
@@ -70,7 +67,7 @@ function validateInput(input: ReportingInput) {
   }
 
   return {
-    category: category as HrmTaskReportCategory,
+    category,
     task_title: taskTitle,
     proof_url: proofUrl,
     notes,

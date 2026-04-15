@@ -67,10 +67,7 @@ export async function parseHrmReportingFilters(
 
   return {
     q,
-    category:
-      HRM_TASK_REPORT_CATEGORIES.includes(category as HrmTaskReportCategory)
-        ? category
-        : "",
+    category,
     userId,
     dateFrom: isIsoDate(dateFrom) ? dateFrom : defaults.dateFrom,
     dateTo: isIsoDate(dateTo) ? dateTo : defaults.dateTo,
@@ -257,7 +254,6 @@ export async function getHrmReportingPageData(
 
     return {
       ...item,
-      category: item.category as HrmTaskReportCategory,
       authorName: profileMap.get(item.author_user_id)?.full_name || null,
       authorEmail: profileMap.get(item.author_user_id)?.email || null,
       isOwnRecord,

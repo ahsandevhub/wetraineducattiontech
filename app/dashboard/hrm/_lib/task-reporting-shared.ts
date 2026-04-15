@@ -58,6 +58,7 @@ export const HRM_TASK_REPORT_CATEGORY_SECTIONS = [
   {
     label: "Administrative",
     categories: [
+      "Give Review",
       "Review Check",
       "Internal Coordination",
       "Documentation",
@@ -87,7 +88,7 @@ export type HrmReportingScope = "EMPLOYEE" | "ADMIN" | "SUPER_ADMIN";
 export type HrmTaskReportRow = {
   id: string;
   author_user_id: string;
-  category: HrmTaskReportCategory;
+  category: string;
   task_title: string;
   proof_url: string | null;
   notes: string | null;

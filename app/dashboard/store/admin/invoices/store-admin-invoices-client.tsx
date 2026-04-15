@@ -1,5 +1,6 @@
 "use client";
 
+import TablePagination from "@/app/dashboard/admin/_components/TablePagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,6 +66,8 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
     "all" | "CONFIRMED" | "REVERSED"
   >("all");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [savingInvoiceId, setSavingInvoiceId] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] =
     useState<StoreAdminInvoice | null>(null);
@@ -95,6 +98,12 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
       );
     });
   }, [invoices, monthFilter, search, statusFilter]);
+  const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / rowsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedInvoices = filteredInvoices.slice(
+    (safeCurrentPage - 1) * rowsPerPage,
+    safeCurrentPage * rowsPerPage,
+  );
 
   const summary = useMemo(
     () => ({
@@ -109,7 +118,6 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
     }),
     [invoices],
   );
-
   const getInvoiceStatusUi = (status: StoreAdminInvoice["status"]) => {
     if (status === "CONFIRMED") {
       return {
@@ -209,14 +217,18 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
             <Input
               type="month"
               value={monthFilter}
-              onChange={(event) => setMonthFilter(event.target.value)}
+              onChange={(event) => {
+                setMonthFilter(event.target.value);
+                setCurrentPage(1);
+              }}
               className="md:w-44"
             />
             <Select
               value={statusFilter}
-              onValueChange={(value) =>
-                setStatusFilter(value as "all" | "CONFIRMED" | "REVERSED")
-              }
+              onValueChange={(value) => {
+                setStatusFilter(value as "all" | "CONFIRMED" | "REVERSED");
+                setCurrentPage(1);
+              }}
             >
               <SelectTrigger className="md:w-48">
                 <SelectValue placeholder="All statuses" />
@@ -229,7 +241,10 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
             </Select>
             <Input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Search invoice, employee, or product"
               className="md:w-80"
             />
@@ -241,7 +256,7 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
               No invoices found for the current filter.
             </div>
           ) : (
-            filteredInvoices.map((invoice) => (
+            paginatedInvoices.map((invoice) => (
               <details
                 key={invoice.id}
                 className={cn(
@@ -380,6 +395,18 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
               </details>
             ))
           )}
+          <TablePagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            rowsPerPage={rowsPerPage}
+            totalRows={filteredInvoices.length}
+            pageSizeOptions={[50, 100, 500]}
+            onPageChange={setCurrentPage}
+            onRowsPerPageChange={(rows) => {
+              setRowsPerPage(rows);
+              setCurrentPage(1);
+            }}
+          />
         </CardContent>
       </Card>
 
