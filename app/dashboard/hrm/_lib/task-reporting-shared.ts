@@ -3,10 +3,7 @@ import type { HrmRole } from "@/app/utils/auth/roles";
 export const HRM_TASK_REPORT_CATEGORY_SECTIONS = [
   {
     label: "Marketing",
-    categories: [
-      "Social Media Engagement",
-      "Facebook Community Engagement",
-    ],
+    categories: ["Social Media Engagement", "Facebook Community Engagement"],
   },
   {
     label: "Customer Service",

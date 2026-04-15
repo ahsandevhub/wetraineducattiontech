@@ -2,11 +2,9 @@ import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/app/utils/supabase/admin";
 import { createClient } from "@/app/utils/supabase/server";
 import {
-  HRM_TASK_REPORT_CATEGORIES,
   type HrmReportingFilters,
   type HrmReportingPageData,
   type HrmReportingScope,
-  type HrmTaskReportCategory,
   type HrmTaskReportListItem,
 } from "./task-reporting-shared";
 
@@ -93,7 +91,10 @@ async function getAssignedSubjectIds(adminId: string) {
 
 async function getProfileMap(userIds: string[]) {
   if (userIds.length === 0) {
-    return new Map<string, { full_name: string | null; email: string | null }>();
+    return new Map<
+      string,
+      { full_name: string | null; email: string | null }
+    >();
   }
 
   const supabaseAdmin = await createAdminClient();
@@ -145,7 +146,10 @@ export async function getHrmReportingPageData(
   let allowedUserIds: string[] = [roles.userId];
 
   if (roles.hrmRole === "ADMIN") {
-    allowedUserIds = [roles.userId, ...(await getAssignedSubjectIds(roles.userId))];
+    allowedUserIds = [
+      roles.userId,
+      ...(await getAssignedSubjectIds(roles.userId)),
+    ];
   } else if (roles.hrmRole === "SUPER_ADMIN") {
     const { data, error } = await supabase
       .from("hrm_users")
@@ -200,19 +204,32 @@ export async function getHrmReportingPageData(
   }
 
   if (filters.dateFrom) {
-    countQuery = countQuery.gte("reported_at", `${filters.dateFrom}T00:00:00.000Z`);
-    dataQuery = dataQuery.gte("reported_at", `${filters.dateFrom}T00:00:00.000Z`);
+    countQuery = countQuery.gte(
+      "reported_at",
+      `${filters.dateFrom}T00:00:00.000Z`,
+    );
+    dataQuery = dataQuery.gte(
+      "reported_at",
+      `${filters.dateFrom}T00:00:00.000Z`,
+    );
   }
 
   if (filters.dateTo) {
-    countQuery = countQuery.lte("reported_at", `${filters.dateTo}T23:59:59.999Z`);
+    countQuery = countQuery.lte(
+      "reported_at",
+      `${filters.dateTo}T23:59:59.999Z`,
+    );
     dataQuery = dataQuery.lte("reported_at", `${filters.dateTo}T23:59:59.999Z`);
   }
 
   if (filters.q) {
     const escaped = filters.q.replace(/,/g, " ");
-    countQuery = countQuery.or(`task_title.ilike.%${escaped}%,notes.ilike.%${escaped}%`);
-    dataQuery = dataQuery.or(`task_title.ilike.%${escaped}%,notes.ilike.%${escaped}%`);
+    countQuery = countQuery.or(
+      `task_title.ilike.%${escaped}%,notes.ilike.%${escaped}%`,
+    );
+    dataQuery = dataQuery.or(
+      `task_title.ilike.%${escaped}%,notes.ilike.%${escaped}%`,
+    );
   }
 
   const from = (filters.page - 1) * filters.pageSize;
@@ -231,7 +248,10 @@ export async function getHrmReportingPageData(
   }
 
   const userIds = [
-    ...new Set([...(data || []).map((item) => item.author_user_id), ...allowedUserIds]),
+    ...new Set([
+      ...(data || []).map((item) => item.author_user_id),
+      ...allowedUserIds,
+    ]),
   ];
   const profileMap = await getProfileMap(userIds);
 
@@ -250,7 +270,8 @@ export async function getHrmReportingPageData(
     const isOwnRecord = item.author_user_id === roles.userId;
     const canEdit =
       roles.hrmRole === "SUPER_ADMIN" ||
-      (isOwnRecord && (roles.hrmRole === "EMPLOYEE" || roles.hrmRole === "ADMIN"));
+      (isOwnRecord &&
+        (roles.hrmRole === "EMPLOYEE" || roles.hrmRole === "ADMIN"));
 
     return {
       ...item,

@@ -2,7 +2,6 @@
 
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
-import { HRM_TASK_REPORT_CATEGORIES } from "../_lib/task-reporting-shared";
 import { revalidatePath } from "next/cache";
 
 type ReportingActionState = {
@@ -139,7 +138,10 @@ export async function updateTaskReport(
       throw new Error("Report not found");
     }
 
-    if (roles.hrmRole !== "SUPER_ADMIN" && existing.author_user_id !== roles.userId) {
+    if (
+      roles.hrmRole !== "SUPER_ADMIN" &&
+      existing.author_user_id !== roles.userId
+    ) {
       throw new Error("You can only edit your own reports");
     }
 
@@ -182,7 +184,10 @@ export async function deleteTaskReport(
       throw new Error("Report not found");
     }
 
-    if (roles.hrmRole !== "SUPER_ADMIN" && existing.author_user_id !== roles.userId) {
+    if (
+      roles.hrmRole !== "SUPER_ADMIN" &&
+      existing.author_user_id !== roles.userId
+    ) {
       throw new Error("You can only delete your own reports");
     }
 

@@ -86,7 +86,10 @@ function FormFields({
           list="task-report-category-list"
           value={values.category}
           onChange={(event) =>
-            setValues((current) => ({ ...current, category: event.target.value }))
+            setValues((current) => ({
+              ...current,
+              category: event.target.value,
+            }))
           }
           placeholder="Select or type a category"
           disabled={pending}
