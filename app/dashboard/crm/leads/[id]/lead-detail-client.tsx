@@ -1,5 +1,6 @@
 "use client";
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -344,7 +345,7 @@ export function LeadDetailClient({
                     Assigned To
                   </div>
                   <div className="mt-1 text-sm font-semibold">
-                    {lead.owner.full_name}
+                    {getCrmUserDisplayName(lead.owner)}
                   </div>
                 </div>
               )}
@@ -474,7 +475,7 @@ export function LeadDetailClient({
                         </p>
                         {log.user && (
                           <p className="text-xs text-slate-500 mt-2">
-                            by {log.user.full_name}
+                            by {getCrmUserDisplayName(log.user)}
                           </p>
                         )}
                       </div>

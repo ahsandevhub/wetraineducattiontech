@@ -1,5 +1,6 @@
 "use client";
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -168,7 +169,7 @@ export function UsersPageClient({
                 {users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
-                      {user.full_name}
+                      {getCrmUserDisplayName(user)}
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
@@ -224,10 +225,14 @@ export function UsersPageClient({
               <div className="space-y-2">
                 <Label>User</Label>
                 <div className="p-2 border rounded bg-muted">
-                  <div className="font-medium">{selectedUser.full_name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {selectedUser.email}
+                  <div className="font-medium">
+                    {getCrmUserDisplayName(selectedUser)}
                   </div>
+                  {selectedUser.email && selectedUser.full_name && (
+                    <div className="text-sm text-muted-foreground">
+                      {selectedUser.email}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -275,9 +280,13 @@ export function UsersPageClient({
             <AlertDialogTitle>Remove User from CRM</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to remove{" "}
-              <span className="font-semibold">{selectedUser?.full_name}</span> (
-              {selectedUser?.email}) from CRM? This user will no longer have
-              access to the CRM system.
+              <span className="font-semibold">
+                {getCrmUserDisplayName(selectedUser)}
+              </span>{" "}
+              {selectedUser?.email && selectedUser.full_name
+                ? `(${selectedUser.email}) `
+                : ""}
+              from CRM? This user will no longer have access to the CRM system.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

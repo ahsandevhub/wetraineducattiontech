@@ -1,5 +1,6 @@
 "use client";
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,8 +149,10 @@ export default function LeadRequestsClient({
         if (!requester) return "-";
         return (
           <div className="text-sm">
-            <p className="font-medium">{requester.full_name}</p>
-            <p className="text-xs text-slate-500">{requester.email}</p>
+            <p className="font-medium">{getCrmUserDisplayName(requester)}</p>
+            {requester.email && requester.full_name && (
+              <p className="text-xs text-slate-500">{requester.email}</p>
+            )}
           </div>
         );
       },
@@ -309,11 +312,14 @@ export default function LeadRequestsClient({
                     REQUESTER
                   </p>
                   <p className="font-medium text-slate-900">
-                    {selectedRequest.requester?.full_name}
+                    {getCrmUserDisplayName(selectedRequest.requester)}
                   </p>
-                  <p className="text-sm text-slate-600">
-                    {selectedRequest.requester?.email}
-                  </p>
+                  {selectedRequest.requester?.email &&
+                    selectedRequest.requester?.full_name && (
+                      <p className="text-sm text-slate-600">
+                        {selectedRequest.requester.email}
+                      </p>
+                    )}
                 </div>
 
                 <div>

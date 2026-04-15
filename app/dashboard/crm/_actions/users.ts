@@ -1,5 +1,10 @@
 "use server";
 
+import {
+  compareCrmUsersByDisplayName,
+} from "@/app/dashboard/crm/lib/user-display";
+import { getCrmUserDirectoryMap } from "@/app/dashboard/crm/lib/user-directory";
+import { isAssignableCrmMarketer } from "@/app/utils/auth/crm-capabilities";
 import { requireCrmAccess, requireCrmAdmin } from "@/app/utils/auth/require";
 import { createClient } from "@/app/utils/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -27,31 +32,19 @@ export async function getAllUsers() {
     return { data: null, error: crmError.message };
   }
 
-  // Fetch profiles for enrichment
-  const { data: profiles, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, full_name, email")
-    .in(
-      "id",
-      (crmUsers || []).map((u) => u.id),
-    );
-
-  if (profileError) {
-    console.error("Error fetching profiles:", profileError);
-    return { data: null, error: profileError.message };
+  let directoryMap;
+  try {
+    directoryMap = await getCrmUserDirectoryMap((crmUsers || []).map((u) => u.id));
+  } catch (error) {
+    console.error("Error fetching user directory:", error);
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : "Failed to fetch users",
+    };
   }
 
-  // Build profile map for O(1) lookup
-  const profileMap = new Map(
-    (profiles || []).map((p) => [
-      p.id,
-      { full_name: p.full_name, email: p.email },
-    ]),
-  );
-
-  // Merge crm_users with profiles
   const flattened = (crmUsers || []).map((u) => {
-    const profile = profileMap.get(u.id);
+    const profile = directoryMap.get(u.id);
     return {
       id: u.id,
       crm_role: u.crm_role as "ADMIN" | "MARKETER",
@@ -190,7 +183,7 @@ export async function unlinkUserFromCRM(userId: string) {
 }
 
 /**
- * Get marketers for lead assignment
+ * Get assignable marketers for lead assignment
  */
 export async function getMarketers() {
   await requireCrmAccess();
@@ -198,48 +191,42 @@ export async function getMarketers() {
 
   const { data: crmUsers, error: crmError } = await supabase
     .from("crm_users")
-    .select("id, crm_role")
-    .eq("crm_role", "MARKETER");
+    .select("id, crm_role, created_at, updated_at")
+    .in("crm_role", ["ADMIN", "MARKETER"]);
 
   if (crmError) {
     console.error("Error fetching marketers:", crmError);
     return { data: null, error: crmError.message };
   }
 
-  // Fetch profiles for enrichment
-  const { data: profiles, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, full_name, email")
-    .in(
-      "id",
-      (crmUsers || []).map((u) => u.id),
-    );
-
-  if (profileError) {
-    console.error("Error fetching profiles:", profileError);
-    return { data: null, error: profileError.message };
+  let directoryMap;
+  try {
+    directoryMap = await getCrmUserDirectoryMap((crmUsers || []).map((u) => u.id));
+  } catch (error) {
+    console.error("Error fetching marketer directory:", error);
+    return {
+      data: null,
+      error:
+        error instanceof Error ? error.message : "Failed to fetch marketers",
+    };
   }
 
-  // Build profile map for O(1) lookup
-  const profileMap = new Map(
-    (profiles || []).map((p) => [
-      p.id,
-      { full_name: p.full_name, email: p.email },
-    ]),
-  );
-
-  // Merge and sort by full_name
   const flattened = (crmUsers || [])
+    .filter((u) =>
+      isAssignableCrmMarketer({ userId: u.id, crmRole: u.crm_role }),
+    )
     .map((u) => {
-      const profile = profileMap.get(u.id);
+      const profile = directoryMap.get(u.id);
       return {
         id: u.id,
         crm_role: u.crm_role as "ADMIN" | "MARKETER",
         full_name: profile?.full_name ?? null,
         email: profile?.email ?? null,
+        created_at: u.created_at,
+        updated_at: u.updated_at,
       };
     })
-    .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+    .sort(compareCrmUsersByDisplayName);
 
   return { data: flattened, error: null };
 }

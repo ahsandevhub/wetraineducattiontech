@@ -39,6 +39,11 @@ type StoreOwnerPurchaseRow = {
   actor_name: string;
 };
 
+type StoreOwnerInvoiceSummaryRow = {
+  month_key: string;
+  total_amount: number;
+};
+
 async function ensureStoreAdminAccess() {
   await requireStoreAdmin();
   const roles = await getCurrentUserWithRoles();
@@ -62,7 +67,13 @@ export async function getStoreOwnerPurchasesOverview() {
 
     await ensureStoreOwnerPurchaseMonthSnapshot(currentMonthKey, supabaseAdmin);
 
-    const [{ data: purchases, error: purchasesError }, closuresResult] =
+    const [
+      { data: purchases, error: purchasesError },
+      { data: confirmedInvoices, error: invoicesError },
+      { data: stockMovements, error: stockMovementsError },
+      { data: stockProducts, error: stockProductsError },
+      closuresResult,
+    ] =
       await Promise.all([
         supabaseAdmin
           .from("store_owner_purchases")
@@ -72,11 +83,34 @@ export async function getStoreOwnerPurchasesOverview() {
           .order("purchase_date", { ascending: false })
           .order("created_at", { ascending: false })
           .limit(300),
+        supabaseAdmin
+          .from("store_invoices")
+          .select("month_key, total_amount")
+          .eq("status", "CONFIRMED"),
+        supabaseAdmin
+          .from("store_stock_movements")
+          .select("product_id, quantity_delta"),
+        supabaseAdmin
+          .from("store_products")
+          .select("id, unit_price, tracks_stock")
+          .eq("tracks_stock", true),
         getStoreOwnerMonthClosuresOverview(),
       ]);
 
     if (purchasesError) {
       return { data: null, error: purchasesError.message };
+    }
+
+    if (invoicesError) {
+      return { data: null, error: invoicesError.message };
+    }
+
+    if (stockMovementsError) {
+      return { data: null, error: stockMovementsError.message };
+    }
+
+    if (stockProductsError) {
+      return { data: null, error: stockProductsError.message };
     }
 
     if (closuresResult.error) {
@@ -118,10 +152,50 @@ export async function getStoreOwnerPurchasesOverview() {
       };
     });
 
+    const salesByMonth = Object.values(
+      ((confirmedInvoices ?? []) as StoreOwnerInvoiceSummaryRow[]).reduce<
+        Record<string, { month_key: string; total_amount: number }>
+      >((acc, invoice) => {
+        const monthKey = invoice.month_key;
+        if (!acc[monthKey]) {
+          acc[monthKey] = { month_key: monthKey, total_amount: 0 };
+        }
+
+        acc[monthKey].total_amount += Number(invoice.total_amount ?? 0);
+        return acc;
+      }, {}),
+    )
+      .map((row) => ({
+        month_key: row.month_key,
+        total_amount: Number(row.total_amount.toFixed(2)),
+      }))
+      .sort((left, right) => right.month_key.localeCompare(left.month_key));
+
+    const onHandByProduct = ((stockMovements ?? []) as {
+      product_id: string;
+      quantity_delta: number;
+    }[]).reduce<Record<string, number>>((acc, movement) => {
+      acc[movement.product_id] =
+        (acc[movement.product_id] ?? 0) + Number(movement.quantity_delta ?? 0);
+      return acc;
+    }, {});
+
+    const stockValuation = Number(
+      ((stockProducts ?? []) as {
+        id: string;
+        unit_price: number;
+        tracks_stock: boolean;
+      }[]).reduce((sum, product) => {
+        const onHand = onHandByProduct[product.id] ?? 0;
+        return sum + onHand * Number(product.unit_price ?? 0);
+      }, 0).toFixed(2),
+    );
+
     const monthOptions = Array.from(
       new Set(
         [currentMonthKey]
           .concat(entries.map((entry) => entry.month_key))
+          .concat(salesByMonth.map((row) => row.month_key))
           .concat((closuresResult.data ?? []).map((closure) => closure.month_key)),
       ),
     ).sort((left, right) => right.localeCompare(left));
@@ -131,6 +205,8 @@ export async function getStoreOwnerPurchasesOverview() {
         currentMonthKey,
         monthOptions,
         entries,
+        salesByMonth,
+        stockValuation,
         monthClosures: closuresResult.data ?? [],
       },
       error: null,

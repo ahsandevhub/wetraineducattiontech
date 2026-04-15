@@ -1,6 +1,7 @@
 "use server";
 
 import type { CreateContactLogData } from "@/app/dashboard/crm/_types";
+import { getCrmUserDirectoryMap } from "@/app/dashboard/crm/lib/user-directory";
 import { requireCrmAccess } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
@@ -52,6 +53,7 @@ export async function createContactLog(data: CreateContactLogData) {
     .eq("id", data.lead_id);
 
   revalidatePath(`/dashboard/crm/leads/${data.lead_id}`);
+  revalidatePath("/dashboard/crm/leads");
   revalidatePath("/dashboard/crm/logs");
   return { data: log };
 }
@@ -75,13 +77,7 @@ export async function getContactLogs(leadId: string) {
   const userIds = [
     ...new Set((logs || []).map((l) => l.user_id).filter(Boolean)),
   ];
-  const { data: userProfiles } = userIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", userIds)
-    : { data: [] };
-  const profileMap = new Map((userProfiles || []).map((p) => [p.id, p]));
+  const profileMap = await getCrmUserDirectoryMap(userIds);
 
   const data = (logs || []).map((log) => ({
     ...log,

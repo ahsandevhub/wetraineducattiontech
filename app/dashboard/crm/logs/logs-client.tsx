@@ -1,5 +1,6 @@
 "use client";
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ColumnDef } from "@tanstack/react-table";
@@ -60,7 +61,7 @@ const contactTypeMeta: Record<
 
 interface LogsPageClientProps {
   logs: (ContactLog & {
-    user?: { full_name: string; email: string };
+    user?: { full_name: string | null; email: string | null };
     lead?: { id: string; name: string; phone: string; company: string | null };
   })[];
   creators: CrmUser[];
@@ -100,7 +101,7 @@ export function LogsPageClient({
 
   const columns: ColumnDef<
     ContactLog & {
-      user?: { full_name: string; email: string };
+      user?: { full_name: string | null; email: string | null };
       lead?: {
         id: string;
         name: string;
@@ -194,8 +195,10 @@ export function LogsPageClient({
       accessorKey: "user",
       header: "Created By",
       cell: ({ row }) => {
-        const user = row.getValue("user") as { full_name: string } | undefined;
-        return user?.full_name || <span className="text-slate-400">-</span>;
+        const user = row.getValue("user") as
+          | { full_name: string | null; email: string | null }
+          | undefined;
+        return getCrmUserDisplayName(user);
       },
       enableSorting: false,
     },

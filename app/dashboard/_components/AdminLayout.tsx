@@ -83,6 +83,8 @@ type AdminLayoutProps = {
   children: ReactNode;
   role: Role;
   crmRole: CrmRole | null;
+  canAccessCrmAdmin: boolean;
+  canActAsCrmMarketer: boolean;
   hrmRole: HrmRole | null;
   storeRole: StoreRole | null;
   hasEducationAccess?: boolean;
@@ -92,6 +94,8 @@ export default function AdminLayout({
   children,
   role,
   crmRole,
+  canAccessCrmAdmin,
+  canActAsCrmMarketer,
   hrmRole,
   storeRole,
   hasEducationAccess = true,
@@ -422,7 +426,7 @@ export default function AdminLayout({
                 icon: MessageSquare,
                 href: "/dashboard/crm/logs",
               },
-              ...(crmRole === "MARKETER"
+              ...(canActAsCrmMarketer
                 ? [
                     {
                       label: "My Requests",
@@ -433,7 +437,7 @@ export default function AdminLayout({
                 : []),
             ],
           },
-          ...(crmRole === "ADMIN"
+          ...(canAccessCrmAdmin
             ? [
                 {
                   title: "Admin",

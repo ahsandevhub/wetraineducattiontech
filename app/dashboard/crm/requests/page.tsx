@@ -1,3 +1,5 @@
+import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import { redirect } from "next/navigation";
 import { getMyLeadRequests } from "../_actions/lead-requests";
 import { AdminPageHeader } from "../_components/AdminPageHeader";
 import { LeadRequestWithRequester } from "../_types";
@@ -13,6 +15,16 @@ interface PageProps {
 }
 
 export default async function MyRequestsPage({ searchParams }: PageProps) {
+  const roles = await getCurrentUserWithRoles();
+
+  if (!roles) {
+    redirect("/login");
+  }
+
+  if (!roles.canActAsCrmMarketer) {
+    redirect("/unauthorized");
+  }
+
   const params = await searchParams;
   const status = (params.status || "all") as
     | "all"

@@ -1,8 +1,13 @@
 import type { Lead } from "@/app/dashboard/crm/_types";
+import {
+  compareCrmUsersByDisplayName,
+} from "@/app/dashboard/crm/lib/user-display";
+import { getCrmUserDirectoryMap } from "@/app/dashboard/crm/lib/user-directory";
 import { requireCrmAccess } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { getMarketers } from "../_actions/users";
 import { buildCrmLeadSearchOr } from "../lib/phone";
 import { LeadsPageClient } from "./leads-client";
 
@@ -18,11 +23,11 @@ export default async function LeadsPage({
     redirect("/login");
   }
 
-  const { userId, crmRole } = userWithRoles;
+  const { userId, canAccessCrmAdmin } = userWithRoles;
   const supabase = await createClient();
   const params = await searchParams;
 
-  const isAdmin = crmRole === "ADMIN";
+  const isAdmin = canAccessCrmAdmin;
 
   // Get CRM user ID (crm_users.id = auth.users.id)
   const { data: crmUser } = await supabase
@@ -177,22 +182,7 @@ export default async function LeadsPage({
     ),
   );
 
-  const { data: relatedProfiles } = relatedUserIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", relatedUserIds)
-    : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
-
-  const profileMap = new Map(
-    (relatedProfiles || []).map((profile) => [
-      profile.id,
-      {
-        full_name: profile.full_name ?? null,
-        email: profile.email ?? null,
-      },
-    ]),
-  );
+  const profileMap = await getCrmUserDirectoryMap(relatedUserIds);
 
   const leads = baseLeads.map((lead) => ({
     ...lead,
@@ -215,7 +205,7 @@ export default async function LeadsPage({
     })),
   }));
 
-  // Fetch all CRM users for owner filter and reassignment options
+  // Fetch all CRM users for owner filter options
   type CrmUserRow = {
     id: string;
     crm_role: "ADMIN" | "MARKETER";
@@ -228,24 +218,9 @@ export default async function LeadsPage({
     .in("crm_role", ["ADMIN", "MARKETER"]);
 
   const crmUserIds = (crmUsers || []).map((user) => user.id);
-  const { data: crmUserProfiles } = crmUserIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", crmUserIds)
-    : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
+  const crmUserProfileMap = await getCrmUserDirectoryMap(crmUserIds);
 
-  const crmUserProfileMap = new Map(
-    (crmUserProfiles || []).map((profile) => [
-      profile.id,
-      {
-        full_name: profile.full_name ?? null,
-        email: profile.email ?? null,
-      },
-    ]),
-  );
-
-  const owners = ((crmUsers || []) as CrmUserRow[])
+  const ownerFilterOptions = ((crmUsers || []) as CrmUserRow[])
     .map((u) => ({
       id: u.id,
       crm_role: u.crm_role as "ADMIN" | "MARKETER",
@@ -254,12 +229,15 @@ export default async function LeadsPage({
       created_at: u.created_at,
       updated_at: u.updated_at,
     }))
-    .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+    .sort(compareCrmUsersByDisplayName);
+
+  const { data: assignableOwners } = await getMarketers();
 
   return (
     <LeadsPageClient
       leads={leads || []}
-      owners={owners}
+      ownerFilterOptions={ownerFilterOptions}
+      assignableOwners={assignableOwners || []}
       isAdmin={isAdmin}
       currentPage={pageNumber}
       pageSize={pageSize}

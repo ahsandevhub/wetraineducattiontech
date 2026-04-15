@@ -1,3 +1,7 @@
+import {
+  compareCrmUsersByDisplayName,
+} from "@/app/dashboard/crm/lib/user-display";
+import { getCrmUserDirectoryMap } from "@/app/dashboard/crm/lib/user-directory";
 import { requireCrmAccess } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
@@ -38,28 +42,8 @@ export default async function LogsPage({
       .select("id, crm_role, created_at, updated_at")
       .in("crm_role", ["ADMIN", "MARKETER"]);
 
-    const creatorIds = (crmUsers || []).map((user) => user.id);
-    const { data: creatorProfiles } = creatorIds.length
-      ? await supabase
-          .from("profiles")
-          .select("id, full_name, email")
-          .in("id", creatorIds)
-      : {
-          data: [] as {
-            id: string;
-            full_name: string | null;
-            email: string | null;
-          }[],
-        };
-
-    const creatorProfileMap = new Map(
-      (creatorProfiles || []).map((profile) => [
-        profile.id,
-        {
-          full_name: profile.full_name ?? null,
-          email: profile.email ?? null,
-        },
-      ]),
+    const creatorProfileMap = await getCrmUserDirectoryMap(
+      (crmUsers || []).map((user) => user.id),
     );
 
     return ((crmUsers || []) as CrmUserRow[])
@@ -71,7 +55,7 @@ export default async function LogsPage({
         created_at: user.created_at,
         updated_at: user.updated_at,
       }))
-      .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
+      .sort(compareCrmUsersByDisplayName);
   };
 
   // Get CRM user ID (crm_users.id = auth.users.id)
@@ -214,22 +198,7 @@ export default async function LogsPage({
     ),
   );
 
-  const { data: profiles } = userIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", userIds)
-    : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
-
-  const profileMap = new Map(
-    (profiles || []).map((profile) => [
-      profile.id,
-      {
-        full_name: profile.full_name ?? null,
-        email: profile.email ?? null,
-      },
-    ]),
-  );
+  const profileMap = await getCrmUserDirectoryMap(userIds);
 
   const logs = (logsRaw || []).map((l) => {
     const user = l.user as {

@@ -38,6 +38,9 @@ function buildRoles(
     hasCrmAccess: false,
     hasHrmAccess: false,
     hasStoreAccess: false,
+    canAccessCrmAdmin: false,
+    canActAsCrmMarketer: false,
+    isDualCapabilityCrmUser: false,
     ...overrides,
   };
 }

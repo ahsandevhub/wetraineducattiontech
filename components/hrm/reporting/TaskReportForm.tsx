@@ -86,6 +86,22 @@ function FormFields({
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="taskTitle">Task Title</Label>
+        <Input
+          id="taskTitle"
+          value={values.taskTitle}
+          onChange={(event) =>
+            setValues((current) => ({
+              ...current,
+              taskTitle: event.target.value,
+            }))
+          }
+          placeholder="What task did you complete?"
+          disabled={pending}
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="category">Category</Label>
         <Select
           value={values.category}
@@ -105,22 +121,6 @@ function FormFields({
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="taskTitle">Task Title</Label>
-        <Input
-          id="taskTitle"
-          value={values.taskTitle}
-          onChange={(event) =>
-            setValues((current) => ({
-              ...current,
-              taskTitle: event.target.value,
-            }))
-          }
-          placeholder="What task did you complete?"
-          disabled={pending}
-        />
       </div>
 
       <div className="space-y-2">
@@ -197,17 +197,17 @@ export function TaskReportForm({
         return;
       }
 
-        toast.success(
-          mode === "create" ? "Task report created" : "Task report updated",
-        );
-        if (mode === "create") {
-          setValues(getInitialValues());
-          onOpenChange?.(false);
-        } else {
-          onOpenChange?.(false);
-        }
-        router.refresh();
-      });
+      toast.success(
+        mode === "create" ? "Task report created" : "Task report updated",
+      );
+      if (mode === "create") {
+        setValues(getInitialValues());
+        onOpenChange?.(false);
+      } else {
+        onOpenChange?.(false);
+      }
+      router.refresh();
+    });
   };
 
   const timestampLabel = formatDateTime(

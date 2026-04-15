@@ -1,5 +1,6 @@
 "use client";
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -263,7 +264,7 @@ export function LeadDialog({
                     <SelectItem value="unassigned">Unassigned</SelectItem>
                     {owners.map((ownerOption) => (
                       <SelectItem key={ownerOption.id} value={ownerOption.id}>
-                        {ownerOption.full_name || "Unknown"}
+                        {getCrmUserDisplayName(ownerOption)}
                       </SelectItem>
                     ))}
                   </SelectContent>

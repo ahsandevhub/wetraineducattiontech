@@ -1,5 +1,6 @@
 "use client";
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -30,7 +31,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { LEAD_STATUS_OPTIONS } from "../_constants/lead-status";
 
 interface LeadFiltersProps {
-  owners: { id: string; full_name: string | null }[];
+  owners: { id: string; full_name: string | null; email: string | null }[];
   isAdmin: boolean;
   onPendingChange?: (isPending: boolean) => void;
 }
@@ -238,7 +239,7 @@ export function LeadFilters({
                 <SelectItem value="unassigned">Unassigned</SelectItem>
                 {owners.map((ownerOption) => (
                   <SelectItem key={ownerOption.id} value={ownerOption.id}>
-                    {ownerOption.full_name || "Unknown"}
+                    {getCrmUserDisplayName(ownerOption)}
                   </SelectItem>
                 ))}
               </SelectContent>

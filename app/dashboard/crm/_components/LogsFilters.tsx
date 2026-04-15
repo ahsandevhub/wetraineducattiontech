@@ -1,5 +1,6 @@
 "use client";
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -29,7 +30,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 interface LogsFiltersProps {
-  creators: { id: string; full_name: string | null }[];
+  creators: { id: string; full_name: string | null; email: string | null }[];
   isAdmin: boolean;
   onPendingChange?: (isPending: boolean) => void;
 }
@@ -217,7 +218,7 @@ export function LogsFilters({
                 <SelectItem value="all">All Creators</SelectItem>
                 {creators.map((creator) => (
                   <SelectItem key={creator.id} value={creator.id}>
-                    {creator.full_name || "Unknown"}
+                    {getCrmUserDisplayName(creator)}
                   </SelectItem>
                 ))}
               </SelectContent>

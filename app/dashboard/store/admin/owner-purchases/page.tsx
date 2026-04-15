@@ -19,6 +19,8 @@ export default async function StoreOwnerPurchasesPage() {
       currentMonthKey={data.currentMonthKey}
       monthOptions={data.monthOptions}
       entries={data.entries}
+      salesByMonth={data.salesByMonth}
+      stockValuation={data.stockValuation}
       monthClosures={data.monthClosures}
     />
   );

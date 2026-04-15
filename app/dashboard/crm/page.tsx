@@ -30,8 +30,12 @@ export default async function CrmDashboardPage({
   const roles = await getCurrentUserWithRoles();
   const supabase = await createClient();
 
-  const isAdmin = roles?.crmRole === "ADMIN";
-  const isMarketer = roles?.crmRole === "MARKETER";
+  const canAccessCrmAdmin = roles?.canAccessCrmAdmin === true;
+  const canActAsCrmMarketer = roles?.canActAsCrmMarketer === true;
+  const roleLabel =
+    roles?.isDualCapabilityCrmUser
+      ? "ADMIN + MARKETER"
+      : (roles?.crmRole ?? "CRM");
 
   // Get date range from URL params
   const range = getCrmRange({
@@ -61,21 +65,21 @@ export default async function CrmDashboardPage({
         <div>
           <h1 className="text-3xl font-bold">CRM Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back, {roles?.email} ({roles?.crmRole})
+            Welcome back, {roles?.email} ({roleLabel})
           </p>
         </div>
         <CrmDateRangeSelect currentRange={range.key} />
       </div>
 
       {/* ADMIN DASHBOARD */}
-      {isAdmin && (
+      {canAccessCrmAdmin && (
         <>
           <CrmReportsPanel isAdmin={true} dateRange={range} />
         </>
       )}
 
       {/* MARKETER DASHBOARD */}
-      {isMarketer && roles?.userId && (
+      {canActAsCrmMarketer && roles?.userId && (
         <>
           {/* Fetch marketer metrics */}
           <MarketerDashboardContent
@@ -87,7 +91,7 @@ export default async function CrmDashboardPage({
       )}
 
       {/* FALLBACK / GENERIC DASHBOARD (for other roles or initial load) */}
-      {!isAdmin && !isMarketer && (
+      {!canAccessCrmAdmin && !canActAsCrmMarketer && (
         <>
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
@@ -136,7 +140,7 @@ export default async function CrmDashboardPage({
               >
                 View Leads
               </Link>
-              {isAdmin && (
+              {canAccessCrmAdmin && (
                 <Link
                   href="/dashboard/crm/admin/users"
                   className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"

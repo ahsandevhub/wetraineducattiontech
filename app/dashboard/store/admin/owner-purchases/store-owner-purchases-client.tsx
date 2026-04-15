@@ -46,10 +46,17 @@ type StoreOwnerMonthClosure = {
   closed_by_name: string | null;
 };
 
+type StoreOwnerMonthlySales = {
+  month_key: string;
+  total_amount: number;
+};
+
 type Props = {
   currentMonthKey: string;
   monthOptions: string[];
   entries: StoreOwnerPurchase[];
+  salesByMonth: StoreOwnerMonthlySales[];
+  stockValuation: number;
   monthClosures: StoreOwnerMonthClosure[];
 };
 
@@ -61,6 +68,8 @@ export function StoreOwnerPurchasesClient({
   currentMonthKey,
   monthOptions,
   entries,
+  salesByMonth,
+  stockValuation,
   monthClosures,
 }: Props) {
   const router = useRouter();
@@ -102,6 +111,9 @@ export function StoreOwnerPurchasesClient({
       (sum, entry) => sum + entry.amount,
       0,
     );
+    const salesAmount =
+      salesByMonth.find((row) => row.month_key.startsWith(monthFilter))
+        ?.total_amount ?? 0;
     const openingAmount = selectedClosure?.opening_amount ?? 0;
     const closingAmount =
       selectedClosure?.status === "CLOSED"
@@ -111,10 +123,11 @@ export function StoreOwnerPurchasesClient({
     return {
       openingAmount,
       purchasesTotal,
+      salesAmount,
       closingAmount,
       count: filteredEntries.length,
     };
-  }, [filteredEntries, selectedClosure]);
+  }, [filteredEntries, monthFilter, salesByMonth, selectedClosure]);
 
   const handleSave = async (values: StoreOwnerPurchaseFormValues) => {
     setSaving(true);
@@ -149,47 +162,50 @@ export function StoreOwnerPurchasesClient({
         <Button onClick={() => setDialogOpen(true)}>Add Owner Purchase</Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Opening Amount</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatAmount(summary.openingAmount)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">This Month Purchases</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Purchases Amount
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatAmount(summary.purchasesTotal)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Owner purchase records for the selected month
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">
-              {selectedClosure?.status === "CLOSED"
-                ? "Closing Amount"
-                : "Projected Closing"}
+              Sales Amount
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatAmount(summary.closingAmount)}
+              {formatAmount(summary.salesAmount)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Confirmed Store invoice sales for the selected month
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Entries</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Stock Valuation
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.count}</div>
+            <div className="text-2xl font-bold">
+              {formatAmount(stockValuation)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Live stock on hand valued at current selling price
+            </p>
           </CardContent>
         </Card>
       </div>

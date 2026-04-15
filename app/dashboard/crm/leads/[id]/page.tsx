@@ -2,6 +2,7 @@ import { requireCrmAccess } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { createClient } from "@/app/utils/supabase/server";
 import { notFound, redirect } from "next/navigation";
+import { getCrmUserDirectoryMap } from "../../lib/user-directory";
 import { LeadDetailClient } from "./lead-detail-client";
 
 export default async function LeadDetailPage({
@@ -83,22 +84,7 @@ export default async function LeadDetailPage({
     ]),
   );
 
-  const { data: profiles } = relatedUserIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", relatedUserIds)
-    : { data: [] as { id: string; full_name: string | null; email: string | null }[] };
-
-  const profileMap = new Map(
-    (profiles || []).map((profile) => [
-      profile.id,
-      {
-        full_name: profile.full_name ?? null,
-        email: profile.email ?? null,
-      },
-    ]),
-  );
+  const profileMap = await getCrmUserDirectoryMap(relatedUserIds);
 
   const leadWithOwner = {
     ...lead,

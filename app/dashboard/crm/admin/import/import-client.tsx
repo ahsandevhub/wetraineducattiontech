@@ -1,5 +1,6 @@
 "use client";
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,8 +64,8 @@ interface ImportProgress {
 
 interface Marketer {
   id: string;
-  full_name: string;
-  email: string;
+  full_name: string | null;
+  email: string | null;
 }
 
 interface ImportPageClientProps {
@@ -674,11 +675,13 @@ export function ImportPageClient({ marketers }: ImportPageClientProps) {
                           >
                             <div>
                               <div className="font-medium">
-                                {marketer.full_name}
+                                {getCrmUserDisplayName(marketer)}
                               </div>
-                              <div className="text-xs text-slate-500">
-                                {marketer.email}
-                              </div>
+                              {marketer.email && marketer.full_name && (
+                                <div className="text-xs text-slate-500">
+                                  {marketer.email}
+                                </div>
+                              )}
                             </div>
                           </Label>
                         </div>

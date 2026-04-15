@@ -33,6 +33,8 @@ export default async function DashboardLayout({
     <DashboardShell
       role={educationRole}
       crmRole={roles.crmRole}
+      canAccessCrmAdmin={roles.canAccessCrmAdmin}
+      canActAsCrmMarketer={roles.canActAsCrmMarketer}
       hrmRole={roles.hrmRole}
       storeRole={roles.storeRole}
       userId={roles.userId}

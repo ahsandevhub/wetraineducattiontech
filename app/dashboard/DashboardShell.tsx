@@ -11,6 +11,8 @@ type DashboardShellProps = {
   children: ReactNode;
   role: Role;
   crmRole: CrmRole | null;
+  canAccessCrmAdmin: boolean;
+  canActAsCrmMarketer: boolean;
   hrmRole: HrmRole | null;
   storeRole: StoreRole | null;
   userId: string; // Keep for future use
@@ -21,6 +23,8 @@ export default function DashboardShell({
   children,
   role,
   crmRole,
+  canAccessCrmAdmin,
+  canActAsCrmMarketer,
   hrmRole,
   storeRole,
   hasEducationAccess,
@@ -31,6 +35,8 @@ export default function DashboardShell({
       <AdminLayout
         role={role}
         crmRole={crmRole}
+        canAccessCrmAdmin={canAccessCrmAdmin}
+        canActAsCrmMarketer={canActAsCrmMarketer}
         hrmRole={hrmRole}
         storeRole={storeRole}
         hasEducationAccess={hasEducationAccess}

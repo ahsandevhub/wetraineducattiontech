@@ -18,8 +18,8 @@ export async function createLead(data: CreateLeadData) {
     return { error: "Unauthorized" };
   }
 
-  const { userId, crmRole } = userWithRoles;
-  const isAdmin = crmRole === "ADMIN";
+  const { userId, canAccessCrmAdmin } = userWithRoles;
+  const isAdmin = canAccessCrmAdmin;
   const supabaseAdmin = createAdminClient();
 
   // Normalize phone
@@ -73,8 +73,8 @@ export async function updateLead(id: string, data: UpdateLeadData) {
     return { error: "Unauthorized" };
   }
 
-  const { userId, crmRole } = userWithRoles;
-  const isAdmin = crmRole === "ADMIN";
+  const { userId, canAccessCrmAdmin } = userWithRoles;
+  const isAdmin = canAccessCrmAdmin;
   const supabaseAdmin = createAdminClient();
 
   const { data: existingLead, error: existingLeadError } = await supabaseAdmin
@@ -155,8 +155,8 @@ export async function reassignLead(leadId: string, newOwnerId: string) {
     return { error: "Unauthorized" };
   }
 
-  const { userId, crmRole } = userWithRoles;
-  const isAdmin = crmRole === "ADMIN";
+  const { userId, canAccessCrmAdmin } = userWithRoles;
+  const isAdmin = canAccessCrmAdmin;
 
   if (!userId) {
     return { error: "CRM user not found" };

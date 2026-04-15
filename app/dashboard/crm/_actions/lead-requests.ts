@@ -5,6 +5,8 @@ import type {
   CreateLeadRequestData,
   LeadRequestWithRequester,
 } from "@/app/dashboard/crm/_types";
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
+import { getCrmUserDirectoryMap } from "@/app/dashboard/crm/lib/user-directory";
 import { normalizeCrmPhone } from "@/app/dashboard/crm/lib/phone";
 import { requireCrmAccess, requireCrmAdmin } from "@/app/utils/auth/require";
 import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
@@ -21,6 +23,10 @@ export async function createLeadRequest(data: CreateLeadRequestData) {
 
   if (!userWithRoles) {
     return { error: "Unauthorized" };
+  }
+
+  if (!userWithRoles.canActAsCrmMarketer) {
+    return { error: "Only marketers can create lead requests" };
   }
 
   const { userId } = userWithRoles;
@@ -125,17 +131,7 @@ export async function listLeadRequests(options?: {
     const requesterIds = [
       ...new Set(rawData.map((r) => r.requester_id).filter(Boolean)),
     ];
-    const profileMap = new Map<
-      string,
-      { full_name: string | null; email: string | null }
-    >();
-    if (requesterIds.length > 0) {
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .in("id", requesterIds);
-      (profs || []).forEach((p) => profileMap.set(p.id, p));
-    }
+    const profileMap = await getCrmUserDirectoryMap(requesterIds);
 
     const filtered = rawData
       .filter((req) => {
@@ -145,7 +141,8 @@ export async function listLeadRequests(options?: {
         const phone = (payload.phone || "").toLowerCase();
         const email = (payload.email || "").toLowerCase();
         const company = (payload.company || "").toLowerCase();
-        const requesterName = (profile?.full_name || "").toLowerCase();
+        const requesterName = getCrmUserDisplayName(profile, "").toLowerCase();
+        const requesterEmail = (profile?.email || "").toLowerCase();
         const payloadPhoneRaw = payload.phone || "";
         const payloadPhoneDigits = String(payloadPhoneRaw).replace(/\D/g, "");
 
@@ -156,7 +153,8 @@ export async function listLeadRequests(options?: {
             payloadPhoneDigits === normalizedSearchPhone) ||
           email.includes(searchTerm) ||
           company.includes(searchTerm) ||
-          requesterName.includes(searchTerm)
+          requesterName.includes(searchTerm) ||
+          requesterEmail.includes(searchTerm)
         );
       })
       .map((req) => ({
@@ -195,17 +193,7 @@ export async function listLeadRequests(options?: {
   const requesterIds = [
     ...new Set((rawRows || []).map((r) => r.requester_id).filter(Boolean)),
   ];
-  const profileMap = new Map<
-    string,
-    { full_name: string | null; email: string | null }
-  >();
-  if (requesterIds.length > 0) {
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id, full_name, email")
-      .in("id", requesterIds);
-    (profs || []).forEach((p) => profileMap.set(p.id, p));
-  }
+  const profileMap = await getCrmUserDirectoryMap(requesterIds);
 
   const enriched = (rawRows || []).map((r) => ({
     ...r,
@@ -379,18 +367,12 @@ export async function getLeadRequest(requestId: string) {
   }
 
   // Enrich requester with profile info
-  let requesterProfile: { full_name: string | null; email: string | null } = {
-    full_name: null,
-    email: null,
-  };
-  if (data?.requester_id) {
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", data.requester_id)
-      .single();
-    if (prof) requesterProfile = prof;
-  }
+  const requesterProfile = data?.requester_id
+    ? (await getCrmUserDirectoryMap([data.requester_id])).get(data.requester_id) || {
+        full_name: null,
+        email: null,
+      }
+    : { full_name: null, email: null };
 
   const result = {
     ...data,
@@ -414,6 +396,10 @@ export async function getMyLeadRequests(options?: {
 
   if (!userWithRoles) {
     return { error: "Unauthorized", data: [] };
+  }
+
+  if (!userWithRoles.canActAsCrmMarketer) {
+    return { error: "Only marketers can view lead requests", data: [] };
   }
 
   const { userId } = userWithRoles;
@@ -477,18 +463,11 @@ export async function getMyLeadRequests(options?: {
   }
 
   // Enrich requester_id with profile (the marketer is the current user)
-  let selfProfile: { full_name: string | null; email: string | null } = {
-    full_name: null,
-    email: null,
-  };
-  if (crmUser.id) {
-    const { data: prof } = await supabase
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", crmUser.id)
-      .single();
-    if (prof) selfProfile = prof;
-  }
+  const selfProfile =
+    (await getCrmUserDirectoryMap([crmUser.id])).get(crmUser.id) || {
+      full_name: null,
+      email: null,
+    };
 
   let results = (rawRows || []).map((r) => ({
     ...r,

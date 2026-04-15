@@ -5,6 +5,7 @@
  */
 
 import { createClient } from "../supabase/server";
+import { getCrmCapabilities } from "./crm-capabilities";
 
 export type EducationRole = "customer" | "admin";
 export type CrmRole = "ADMIN" | "MARKETER";
@@ -22,6 +23,9 @@ export interface UserWithRoles {
   hasCrmAccess: boolean;
   hasHrmAccess: boolean;
   hasStoreAccess: boolean;
+  canAccessCrmAdmin: boolean;
+  canActAsCrmMarketer: boolean;
+  isDualCapabilityCrmUser: boolean;
 }
 
 function isMissingRelationError(
@@ -98,6 +102,10 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
   const hasCrmAccessFlag = crmUser !== null;
   const hasHrmAccessFlag = hrmUser !== null;
   const hasStoreAccessFlag = storeUser !== null;
+  const crmCapabilities = getCrmCapabilities({
+    userId: user.id,
+    crmRole: crmUser?.crm_role || null,
+  });
 
   return {
     userId: user.id,
@@ -110,6 +118,9 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     hasCrmAccess: hasCrmAccessFlag,
     hasHrmAccess: hasHrmAccessFlag,
     hasStoreAccess: hasStoreAccessFlag,
+    canAccessCrmAdmin: crmCapabilities.canAccessCrmAdmin,
+    canActAsCrmMarketer: crmCapabilities.canActAsCrmMarketer,
+    isDualCapabilityCrmUser: crmCapabilities.isDualCapabilityCrmUser,
   };
 }
 
@@ -160,7 +171,14 @@ export function hasAnyAccess(roles: UserWithRoles | null): boolean {
  * Check if user is CRM admin
  */
 export function isCrmAdmin(roles: UserWithRoles | null): boolean {
-  return roles?.crmRole === "ADMIN";
+  return roles?.canAccessCrmAdmin === true;
+}
+
+/**
+ * Check if user can act as CRM marketer
+ */
+export function canActAsCrmMarketer(roles: UserWithRoles | null): boolean {
+  return roles?.canActAsCrmMarketer === true;
 }
 
 /**

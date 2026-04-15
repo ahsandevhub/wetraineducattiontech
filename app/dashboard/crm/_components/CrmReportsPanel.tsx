@@ -4,6 +4,8 @@
  * Can be embedded in dashboard or shown on dedicated reports page
  */
 
+import { getCrmUserDisplayName } from "@/app/dashboard/crm/lib/user-display";
+import { getCrmUserDirectoryMap } from "@/app/dashboard/crm/lib/user-directory";
 import { getAdminChartData } from "@/app/dashboard/crm/lib/chart-data";
 import { createClient } from "@/app/utils/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -102,19 +104,7 @@ export async function CrmReportsPanel({
     ),
   );
 
-  const { data: ownerProfiles } = ownerIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", ownerIds)
-    : { data: [] as { id: string; full_name: string | null }[] };
-
-  const ownerNameMap = new Map(
-    (ownerProfiles || []).map((profile) => [
-      profile.id,
-      profile.full_name ?? null,
-    ]),
-  );
+  const ownerNameMap = await getCrmUserDirectoryMap(ownerIds);
 
   // Get marketer performance
   interface MarketerStat {
@@ -159,7 +149,9 @@ export async function CrmReportsPanel({
         ? (ownerRelation[0] ?? null)
         : ownerRelation;
       const ownerName = normalizeLabel(
-        owner?.id ? ownerNameMap.get(owner.id) ?? null : null,
+        owner?.id
+          ? getCrmUserDisplayName(ownerNameMap.get(owner.id), "Unknown")
+          : null,
         ownerId ? "Unknown" : "Unassigned",
       );
 
