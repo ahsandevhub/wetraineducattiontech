@@ -1,7 +1,10 @@
 "use server";
 
 import { requireStoreAdmin } from "@/app/utils/auth/require";
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import {
+  getCurrentUserWithRoles,
+  hasStorePermission,
+} from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import {
@@ -30,6 +33,7 @@ type StockProductRow = {
   name: string;
   sku: string | null;
   barcode: string | null;
+  image_url: string | null;
   unit_price: number;
   is_active: boolean;
   tracks_stock: boolean;
@@ -104,7 +108,9 @@ function parseStockOverviewFilters(
     movementType,
     actor: normalizeFilterValue(rawFilters.actor, "all").trim() || "all",
     page: clampPage(normalizeFilterValue(rawFilters.page, "1")),
-    pageSize: normalizePageSize(normalizeFilterValue(rawFilters.pageSize, "50")),
+    pageSize: normalizePageSize(
+      normalizeFilterValue(rawFilters.pageSize, "50"),
+    ),
   };
 }
 
@@ -186,22 +192,19 @@ export async function getStoreStockOverview(
       { data: products, error: productsError },
       { data: allMovements, error: allMovementsError },
       { data: actorRows, error: actorRowsError },
-    ] =
-      await Promise.all([
-        supabaseAdmin
-          .from("store_products")
-          .select(
-            "id, name, sku, barcode, unit_price, is_active, tracks_stock, created_at, updated_at",
-          )
-          .eq("tracks_stock", true)
-          .order("name", { ascending: true }),
-        supabaseAdmin
-          .from("store_stock_movements")
-          .select("product_id, quantity_delta"),
-        supabaseAdmin
-          .from("store_stock_movements")
-          .select("actor_user_id"),
-      ]);
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("store_products")
+        .select(
+          "id, name, sku, barcode, image_url, unit_price, is_active, tracks_stock, created_at, updated_at",
+        )
+        .eq("tracks_stock", true)
+        .order("name", { ascending: true }),
+      supabaseAdmin
+        .from("store_stock_movements")
+        .select("product_id, quantity_delta"),
+      supabaseAdmin.from("store_stock_movements").select("actor_user_id"),
+    ]);
 
     if (productsError) {
       return { data: null, error: productsError.message };
@@ -318,7 +321,8 @@ export async function getStoreStockOverview(
         }
       }
 
-      const { count: movementCount, error: movementCountError } = await countQuery;
+      const { count: movementCount, error: movementCountError } =
+        await countQuery;
 
       if (movementCountError) {
         return { data: null, error: movementCountError.message };
@@ -334,10 +338,8 @@ export async function getStoreStockOverview(
       const from = (safePage - 1) * filters.pageSize;
       const to = from + filters.pageSize - 1;
 
-      const { data: movementRows, error: movementRowsError } = await dataQuery.range(
-        from,
-        to,
-      );
+      const { data: movementRows, error: movementRowsError } =
+        await dataQuery.range(from, to);
 
       if (movementRowsError) {
         return { data: null, error: movementRowsError.message };
@@ -377,7 +379,10 @@ export async function getStoreStockOverview(
         .sort((left, right) => left.name.localeCompare(right.name)),
     ];
 
-    const totalPages = Math.max(1, Math.ceil(movementTotalRows / filters.pageSize));
+    const totalPages = Math.max(
+      1,
+      Math.ceil(movementTotalRows / filters.pageSize),
+    );
     const safePage = Math.min(filters.page, totalPages);
 
     return {
@@ -410,6 +415,10 @@ export async function recordStoreStockAction(data: StockActionInput) {
   const auth = await ensureStoreAdminAccess();
   if (auth.error || !auth.roles) {
     return { error: auth.error ?? "Not authorized" };
+  }
+
+  if (!hasStorePermission(auth.roles, "stock_manage")) {
+    return { error: "You do not have permission to manage Store stock" };
   }
 
   if (!data.productId.trim()) {

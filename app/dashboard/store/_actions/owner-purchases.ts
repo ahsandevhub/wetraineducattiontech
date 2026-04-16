@@ -1,20 +1,23 @@
 "use server";
 
 import { requireStoreAdmin } from "@/app/utils/auth/require";
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import {
+  getCurrentUserWithRoles,
+  hasStorePermission,
+} from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import {
-  getStoreOwnerMonthClosuresOverview,
-  ensureStoreOwnerPurchaseMonthSnapshot,
-  ensureStoreMonthOpen,
-} from "./month-closures";
 import {
   normalizeOptionalText,
   normalizeStoreMonthKey,
   parsePositiveMoney,
   startOfMonth,
 } from "../_lib/store-domain";
+import {
+  ensureStoreMonthOpen,
+  ensureStoreOwnerPurchaseMonthSnapshot,
+  getStoreOwnerMonthClosuresOverview,
+} from "./month-closures";
 
 type OwnerPurchaseInput = {
   purchaseDate: string;
@@ -73,29 +76,28 @@ export async function getStoreOwnerPurchasesOverview() {
       { data: stockMovements, error: stockMovementsError },
       { data: stockProducts, error: stockProductsError },
       closuresResult,
-    ] =
-      await Promise.all([
-        supabaseAdmin
-          .from("store_owner_purchases")
-          .select(
-            "id, purchase_date, month_key, title, amount, vendor, note, created_by, created_at, updated_at",
-          )
-          .order("purchase_date", { ascending: false })
-          .order("created_at", { ascending: false })
-          .limit(300),
-        supabaseAdmin
-          .from("store_invoices")
-          .select("month_key, total_amount")
-          .eq("status", "CONFIRMED"),
-        supabaseAdmin
-          .from("store_stock_movements")
-          .select("product_id, quantity_delta"),
-        supabaseAdmin
-          .from("store_products")
-          .select("id, unit_price, tracks_stock")
-          .eq("tracks_stock", true),
-        getStoreOwnerMonthClosuresOverview(),
-      ]);
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("store_owner_purchases")
+        .select(
+          "id, purchase_date, month_key, title, amount, vendor, note, created_by, created_at, updated_at",
+        )
+        .order("purchase_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(300),
+      supabaseAdmin
+        .from("store_invoices")
+        .select("month_key, total_amount")
+        .eq("status", "CONFIRMED"),
+      supabaseAdmin
+        .from("store_stock_movements")
+        .select("product_id, quantity_delta"),
+      supabaseAdmin
+        .from("store_products")
+        .select("id, unit_price, tracks_stock")
+        .eq("tracks_stock", true),
+      getStoreOwnerMonthClosuresOverview(),
+    ]);
 
     if (purchasesError) {
       return { data: null, error: purchasesError.message };
@@ -140,17 +142,19 @@ export async function getStoreOwnerPurchasesOverview() {
       (profiles ?? []).map((profile) => [profile.id, profile]),
     );
 
-    const entries: StoreOwnerPurchaseRow[] = (purchases ?? []).map((purchase) => {
-      const actor = purchase.created_by
-        ? profileMap.get(purchase.created_by)
-        : null;
+    const entries: StoreOwnerPurchaseRow[] = (purchases ?? []).map(
+      (purchase) => {
+        const actor = purchase.created_by
+          ? profileMap.get(purchase.created_by)
+          : null;
 
-      return {
-        ...purchase,
-        amount: Number(purchase.amount),
-        actor_name: actor?.full_name || actor?.email || "System",
-      };
-    });
+        return {
+          ...purchase,
+          amount: Number(purchase.amount),
+          actor_name: actor?.full_name || actor?.email || "System",
+        };
+      },
+    );
 
     const salesByMonth = Object.values(
       ((confirmedInvoices ?? []) as StoreOwnerInvoiceSummaryRow[]).reduce<
@@ -171,24 +175,30 @@ export async function getStoreOwnerPurchasesOverview() {
       }))
       .sort((left, right) => right.month_key.localeCompare(left.month_key));
 
-    const onHandByProduct = ((stockMovements ?? []) as {
-      product_id: string;
-      quantity_delta: number;
-    }[]).reduce<Record<string, number>>((acc, movement) => {
+    const onHandByProduct = (
+      (stockMovements ?? []) as {
+        product_id: string;
+        quantity_delta: number;
+      }[]
+    ).reduce<Record<string, number>>((acc, movement) => {
       acc[movement.product_id] =
         (acc[movement.product_id] ?? 0) + Number(movement.quantity_delta ?? 0);
       return acc;
     }, {});
 
     const stockValuation = Number(
-      ((stockProducts ?? []) as {
-        id: string;
-        unit_price: number;
-        tracks_stock: boolean;
-      }[]).reduce((sum, product) => {
-        const onHand = onHandByProduct[product.id] ?? 0;
-        return sum + onHand * Number(product.unit_price ?? 0);
-      }, 0).toFixed(2),
+      (
+        (stockProducts ?? []) as {
+          id: string;
+          unit_price: number;
+          tracks_stock: boolean;
+        }[]
+      )
+        .reduce((sum, product) => {
+          const onHand = onHandByProduct[product.id] ?? 0;
+          return sum + onHand * Number(product.unit_price ?? 0);
+        }, 0)
+        .toFixed(2),
     );
 
     const monthOptions = Array.from(
@@ -196,7 +206,9 @@ export async function getStoreOwnerPurchasesOverview() {
         [currentMonthKey]
           .concat(entries.map((entry) => entry.month_key))
           .concat(salesByMonth.map((row) => row.month_key))
-          .concat((closuresResult.data ?? []).map((closure) => closure.month_key)),
+          .concat(
+            (closuresResult.data ?? []).map((closure) => closure.month_key),
+          ),
       ),
     ).sort((left, right) => right.localeCompare(left));
 
@@ -225,6 +237,10 @@ export async function createStoreOwnerPurchase(data: OwnerPurchaseInput) {
     return { error: auth.error ?? "Not authorized" };
   }
 
+  if (!hasStorePermission(auth.roles, "owner_purchase_manage")) {
+    return { error: "You do not have permission to manage owner purchases" };
+  }
+
   const title = data.title.trim();
   if (!title) {
     return { error: "Title is required" };
@@ -235,7 +251,8 @@ export async function createStoreOwnerPurchase(data: OwnerPurchaseInput) {
     return { error: parsedAmount.error ?? "Invalid amount" };
   }
 
-  const purchaseDate = data.purchaseDate || new Date().toISOString().slice(0, 10);
+  const purchaseDate =
+    data.purchaseDate || new Date().toISOString().slice(0, 10);
   const effectiveMonth = data.monthKey
     ? normalizeStoreMonthKey(data.monthKey)
     : startOfMonth(purchaseDate);
@@ -279,6 +296,154 @@ export async function createStoreOwnerPurchase(data: OwnerPurchaseInput) {
       note: normalizeOptionalText(data.note),
       created_by: auth.roles.userId,
     });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath("/dashboard/store/admin");
+    revalidatePath("/dashboard/store/admin/owner-purchases");
+    return { error: null };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function updateStoreOwnerPurchase(
+  id: string,
+  data: OwnerPurchaseInput,
+) {
+  const auth = await ensureStoreAdminAccess();
+  if (auth.error || !auth.roles) {
+    return { error: auth.error ?? "Not authorized" };
+  }
+
+  if (!hasStorePermission(auth.roles, "owner_purchase_manage")) {
+    return { error: "You do not have permission to manage owner purchases" };
+  }
+
+  const title = data.title.trim();
+  if (!title) {
+    return { error: "Title is required" };
+  }
+
+  const parsedAmount = parsePositiveMoney(data.amount);
+  if (parsedAmount.error || parsedAmount.value === null) {
+    return { error: parsedAmount.error ?? "Invalid amount" };
+  }
+
+  const purchaseDate =
+    data.purchaseDate || new Date().toISOString().slice(0, 10);
+  const effectiveMonth = data.monthKey
+    ? normalizeStoreMonthKey(data.monthKey)
+    : startOfMonth(purchaseDate);
+
+  if (!effectiveMonth) {
+    return { error: "A valid month is required" };
+  }
+
+  const derivedMonthFromDate = startOfMonth(purchaseDate);
+  if (!derivedMonthFromDate) {
+    return { error: "Purchase date is invalid" };
+  }
+
+  if (derivedMonthFromDate !== effectiveMonth) {
+    return {
+      error: "Purchase date and selected month must belong to the same month",
+    };
+  }
+
+  const supabaseAdmin = createAdminClient();
+
+  try {
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("store_owner_purchases")
+      .select("id, month_key")
+      .eq("id", id)
+      .single();
+
+    if (existingError) {
+      return { error: existingError.message };
+    }
+
+    const currentMonthStatus = await ensureStoreMonthOpen(existing.month_key);
+    if (currentMonthStatus.error) {
+      return { error: currentMonthStatus.error };
+    }
+
+    const targetMonthStatus = await ensureStoreMonthOpen(effectiveMonth);
+    if (targetMonthStatus.error) {
+      return { error: targetMonthStatus.error };
+    }
+
+    const snapshotResult = await ensureStoreOwnerPurchaseMonthSnapshot(
+      effectiveMonth,
+      supabaseAdmin,
+    );
+    if (snapshotResult.error) {
+      return { error: snapshotResult.error };
+    }
+
+    const { error } = await supabaseAdmin
+      .from("store_owner_purchases")
+      .update({
+        purchase_date: purchaseDate,
+        month_key: effectiveMonth,
+        title,
+        amount: parsedAmount.value,
+        vendor: normalizeOptionalText(data.vendor),
+        note: normalizeOptionalText(data.note),
+      })
+      .eq("id", id);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath("/dashboard/store/admin");
+    revalidatePath("/dashboard/store/admin/owner-purchases");
+    return { error: null };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function deleteStoreOwnerPurchase(id: string) {
+  const auth = await ensureStoreAdminAccess();
+  if (auth.error || !auth.roles) {
+    return { error: auth.error ?? "Not authorized" };
+  }
+
+  if (!hasStorePermission(auth.roles, "owner_purchase_manage")) {
+    return { error: "You do not have permission to manage owner purchases" };
+  }
+
+  const supabaseAdmin = createAdminClient();
+
+  try {
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("store_owner_purchases")
+      .select("id, month_key")
+      .eq("id", id)
+      .single();
+
+    if (existingError) {
+      return { error: existingError.message };
+    }
+
+    const monthStatus = await ensureStoreMonthOpen(existing.month_key);
+    if (monthStatus.error) {
+      return { error: monthStatus.error };
+    }
+
+    const { error } = await supabaseAdmin
+      .from("store_owner_purchases")
+      .delete()
+      .eq("id", id);
 
     if (error) {
       return { error: error.message };

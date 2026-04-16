@@ -21,8 +21,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatStoreDateTime } from "../../_lib/date-format";
 import { Minus, PencilLine, Plus } from "lucide-react";
+import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
@@ -33,6 +33,7 @@ import {
 } from "react";
 import { toast } from "react-hot-toast";
 import { recordStoreStockAction } from "../../_actions/stocks";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import StoreStockActionDialog, {
   type StockActionFormValues,
 } from "../_components/StoreStockActionDialog";
@@ -42,6 +43,7 @@ type StockProduct = {
   name: string;
   sku: string | null;
   barcode: string | null;
+  image_url: string | null;
   unit_price: number;
   is_active: boolean;
   tracks_stock: boolean;
@@ -90,6 +92,7 @@ type StoreStocksClientProps = {
     id: string;
     name: string;
   }>;
+  canManageStock: boolean;
 };
 
 type DialogState = {
@@ -122,6 +125,7 @@ export function StoreStocksClient({
   movementPage,
   movementFilters,
   movementActors,
+  canManageStock,
 }: StoreStocksClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -344,7 +348,7 @@ export function StoreStocksClient({
                   setInventorySearch(event.target.value);
                   setInventoryPage(1);
                 }}
-                placeholder="Search by name or barcode"
+                placeholder="Search by name, SKU, or barcode"
                 className="w-full md:max-w-sm"
               />
             </CardHeader>
@@ -375,8 +379,32 @@ export function StoreStocksClient({
                     ) : (
                       paginatedProducts.map((product) => (
                         <TableRow key={product.id}>
-                          <TableCell className="font-medium">
-                            {product.name}
+                          <TableCell className="min-w-[220px]">
+                            <div className="flex items-center gap-3">
+                              <div className="relative h-10 w-10 overflow-hidden rounded-md border bg-muted">
+                                {product.image_url ? (
+                                  <Image
+                                    src={product.image_url}
+                                    alt={product.name}
+                                    fill
+                                    sizes="40px"
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                                    No image
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-medium">
+                                  {product.name}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {product.sku ?? "No SKU"}
+                                </div>
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>{product.barcode ?? "—"}</TableCell>
                           <TableCell>
@@ -398,48 +426,54 @@ export function StoreStocksClient({
                             </Badge>
                           </TableCell>
                           <TableCell className="space-x-2 text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setDialogState({
-                                  open: true,
-                                  initialProductId: product.id,
-                                  initialActionType: "RESTOCK",
-                                })
-                              }
-                              disabled={loading}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setDialogState({
-                                  open: true,
-                                  initialProductId: product.id,
-                                  initialActionType: "DEDUCT",
-                                })
-                              }
-                              disabled={loading}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setDialogState({
-                                  open: true,
-                                  initialProductId: product.id,
-                                  initialActionType: "ADJUST",
-                                })
-                              }
-                              disabled={loading}
-                            >
-                              <PencilLine className="h-4 w-4" />
-                            </Button>
+                            {canManageStock ? (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setDialogState({
+                                      open: true,
+                                      initialProductId: product.id,
+                                      initialActionType: "RESTOCK",
+                                    })
+                                  }
+                                  disabled={loading}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setDialogState({
+                                      open: true,
+                                      initialProductId: product.id,
+                                      initialActionType: "DEDUCT",
+                                    })
+                                  }
+                                  disabled={loading}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setDialogState({
+                                      open: true,
+                                      initialProductId: product.id,
+                                      initialActionType: "ADJUST",
+                                    })
+                                  }
+                                  disabled={loading}
+                                >
+                                  <PencilLine className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <Badge variant="secondary">Read only</Badge>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))

@@ -1,7 +1,10 @@
 "use server";
 
 import { requireStoreAdmin } from "@/app/utils/auth/require";
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import {
+  getCurrentUserWithRoles,
+  hasStorePermission,
+} from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import {
@@ -14,6 +17,7 @@ type StoreProductRow = {
   name: string;
   sku: string | null;
   barcode: string | null;
+  image_url: string | null;
   unit_price: number;
   is_active: boolean;
   tracks_stock: boolean;
@@ -86,7 +90,7 @@ export async function getAllStoreProducts() {
     const { data, error } = await supabaseAdmin
       .from("store_products")
       .select(
-        "id, name, sku, barcode, unit_price, is_active, tracks_stock, created_at, updated_at, created_by, updated_by",
+        "id, name, sku, barcode, image_url, unit_price, is_active, tracks_stock, created_at, updated_at, created_by, updated_by",
       )
       .order("created_at", { ascending: false });
 
@@ -107,6 +111,10 @@ export async function createStoreProduct(data: ProductFormData) {
   const auth = await ensureStoreAdminAccess();
   if (auth.error || !auth.roles) {
     return { error: auth.error ?? "Not authorized" };
+  }
+
+  if (!hasStorePermission(auth.roles, "product_manage")) {
+    return { error: "You do not have permission to manage Store products" };
   }
 
   const built = buildProductPayload(auth.roles.userId, data, "create");
@@ -149,6 +157,10 @@ export async function updateStoreProduct(
   const auth = await ensureStoreAdminAccess();
   if (auth.error || !auth.roles) {
     return { error: auth.error ?? "Not authorized" };
+  }
+
+  if (!hasStorePermission(auth.roles, "product_manage")) {
+    return { error: "You do not have permission to manage Store products" };
   }
 
   const built = buildProductPayload(auth.roles.userId, data, "update");
@@ -205,6 +217,10 @@ export async function deleteStoreProduct(productId: string) {
     return { error: auth.error ?? "Not authorized" };
   }
 
+  if (!hasStorePermission(auth.roles, "product_manage")) {
+    return { error: "You do not have permission to manage Store products" };
+  }
+
   try {
     const supabaseAdmin = createAdminClient();
     const { data: product, error: productError } = await supabaseAdmin
@@ -221,21 +237,24 @@ export async function deleteStoreProduct(productId: string) {
       return { error: "Product not found" };
     }
 
-    const [{ count: invoiceItemCount, error: invoiceItemError }, { count: stockEntryCount, error: stockEntryError }, { count: stockMovementCount, error: stockMovementError }] =
-      await Promise.all([
-        supabaseAdmin
-          .from("store_invoice_items")
-          .select("*", { count: "exact", head: true })
-          .eq("product_id", productId),
-        supabaseAdmin
-          .from("store_stock_entries")
-          .select("*", { count: "exact", head: true })
-          .eq("product_id", productId),
-        supabaseAdmin
-          .from("store_stock_movements")
-          .select("*", { count: "exact", head: true })
-          .eq("product_id", productId),
-      ]);
+    const [
+      { count: invoiceItemCount, error: invoiceItemError },
+      { count: stockEntryCount, error: stockEntryError },
+      { count: stockMovementCount, error: stockMovementError },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("store_invoice_items")
+        .select("*", { count: "exact", head: true })
+        .eq("product_id", productId),
+      supabaseAdmin
+        .from("store_stock_entries")
+        .select("*", { count: "exact", head: true })
+        .eq("product_id", productId),
+      supabaseAdmin
+        .from("store_stock_movements")
+        .select("*", { count: "exact", head: true })
+        .eq("product_id", productId),
+    ]);
 
     if (invoiceItemError || stockEntryError || stockMovementError) {
       return {
@@ -247,7 +266,11 @@ export async function deleteStoreProduct(productId: string) {
       };
     }
 
-    if ((invoiceItemCount ?? 0) > 0 || (stockEntryCount ?? 0) > 0 || (stockMovementCount ?? 0) > 0) {
+    if (
+      (invoiceItemCount ?? 0) > 0 ||
+      (stockEntryCount ?? 0) > 0 ||
+      (stockMovementCount ?? 0) > 0
+    ) {
       return {
         error:
           "This product already has purchase or stock history. Mark it inactive instead of deleting it.",

@@ -1,7 +1,10 @@
 "use server";
 
 import { requireStoreAdmin } from "@/app/utils/auth/require";
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import {
+  getCurrentUserWithRoles,
+  hasStorePermission,
+} from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import {
@@ -61,7 +64,9 @@ export async function getStoreMonthStatus(monthKey: string) {
   const supabaseAdmin = createAdminClient();
   const { data, error } = await supabaseAdmin
     .from("store_month_closures")
-    .select("id, month_key, status, opening_balance, closing_balance, closed_at, closed_by, note")
+    .select(
+      "id, month_key, status, opening_balance, closing_balance, closed_at, closed_by, note",
+    )
     .eq("month_key", normalizedMonth)
     .maybeSingle();
 
@@ -216,20 +221,24 @@ export async function getStoreMonthClosuresOverview() {
       (profiles ?? []).map((profile) => [profile.id, profile]),
     );
 
-    const monthClosures: StoreMonthClosureRow[] = (closures ?? []).map((closure) => {
-      const actor = closure.closed_by ? profileMap.get(closure.closed_by) : null;
+    const monthClosures: StoreMonthClosureRow[] = (closures ?? []).map(
+      (closure) => {
+        const actor = closure.closed_by
+          ? profileMap.get(closure.closed_by)
+          : null;
 
-      return {
-        ...closure,
-        status: closure.status as StoreMonthStatus,
-        opening_balance: Number(closure.opening_balance ?? 0),
-        closing_balance:
-          closure.closing_balance === null
-            ? null
-            : Number(closure.closing_balance),
-        closed_by_name: actor?.full_name || actor?.email || null,
-      };
-    });
+        return {
+          ...closure,
+          status: closure.status as StoreMonthStatus,
+          opening_balance: Number(closure.opening_balance ?? 0),
+          closing_balance:
+            closure.closing_balance === null
+              ? null
+              : Number(closure.closing_balance),
+          closed_by_name: actor?.full_name || actor?.email || null,
+        };
+      },
+    );
 
     return { data: monthClosures, error: null };
   } catch (error) {
@@ -285,14 +294,18 @@ export async function getStoreOwnerMonthClosuresOverview() {
 
     const monthClosures: StoreOwnerMonthClosureRow[] = (closures ?? []).map(
       (closure) => {
-        const actor = closure.closed_by ? profileMap.get(closure.closed_by) : null;
+        const actor = closure.closed_by
+          ? profileMap.get(closure.closed_by)
+          : null;
 
         return {
           ...closure,
           status: closure.status as StoreMonthStatus,
           opening_amount: Number(closure.opening_amount ?? 0),
           closing_amount:
-            closure.closing_amount === null ? null : Number(closure.closing_amount),
+            closure.closing_amount === null
+              ? null
+              : Number(closure.closing_amount),
           closed_by_name: actor?.full_name || actor?.email || null,
         };
       },
@@ -322,10 +335,11 @@ async function closeStoreOwnerPurchaseMonth(
     return { error: snapshotResult.error ?? "Unable to prepare owner month" };
   }
 
-  const { data: ownerPurchases, error: ownerPurchasesError } = await supabaseAdmin
-    .from("store_owner_purchases")
-    .select("amount")
-    .eq("month_key", monthKey);
+  const { data: ownerPurchases, error: ownerPurchasesError } =
+    await supabaseAdmin
+      .from("store_owner_purchases")
+      .select("amount")
+      .eq("month_key", monthKey);
 
   if (ownerPurchasesError) {
     return { error: ownerPurchasesError.message };
@@ -408,6 +422,10 @@ export async function closeStoreMonth(data: CloseStoreMonthInput) {
     return { error: auth.error ?? "Not authorized" };
   }
 
+  if (!hasStorePermission(auth.roles, "balance_add")) {
+    return { error: "You do not have permission to close Store months" };
+  }
+
   const range = getMonthRange(data.monthKey);
   if (!range) {
     return { error: "A valid month is required" };
@@ -415,31 +433,36 @@ export async function closeStoreMonth(data: CloseStoreMonthInput) {
 
   const supabaseAdmin = createAdminClient();
 
-  const { data: existingClosure, error: existingClosureError } = await supabaseAdmin
-    .from("store_month_closures")
-    .select("id, status")
-    .eq("month_key", range.monthKey)
-    .maybeSingle();
+  const { data: existingClosure, error: existingClosureError } =
+    await supabaseAdmin
+      .from("store_month_closures")
+      .select("id, status")
+      .eq("month_key", range.monthKey)
+      .maybeSingle();
 
   if (existingClosureError) {
     return { error: existingClosureError.message };
   }
 
   if (existingClosure?.status === "CLOSED") {
-    return { error: `The month ${range.monthKey.slice(0, 7)} is already closed` };
+    return {
+      error: `The month ${range.monthKey.slice(0, 7)} is already closed`,
+    };
   }
 
-  const [{ data: openingRows, error: openingError }, { data: closingRows, error: closingError }] =
-    await Promise.all([
-      supabaseAdmin
-        .from("store_account_entries")
-        .select("amount")
-        .lt("entry_date", range.startDate),
-      supabaseAdmin
-        .from("store_account_entries")
-        .select("amount")
-        .lte("entry_date", range.endDate),
-    ]);
+  const [
+    { data: openingRows, error: openingError },
+    { data: closingRows, error: closingError },
+  ] = await Promise.all([
+    supabaseAdmin
+      .from("store_account_entries")
+      .select("amount")
+      .lt("entry_date", range.startDate),
+    supabaseAdmin
+      .from("store_account_entries")
+      .select("amount")
+      .lte("entry_date", range.endDate),
+  ]);
 
   if (openingError) {
     return { error: openingError.message };
@@ -482,11 +505,12 @@ export async function closeStoreMonth(data: CloseStoreMonthInput) {
     return { error: closeError.message };
   }
 
-  const { data: nextMonthClosure, error: nextMonthLookupError } = await supabaseAdmin
-    .from("store_month_closures")
-    .select("id, status")
-    .eq("month_key", range.nextMonthKey)
-    .maybeSingle();
+  const { data: nextMonthClosure, error: nextMonthLookupError } =
+    await supabaseAdmin
+      .from("store_month_closures")
+      .select("id, status")
+      .eq("month_key", range.nextMonthKey)
+      .maybeSingle();
 
   if (nextMonthLookupError) {
     return { error: nextMonthLookupError.message };

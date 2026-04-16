@@ -23,8 +23,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatStoreDateTime } from "../../_lib/date-format";
 import { Edit, Loader2, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -33,6 +33,7 @@ import {
   deleteStoreProduct,
   updateStoreProduct,
 } from "../../_actions/products";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import StoreProductDialog, {
   type StoreProduct,
   type StoreProductFormValues,
@@ -40,6 +41,7 @@ import StoreProductDialog, {
 
 type StoreProductsClientProps = {
   products: StoreProduct[];
+  canManageProducts: boolean;
 };
 
 function formatPrice(amount: number) {
@@ -52,6 +54,7 @@ function formatPrice(amount: number) {
 
 export function StoreProductsClient({
   products: initialProducts,
+  canManageProducts,
 }: StoreProductsClientProps) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
@@ -172,12 +175,18 @@ export function StoreProductsClient({
             Manage sellable cafeteria items, pricing, and product availability.
           </p>
         </div>
-        <StoreProductDialog
-          open={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
-          isSaving={loading}
-          onSave={handleCreateProduct}
-        />
+        {canManageProducts ? (
+          <StoreProductDialog
+            open={isAddDialogOpen}
+            onOpenChange={setIsAddDialogOpen}
+            isSaving={loading}
+            onSave={handleCreateProduct}
+          />
+        ) : (
+          <div className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+            Read-only access
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -222,7 +231,7 @@ export function StoreProductsClient({
               setSearch(event.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Search by name or barcode"
+            placeholder="Search by name, SKU, or barcode"
             className="w-full md:max-w-md"
           />
         </CardHeader>
@@ -255,8 +264,30 @@ export function StoreProductsClient({
                 ) : (
                   paginatedProducts.map((product) => (
                     <TableRow key={product.id}>
-                      <TableCell className="font-medium">
-                        {product.name}
+                      <TableCell className="min-w-[220px]">
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-10 w-10 overflow-hidden rounded-md border bg-muted">
+                            {product.image_url ? (
+                              <Image
+                                src={product.image_url}
+                                alt={product.name}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                                No image
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {product.sku ?? "No SKU"}
+                            </div>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell>{formatPrice(product.unit_price)}</TableCell>
                       <TableCell>{product.barcode ?? "—"}</TableCell>
@@ -280,28 +311,34 @@ export function StoreProductsClient({
                         {formatStoreDateTime(product.updated_at)}
                       </TableCell>
                       <TableCell className="space-x-2 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedProduct(product);
-                            setIsEditDialogOpen(true);
-                          }}
-                          disabled={loading}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedProduct(product);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          disabled={loading}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
+                        {canManageProducts ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setIsEditDialogOpen(true);
+                              }}
+                              disabled={loading}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                              disabled={loading}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </>
+                        ) : (
+                          <Badge variant="secondary">Read only</Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

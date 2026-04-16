@@ -1,5 +1,7 @@
 "use client";
 
+import { ImageUpload } from "@/app/dashboard/admin/_components/ImageUpload";
+import { StoreBarcodeScannerDialog } from "@/app/dashboard/store/_components/StoreBarcodeScannerDialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,7 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { StoreBarcodeScannerDialog } from "@/app/dashboard/store/_components/StoreBarcodeScannerDialog";
 import { Loader2, Plus, ScanBarcode } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -21,6 +22,7 @@ export type StoreProductFormValues = {
   name: string;
   sku: string;
   barcode: string;
+  imageUrl: string;
   unitPrice: string;
   isActive: boolean;
   tracksStock: boolean;
@@ -31,6 +33,7 @@ export type StoreProduct = {
   name: string;
   sku: string | null;
   barcode: string | null;
+  image_url: string | null;
   unit_price: number;
   is_active: boolean;
   tracks_stock: boolean;
@@ -62,6 +65,7 @@ export default function StoreProductDialog({
       name: product?.name ?? "",
       sku: product?.sku ?? "",
       barcode: product?.barcode ?? "",
+      imageUrl: product?.image_url ?? "",
       unitPrice:
         product?.unit_price === undefined || product.unit_price === null
           ? ""
@@ -187,6 +191,25 @@ export default function StoreProductDialog({
               disabled={isSaving}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <ImageUpload
+              label="Product Image"
+              bucket="store-products"
+              folder="products"
+              currentUrl={values.imageUrl || undefined}
+              isLoading={isSaving}
+              onUpload={(url) =>
+                setValues((prev) => ({
+                  ...prev,
+                  imageUrl: url,
+                }))
+              }
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional. Upload one product image for the catalog preview.
+            </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

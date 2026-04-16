@@ -1,11 +1,18 @@
 "use server";
 
-import { requireStoreAccess, requireStoreAdmin } from "@/app/utils/auth/require";
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import {
+  requireStoreAccess,
+  requireStoreAdmin,
+} from "@/app/utils/auth/require";
+import {
+  getCurrentUserWithRoles,
+  hasStorePermission,
+} from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import {
   buildStoreInvoiceReversalReason,
+  buildStoreLowBalanceMessage,
   normalizeDraftItems,
   type InvoiceDraftItemInput,
 } from "../_lib/store-domain";
@@ -22,6 +29,7 @@ type StoreInvoiceProduct = {
   name: string;
   sku: string | null;
   barcode: string | null;
+  image_url: string | null;
   unit_price: number;
   tracks_stock: boolean;
   stock_quantity: number | null;
@@ -98,21 +106,21 @@ export async function getStoreInvoiceBuilderData() {
       { data: balanceRows, error: balanceError },
       { data: profile, error: profileError },
     ] = await Promise.all([
-        supabaseAdmin
-          .from("store_products")
-          .select("id, name, sku, barcode, unit_price, tracks_stock")
-          .eq("is_active", true)
-          .order("name", { ascending: true }),
-        supabaseAdmin
-          .from("store_account_entries")
-          .select("amount")
-          .eq("user_id", auth.roles.userId),
-        supabaseAdmin
-          .from("profiles")
-          .select("full_name, email")
-          .eq("id", auth.roles.userId)
-          .maybeSingle(),
-      ]);
+      supabaseAdmin
+        .from("store_products")
+        .select("id, name, sku, barcode, image_url, unit_price, tracks_stock")
+        .eq("is_active", true)
+        .order("name", { ascending: true }),
+      supabaseAdmin
+        .from("store_account_entries")
+        .select("amount")
+        .eq("user_id", auth.roles.userId),
+      supabaseAdmin
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", auth.roles.userId)
+        .maybeSingle(),
+    ]);
 
     if (productsError) {
       return { data: null, error: productsError.message };
@@ -158,21 +166,21 @@ export async function getStoreInvoiceBuilderData() {
 
     const customer: StoreInvoiceCustomer = {
       name:
-        profile?.full_name?.trim() ||
-        profile?.email?.trim() ||
-        "Store User",
+        profile?.full_name?.trim() || profile?.email?.trim() || "Store User",
       email: profile?.email?.trim() || null,
     };
 
     return {
       data: {
-        products: ((products ?? []) as StoreInvoiceProduct[]).map((product) => ({
-          ...product,
-          unit_price: Number(product.unit_price),
-          stock_quantity: product.tracks_stock
-            ? stockMap.get(product.id) ?? 0
-            : null,
-        })),
+        products: ((products ?? []) as StoreInvoiceProduct[]).map(
+          (product) => ({
+            ...product,
+            unit_price: Number(product.unit_price),
+            stock_quantity: product.tracks_stock
+              ? (stockMap.get(product.id) ?? 0)
+              : null,
+          }),
+        ),
         currentBalance: Number(currentBalance.toFixed(2)),
         customer,
       },
@@ -194,7 +202,9 @@ export async function createStoreInvoice(data: CreateStoreInvoiceInput) {
 
   const normalized = normalizeDraftItems(data.items);
   if (normalized.error || !normalized.items || normalized.items.length === 0) {
-    return { error: normalized.error ?? "Add at least one item to the invoice" };
+    return {
+      error: normalized.error ?? "Add at least one item to the invoice",
+    };
   }
 
   const userId = auth.roles.userId;
@@ -210,7 +220,9 @@ export async function createStoreInvoice(data: CreateStoreInvoiceInput) {
     return { error: productsError.message };
   }
 
-  const productMap = new Map((products ?? []).map((product) => [product.id, product]));
+  const productMap = new Map(
+    (products ?? []).map((product) => [product.id, product]),
+  );
 
   for (const item of normalized.items) {
     const product = productMap.get(item.productId);
@@ -270,11 +282,36 @@ export async function createStoreInvoice(data: CreateStoreInvoiceInput) {
     return sum + Number(product?.unit_price ?? 0) * item.quantity;
   }, 0);
 
+  const { data: balanceRows, error: balanceError } = await supabaseAdmin
+    .from("store_account_entries")
+    .select("amount")
+    .eq("user_id", userId);
+
+  if (balanceError) {
+    return { error: balanceError.message };
+  }
+
+  const currentBalance = (balanceRows ?? []).reduce(
+    (sum, row) => sum + Number(row.amount ?? 0),
+    0,
+  );
+
+  const lowBalanceMessage = buildStoreLowBalanceMessage(
+    currentBalance,
+    totalAmount,
+  );
+
+  if (lowBalanceMessage) {
+    return { error: lowBalanceMessage };
+  }
+
   let createdInvoiceId: string | null = null;
   let createdEntryId: string | null = null;
-  let createdInvoiceItems:
-    | Array<{ id: string; product_id: string; quantity: number }>
-    | null = null;
+  let createdInvoiceItems: Array<{
+    id: string;
+    product_id: string;
+    quantity: number;
+  }> | null = null;
 
   try {
     const { data: invoice, error: invoiceError } = await supabaseAdmin
@@ -390,7 +427,10 @@ export async function createStoreInvoice(data: CreateStoreInvoiceInput) {
     }
 
     if (createdInvoiceId) {
-      await supabaseAdmin.from("store_invoices").delete().eq("id", createdInvoiceId);
+      await supabaseAdmin
+        .from("store_invoices")
+        .delete()
+        .eq("id", createdInvoiceId);
     }
 
     return {
@@ -462,7 +502,9 @@ export async function getStoreAdminInvoiceHistory() {
     const itemMap = new Map<string, StoreAdminInvoiceItem[]>();
 
     for (const item of invoiceItems ?? []) {
-      const product = Array.isArray(item.product) ? item.product[0] : item.product;
+      const product = Array.isArray(item.product)
+        ? item.product[0]
+        : item.product;
       const mappedItem: StoreAdminInvoiceItem = {
         id: item.id,
         product_id: item.product_id,
@@ -515,6 +557,10 @@ export async function reverseStoreInvoice(data: ReverseStoreInvoiceInput) {
   const auth = await getCurrentUserForStoreAdminAction();
   if (auth.error || !auth.roles) {
     return { error: auth.error ?? "Not authorized" };
+  }
+
+  if (!hasStorePermission(auth.roles, "invoice_manage")) {
+    return { error: "You do not have permission to manage Store invoices" };
   }
 
   const invoiceId = data.invoiceId.trim();
@@ -597,14 +643,15 @@ export async function reverseStoreInvoice(data: ReverseStoreInvoiceInput) {
 
   const invoiceItemIds = (invoiceItems ?? []).map((item) => item.id);
 
-  const { data: saleMovements, error: saleMovementsError } = invoiceItemIds.length
-    ? await supabaseAdmin
-        .from("store_stock_movements")
-        .select("id, product_id, invoice_item_id, quantity_delta")
-        .in("invoice_item_id", invoiceItemIds)
-        .eq("movement_type", "SALE")
-        .is("reversed_from_movement_id", null)
-    : { data: [], error: null };
+  const { data: saleMovements, error: saleMovementsError } =
+    invoiceItemIds.length
+      ? await supabaseAdmin
+          .from("store_stock_movements")
+          .select("id, product_id, invoice_item_id, quantity_delta")
+          .in("invoice_item_id", invoiceItemIds)
+          .eq("movement_type", "SALE")
+          .is("reversed_from_movement_id", null)
+      : { data: [], error: null };
 
   if (saleMovementsError) {
     return { error: saleMovementsError.message };
@@ -642,21 +689,22 @@ export async function reverseStoreInvoice(data: ReverseStoreInvoiceInput) {
   let createdStockReversalIds: string[] = [];
 
   try {
-    const { data: reversalEntry, error: reversalEntryError } = await supabaseAdmin
-      .from("store_account_entries")
-      .insert({
-        user_id: invoice.user_id,
-        entry_date: now.slice(0, 10),
-        month_key: now.slice(0, 7) + "-01",
-        amount: Number(reversalAmount.toFixed(2)),
-        category: "REVERSAL",
-        reason: reversalReason,
-        invoice_id: invoiceId,
-        reversed_from_entry_id: purchaseEntry.id,
-        created_by: auth.roles.userId,
-      })
-      .select("id")
-      .single();
+    const { data: reversalEntry, error: reversalEntryError } =
+      await supabaseAdmin
+        .from("store_account_entries")
+        .insert({
+          user_id: invoice.user_id,
+          entry_date: now.slice(0, 10),
+          month_key: now.slice(0, 7) + "-01",
+          amount: Number(reversalAmount.toFixed(2)),
+          category: "REVERSAL",
+          reason: reversalReason,
+          invoice_id: invoiceId,
+          reversed_from_entry_id: purchaseEntry.id,
+          created_by: auth.roles.userId,
+        })
+        .select("id")
+        .single();
 
     if (reversalEntryError) {
       throw new Error(reversalEntryError.message);

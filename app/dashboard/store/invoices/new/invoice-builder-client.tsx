@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
+  AlertTriangle,
   Check,
   CheckCircle,
   ChevronsUpDown,
@@ -51,12 +52,14 @@ import { toast } from "react-hot-toast";
 import { createStoreInvoice } from "../../_actions/invoices";
 import { StoreBarcodeScannerDialog } from "../../_components/StoreBarcodeScannerDialog";
 import { formatStoreDateTime } from "../../_lib/date-format";
+import { buildStoreLowBalanceMessage } from "../../_lib/store-domain";
 
 type StoreInvoiceProduct = {
   id: string;
   name: string;
   sku: string | null;
   barcode: string | null;
+  image_url: string | null;
   unit_price: number;
   tracks_stock: boolean;
   stock_quantity: number | null;
@@ -123,6 +126,10 @@ export function InvoiceBuilderClient({
   );
 
   const projectedBalance = Number((currentBalance - invoiceTotal).toFixed(2));
+  const lowBalanceMessage = useMemo(
+    () => buildStoreLowBalanceMessage(currentBalance, invoiceTotal),
+    [currentBalance, invoiceTotal],
+  );
   const todayLabel = useMemo(() => formatStoreDateTime(new Date()), []);
   const parsedQuantity = Number(quantity);
   const normalizedQuantity =
@@ -289,6 +296,11 @@ export function InvoiceBuilderClient({
       return;
     }
 
+    if (lowBalanceMessage) {
+      toast.error(lowBalanceMessage);
+      return;
+    }
+
     startTransition(async () => {
       const result = await createStoreInvoice({ items: draftItems });
 
@@ -333,8 +345,10 @@ export function InvoiceBuilderClient({
                   <div className="flex min-w-[180px] max-w-[240px] sm:max-w-[350px] items-center gap-3">
                     <div className="relative shrink-0 h-14 w-14 overflow-hidden rounded-lg border bg-muted/30">
                       <Image
-                        src="/product-placeholder.png"
-                        alt=""
+                        src={
+                          item.product.image_url || "/product-placeholder.png"
+                        }
+                        alt={item.product.name}
                         width={56}
                         height={56}
                         className="h-full w-full object-cover"
@@ -539,8 +553,11 @@ export function InvoiceBuilderClient({
                             <div className="flex min-w-0 items-center gap-3">
                               <div className="relative h-12 w-12 overflow-hidden rounded-lg border bg-muted/30">
                                 <Image
-                                  src="/product-placeholder.png"
-                                  alt=""
+                                  src={
+                                    product.image_url ||
+                                    "/product-placeholder.png"
+                                  }
+                                  alt={product.name}
                                   width={48}
                                   height={48}
                                   className="h-full w-full object-cover"
@@ -724,9 +741,16 @@ export function InvoiceBuilderClient({
             </div>
 
             <div className="flex flex-col items-stretch gap-2 lg:items-end">
-              <div className="text-xs text-muted-foreground">
-                Saving will create the purchase record and deduct the balance.
-              </div>
+              {lowBalanceMessage ? (
+                <div className="flex max-w-md items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{lowBalanceMessage}</span>
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground">
+                  Saving will create the purchase record and deduct the balance.
+                </div>
+              )}
               <Button
                 type="button"
                 onClick={handleConfirmSave}
@@ -785,8 +809,8 @@ export function InvoiceBuilderClient({
             <div className="flex items-center gap-3">
               <div className="relative h-14 w-14 overflow-hidden rounded-lg border bg-muted/30">
                 <Image
-                  src="/product-placeholder.png"
-                  alt=""
+                  src={scannedProduct.image_url || "/product-placeholder.png"}
+                  alt={scannedProduct.name}
                   width={56}
                   height={56}
                   className="h-full w-full object-cover"

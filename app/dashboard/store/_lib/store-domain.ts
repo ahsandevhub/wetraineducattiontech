@@ -20,6 +20,7 @@ export type ProductFormData = {
   name: string;
   sku?: string;
   barcode?: string;
+  imageUrl?: string;
   unitPrice: string;
   isActive: boolean;
   tracksStock: boolean;
@@ -108,7 +109,10 @@ export function parseOptionalMoney(value?: string) {
 
   const parsed = Number(normalized);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    return { value: null, error: "Unit cost must be zero or a positive number" };
+    return {
+      value: null,
+      error: "Unit cost must be zero or a positive number",
+    };
   }
 
   return { value: Number(parsed.toFixed(2)), error: null };
@@ -150,8 +154,9 @@ export function normalizeStoreMonthKey(monthKey: string) {
     return null;
   }
 
-  const withDay =
-    /^\d{4}-\d{2}$/.test(normalized) ? `${normalized}-01` : normalized;
+  const withDay = /^\d{4}-\d{2}$/.test(normalized)
+    ? `${normalized}-01`
+    : normalized;
   const date = new Date(withDay);
 
   if (Number.isNaN(date.getTime())) {
@@ -201,7 +206,9 @@ export function buildQuantityDelta(
   return quantity - currentOnHand;
 }
 
-export function isValidStockActionType(value: string): value is StockActionType {
+export function isValidStockActionType(
+  value: string,
+): value is StockActionType {
   return value === "RESTOCK" || value === "DEDUCT" || value === "ADJUST";
 }
 
@@ -223,14 +230,21 @@ export function normalizeDraftItems(items: InvoiceDraftItemInput[]) {
   const grouped = new Map<string, number>();
 
   for (const item of items) {
-    if (!item.productId || !Number.isInteger(item.quantity) || item.quantity <= 0) {
+    if (
+      !item.productId ||
+      !Number.isInteger(item.quantity) ||
+      item.quantity <= 0
+    ) {
       return {
         items: null,
         error: "Each invoice item must have a valid quantity",
       };
     }
 
-    grouped.set(item.productId, (grouped.get(item.productId) ?? 0) + item.quantity);
+    grouped.set(
+      item.productId,
+      (grouped.get(item.productId) ?? 0) + item.quantity,
+    );
   }
 
   return {
@@ -253,6 +267,23 @@ export function buildStoreInvoiceReversalReason(
     : `Invoice reversal for ${invoiceId}`;
 }
 
+export function buildStoreLowBalanceMessage(
+  currentBalance: number,
+  invoiceTotal: number,
+) {
+  if (!Number.isFinite(currentBalance) || !Number.isFinite(invoiceTotal)) {
+    return "Low balance. Please recharge your balance from the authority before purchasing.";
+  }
+
+  if (invoiceTotal <= 0 || currentBalance >= invoiceTotal) {
+    return null;
+  }
+
+  const shortfall = Number((invoiceTotal - currentBalance).toFixed(2));
+
+  return `Low balance. Please recharge your balance from the authority before purchasing. You need ${shortfall.toFixed(2)} BDT more.`;
+}
+
 export function buildProductPayload(
   currentUserId: string,
   data: ProductFormData,
@@ -272,6 +303,7 @@ export function buildProductPayload(
     name,
     sku: normalizeOptionalText(data.sku),
     barcode: normalizeOptionalText(data.barcode),
+    image_url: normalizeOptionalText(data.imageUrl),
     unit_price: parsedPrice.value,
     is_active: data.isActive,
     tracks_stock: data.tracksStock,

@@ -85,11 +85,9 @@ export async function getStoreReportsData() {
         .select("product_id, quantity_delta"),
       supabaseAdmin
         .from("store_products")
-        .select("id, name, is_active")
+        .select("id, name, image_url, is_active")
         .order("name", { ascending: true }),
-      supabaseAdmin
-        .from("store_users")
-        .select("id"),
+      supabaseAdmin.from("store_users").select("id"),
       supabaseAdmin
         .from("store_month_closures")
         .select(
@@ -154,15 +152,19 @@ export async function getStoreReportsData() {
       (products ?? []).map((product) => [product.id, product]),
     );
 
-    const typedInvoices = ((invoices ?? []) as ReportInvoice[]).map((invoice) => ({
-      ...invoice,
-      total_amount: Number(invoice.total_amount),
-    }));
+    const typedInvoices = ((invoices ?? []) as ReportInvoice[]).map(
+      (invoice) => ({
+        ...invoice,
+        total_amount: Number(invoice.total_amount),
+      }),
+    );
 
-    const typedItems = ((invoiceItems ?? []) as ReportInvoiceItem[]).map((item) => ({
-      ...item,
-      line_total: Number(item.line_total),
-    }));
+    const typedItems = ((invoiceItems ?? []) as ReportInvoiceItem[]).map(
+      (item) => ({
+        ...item,
+        line_total: Number(item.line_total),
+      }),
+    );
 
     const typedEntries = ((accountEntries ?? []) as ReportAccountEntry[]).map(
       (entry) => ({
@@ -186,7 +188,9 @@ export async function getStoreReportsData() {
 
     const typedClosures = ((monthClosures ?? []) as ReportMonthClosure[]).map(
       (closure) => {
-        const actor = closure.closed_by ? profileMap.get(closure.closed_by) : null;
+        const actor = closure.closed_by
+          ? profileMap.get(closure.closed_by)
+          : null;
 
         return {
           ...closure,
@@ -218,16 +222,23 @@ export async function getStoreReportsData() {
         products: (products ?? []).map((product) => ({
           id: product.id,
           name: product.name,
+          image_url: product.image_url ?? null,
           is_active: product.is_active,
           on_hand: Number(
             ((stockMovements ?? []) as ReportStockMovement[])
               .filter((movement) => movement.product_id === product.id)
-              .reduce((sum, movement) => sum + Number(movement.quantity_delta ?? 0), 0)
+              .reduce(
+                (sum, movement) => sum + Number(movement.quantity_delta ?? 0),
+                0,
+              )
               .toFixed(0),
           ),
         })),
         productNames: Object.fromEntries(
-          Array.from(productMap.entries()).map(([id, product]) => [id, product.name]),
+          Array.from(productMap.entries()).map(([id, product]) => [
+            id,
+            product.name,
+          ]),
         ),
         monthClosures: typedClosures,
       },

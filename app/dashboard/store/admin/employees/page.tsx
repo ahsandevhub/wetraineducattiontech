@@ -18,6 +18,7 @@ export default async function StoreEmployeesPage() {
     <StoreEmployeesClient
       users={data.users}
       currentUserId={data.currentUserId}
+      canManagePermissions={data.canManagePermissions}
     />
   );
 }

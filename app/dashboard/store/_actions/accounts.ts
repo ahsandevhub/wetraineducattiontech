@@ -1,13 +1,12 @@
 "use server";
 
 import { requireStoreAdmin } from "@/app/utils/auth/require";
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import {
+  getCurrentUserWithRoles,
+  hasStorePermission,
+} from "@/app/utils/auth/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import {
-  ensureStoreMonthOpen,
-  getStoreMonthClosuresOverview,
-} from "./month-closures";
 import {
   ensureValidCategory,
   ensureValidManualCategory,
@@ -16,6 +15,10 @@ import {
   STORE_ACCOUNT_CATEGORIES,
   type StoreAccountCategory,
 } from "../_lib/store-domain";
+import {
+  ensureStoreMonthOpen,
+  getStoreMonthClosuresOverview,
+} from "./month-closures";
 
 type AccountEntryDirection = "CREDIT" | "DEBIT";
 
@@ -218,6 +221,10 @@ export async function createStoreAccountEntry(data: AccountEntryInput) {
     return { error: auth.error ?? "Not authorized" };
   }
 
+  if (!hasStorePermission(auth.roles, "balance_add")) {
+    return { error: "You do not have permission to add Store balance entries" };
+  }
+
   if (!ensureValidCategory(data.category)) {
     return { error: "Invalid category" };
   }
@@ -267,11 +274,12 @@ export async function createStoreAccountEntry(data: AccountEntryInput) {
   try {
     const supabaseAdmin = createAdminClient();
 
-    const { data: existingStoreUser, error: storeUserError } = await supabaseAdmin
-      .from("store_users")
-      .select("id")
-      .eq("id", data.userId)
-      .maybeSingle();
+    const { data: existingStoreUser, error: storeUserError } =
+      await supabaseAdmin
+        .from("store_users")
+        .select("id")
+        .eq("id", data.userId)
+        .maybeSingle();
 
     if (storeUserError) {
       return { error: storeUserError.message };

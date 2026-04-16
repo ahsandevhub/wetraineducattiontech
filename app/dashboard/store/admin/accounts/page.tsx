@@ -1,8 +1,13 @@
+import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { getStoreAccountsOverview } from "../../_actions/accounts";
 import { StoreAccountsAdminClient } from "./store-accounts-admin-client";
 
 export default async function StoreAdminAccountsPage() {
-  const { data, error } = await getStoreAccountsOverview();
+  const [result, roles] = await Promise.all([
+    getStoreAccountsOverview(),
+    getCurrentUserWithRoles(),
+  ]);
+  const { data, error } = result;
 
   if (error || !data) {
     return (
@@ -21,6 +26,7 @@ export default async function StoreAdminAccountsPage() {
       categories={data.categories}
       summary={data.summary}
       monthClosures={data.monthClosures}
+      canAddBalance={Boolean(roles?.storeCapabilities.canAddBalance)}
     />
   );
 }

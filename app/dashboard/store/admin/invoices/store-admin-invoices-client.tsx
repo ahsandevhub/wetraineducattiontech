@@ -57,9 +57,13 @@ type StoreAdminInvoice = {
 
 type Props = {
   invoices: StoreAdminInvoice[];
+  canManageInvoices: boolean;
 };
 
-export function StoreAdminInvoicesClient({ invoices }: Props) {
+export function StoreAdminInvoicesClient({
+  invoices,
+  canManageInvoices,
+}: Props) {
   const router = useRouter();
   const [monthFilter, setMonthFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<
@@ -98,7 +102,10 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
       );
     });
   }, [invoices, monthFilter, search, statusFilter]);
-  const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / rowsPerPage));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredInvoices.length / rowsPerPage),
+  );
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedInvoices = filteredInvoices.slice(
     (safeCurrentPage - 1) * rowsPerPage,
@@ -325,18 +332,22 @@ export function StoreAdminInvoicesClient({ invoices }: Props) {
                     <div className="text-sm text-muted-foreground">
                       Confirmed {formatStoreDateTime(invoice.confirmed_at)}
                     </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setSelectedInvoice(invoice)}
-                      disabled={
-                        invoice.status === "REVERSED" ||
-                        savingInvoiceId === invoice.id
-                      }
-                    >
-                      Reverse Invoice
-                    </Button>
+                    {canManageInvoices ? (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setSelectedInvoice(invoice)}
+                        disabled={
+                          invoice.status === "REVERSED" ||
+                          savingInvoiceId === invoice.id
+                        }
+                      >
+                        Reverse Invoice
+                      </Button>
+                    ) : (
+                      <Badge variant="secondary">Read only</Badge>
+                    )}
                   </div>
 
                   {invoice.status === "REVERSED" ? (

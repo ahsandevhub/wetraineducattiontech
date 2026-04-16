@@ -154,7 +154,7 @@ export default function AddPaymentDialog({
             );
           } else if (data.code === "42501") {
             toast.error(
-              "RLS Policy Error: Please disable RLS on payments table in Supabase. See FIX_RLS_POLICY.md",
+              "RLS policy error: keep RLS enabled and ensure admin and own-record policies exist for payments.",
               { duration: 6000 },
             );
           } else {

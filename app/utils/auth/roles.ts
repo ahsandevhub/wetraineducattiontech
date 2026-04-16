@@ -11,6 +11,31 @@ export type EducationRole = "customer" | "admin";
 export type CrmRole = "ADMIN" | "MARKETER";
 export type HrmRole = "SUPER_ADMIN" | "ADMIN" | "EMPLOYEE";
 export type StoreRole = "USER" | "ADMIN";
+export type StorePermission =
+  | "owner_purchase_manage"
+  | "balance_add"
+  | "stock_manage"
+  | "product_manage"
+  | "invoice_manage"
+  | "permissions_manage";
+
+export const STORE_PERMISSION_KEYS: StorePermission[] = [
+  "owner_purchase_manage",
+  "balance_add",
+  "stock_manage",
+  "product_manage",
+  "invoice_manage",
+  "permissions_manage",
+];
+
+export interface StoreCapabilities {
+  canManageOwnerPurchases: boolean;
+  canAddBalance: boolean;
+  canManageStock: boolean;
+  canManageProducts: boolean;
+  canManageInvoices: boolean;
+  canManagePermissions: boolean;
+}
 
 export interface UserWithRoles {
   userId: string;
@@ -23,6 +48,8 @@ export interface UserWithRoles {
   hasCrmAccess: boolean;
   hasHrmAccess: boolean;
   hasStoreAccess: boolean;
+  storePermissions: StorePermission[];
+  storeCapabilities: StoreCapabilities;
   canAccessCrmAdmin: boolean;
   canActAsCrmMarketer: boolean;
   isDualCapabilityCrmUser: boolean;
@@ -39,6 +66,24 @@ function isMissingRelationError(
     error.code === "42P01" ||
     error.message?.toLowerCase().includes("could not find the table") === true
   );
+}
+
+function buildStoreCapabilities(
+  storeRole: StoreRole | null,
+  storePermissions: StorePermission[],
+): StoreCapabilities {
+  const permissionSet = new Set(storePermissions);
+  const isAdmin = storeRole === "ADMIN";
+
+  return {
+    canManageOwnerPurchases:
+      isAdmin && permissionSet.has("owner_purchase_manage"),
+    canAddBalance: isAdmin && permissionSet.has("balance_add"),
+    canManageStock: isAdmin && permissionSet.has("stock_manage"),
+    canManageProducts: isAdmin && permissionSet.has("product_manage"),
+    canManageInvoices: isAdmin && permissionSet.has("invoice_manage"),
+    canManagePermissions: isAdmin && permissionSet.has("permissions_manage"),
+  };
 }
 
 /**
@@ -98,6 +143,22 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     throw storeUserError;
   }
 
+  const { data: storePermissionRows, error: storePermissionError } =
+    await supabase
+      .from("store_admin_permissions")
+      .select("permission_key")
+      .eq("user_id", user.id);
+
+  if (storePermissionError && !isMissingRelationError(storePermissionError)) {
+    throw storePermissionError;
+  }
+
+  const storePermissions = (storePermissionRows ?? [])
+    .map((row) => row.permission_key)
+    .filter((value): value is StorePermission =>
+      STORE_PERMISSION_KEYS.includes(value as StorePermission),
+    ) as StorePermission[];
+
   const hasEducationAccess = profile !== null;
   const hasCrmAccessFlag = crmUser !== null;
   const hasHrmAccessFlag = hrmUser !== null;
@@ -106,6 +167,10 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     userId: user.id,
     crmRole: crmUser?.crm_role || null,
   });
+  const storeCapabilities = buildStoreCapabilities(
+    storeUser?.store_role || null,
+    storePermissions,
+  );
 
   return {
     userId: user.id,
@@ -118,6 +183,8 @@ export async function getCurrentUserWithRoles(): Promise<UserWithRoles | null> {
     hasCrmAccess: hasCrmAccessFlag,
     hasHrmAccess: hasHrmAccessFlag,
     hasStoreAccess: hasStoreAccessFlag,
+    storePermissions,
+    storeCapabilities,
     canAccessCrmAdmin: crmCapabilities.canAccessCrmAdmin,
     canActAsCrmMarketer: crmCapabilities.canActAsCrmMarketer,
     isDualCapabilityCrmUser: crmCapabilities.isDualCapabilityCrmUser,
@@ -158,12 +225,10 @@ export function hasStoreAccess(roles: UserWithRoles | null): boolean {
 export function hasAnyAccess(roles: UserWithRoles | null): boolean {
   return (
     roles !== null &&
-    (
-      roles.hasEducationAccess ||
+    (roles.hasEducationAccess ||
       roles.hasCrmAccess ||
       roles.hasHrmAccess ||
-      roles.hasStoreAccess
-    )
+      roles.hasStoreAccess)
   );
 }
 
@@ -214,4 +279,41 @@ export function isHrmEmployee(roles: UserWithRoles | null): boolean {
  */
 export function isStoreAdmin(roles: UserWithRoles | null): boolean {
   return roles?.storeRole === "ADMIN";
+}
+
+export function hasStorePermission(
+  roles: UserWithRoles | null,
+  permission: StorePermission,
+): boolean {
+  return (
+    roles?.storeRole === "ADMIN" && roles.storePermissions.includes(permission)
+  );
+}
+
+export function canManageStoreOwnerPurchases(
+  roles: UserWithRoles | null,
+): boolean {
+  return roles?.storeCapabilities.canManageOwnerPurchases === true;
+}
+
+export function canAddStoreBalance(roles: UserWithRoles | null): boolean {
+  return roles?.storeCapabilities.canAddBalance === true;
+}
+
+export function canManageStoreStock(roles: UserWithRoles | null): boolean {
+  return roles?.storeCapabilities.canManageStock === true;
+}
+
+export function canManageStoreProducts(roles: UserWithRoles | null): boolean {
+  return roles?.storeCapabilities.canManageProducts === true;
+}
+
+export function canManageStoreInvoices(roles: UserWithRoles | null): boolean {
+  return roles?.storeCapabilities.canManageInvoices === true;
+}
+
+export function canManageStorePermissions(
+  roles: UserWithRoles | null,
+): boolean {
+  return roles?.storeCapabilities.canManagePermissions === true;
 }

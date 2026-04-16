@@ -11,12 +11,14 @@ import {
   hasCrmAccess,
   hasHrmAccess,
   hasStoreAccess,
+  hasStorePermission,
   isCrmAdmin,
   isEducationAdmin,
   isHrmAdmin,
   isHrmEmployee,
   isHrmSuperAdmin,
   isStoreAdmin,
+  type StorePermission,
   type UserWithRoles,
 } from "./roles";
 
@@ -159,6 +161,21 @@ export async function requireStoreAdmin(): Promise<UserWithRoles> {
   const roles = await requireAuth();
 
   if (!isStoreAdmin(roles)) {
+    redirect("/unauthorized");
+  }
+
+  return roles;
+}
+
+/**
+ * Require a specific Store admin permission
+ */
+export async function requireStorePermission(
+  permission: StorePermission,
+): Promise<UserWithRoles> {
+  const roles = await requireStoreAdmin();
+
+  if (!hasStorePermission(roles, permission)) {
     redirect("/unauthorized");
   }
 

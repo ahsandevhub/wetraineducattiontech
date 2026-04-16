@@ -21,12 +21,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatStoreDateTime } from "../../_lib/date-format";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
 import { createStoreAccountEntry } from "../../_actions/accounts";
 import { closeStoreMonth } from "../../_actions/month-closures";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import StoreAccountEntryDialog, {
   type StoreAccountEntryFormValues,
 } from "../_components/StoreAccountEntryDialog";
@@ -95,6 +95,7 @@ type Props = {
   categories: StoreAccountCategory[];
   summary: Summary;
   monthClosures: StoreMonthClosure[];
+  canAddBalance: boolean;
 };
 
 function formatCategory(category: string) {
@@ -114,6 +115,7 @@ export function StoreAccountsAdminClient({
   categories,
   summary,
   monthClosures,
+  canAddBalance,
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -221,14 +223,20 @@ export function StoreAccountsAdminClient({
             Add manual credits or debits and review employee balance history.
           </p>
         </div>
-        <StoreAccountEntryDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          users={users}
-          categories={categories}
-          isSaving={loading}
-          onSave={handleSave}
-        />
+        {canAddBalance ? (
+          <StoreAccountEntryDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            users={users}
+            categories={categories}
+            isSaving={loading}
+            onSave={handleSave}
+          />
+        ) : (
+          <div className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+            Read-only access
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -279,13 +287,15 @@ export function StoreAccountsAdminClient({
               closing balance into the next month&apos;s opening balance.
             </p>
           </div>
-          <Button
-            type="button"
-            onClick={() => setMonthCloseOpen(true)}
-            className="w-full sm:w-auto sm:shrink-0"
-          >
-            Close Month
-          </Button>
+          {canAddBalance ? (
+            <Button
+              type="button"
+              onClick={() => setMonthCloseOpen(true)}
+              className="w-full sm:w-auto sm:shrink-0"
+            >
+              Close Month
+            </Button>
+          ) : null}
         </CardHeader>
         <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
           <div className="overflow-x-auto rounded-md border">
@@ -369,7 +379,9 @@ export function StoreAccountsAdminClient({
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Store Role</TableHead>
-                      <TableHead className="text-right">Current Balance</TableHead>
+                      <TableHead className="text-right">
+                        Current Balance
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -573,13 +585,15 @@ export function StoreAccountsAdminClient({
         </TabsContent>
       </Tabs>
 
-      <StoreMonthCloseDialog
-        open={monthCloseOpen}
-        onOpenChange={setMonthCloseOpen}
-        isSaving={monthCloseLoading}
-        initialMonthKey={currentMonth}
-        onSave={handleMonthClose}
-      />
+      {canAddBalance ? (
+        <StoreMonthCloseDialog
+          open={monthCloseOpen}
+          onOpenChange={setMonthCloseOpen}
+          isSaving={monthCloseLoading}
+          initialMonthKey={currentMonth}
+          onSave={handleMonthClose}
+        />
+      ) : null}
     </div>
   );
 }

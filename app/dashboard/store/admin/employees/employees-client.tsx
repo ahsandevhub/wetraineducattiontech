@@ -1,5 +1,6 @@
 "use client";
 
+import type { StorePermission } from "@/app/utils/auth/roles";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -37,15 +39,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatStoreDateTime } from "../../_lib/date-format";
-import { Edit, Loader2, Trash2 } from "lucide-react";
+import { Edit, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import {
   unlinkUserFromStore,
+  updateStoreUserPermissions,
   updateStoreUserRole,
 } from "../../_actions/users";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import AddStoreUserDialog from "../_components/AddStoreUserDialog";
 
 type StoreRole = "USER" | "ADMIN";
@@ -56,16 +59,56 @@ type StoreUser = {
   email: string;
   store_role: StoreRole;
   created_at: string;
+  permissions: StorePermission[];
 };
+
+const PERMISSION_OPTIONS: Array<{
+  key: StorePermission;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: "owner_purchase_manage",
+    label: "Owner Purchases",
+    description: "Add, edit, and delete owner purchase entries.",
+  },
+  {
+    key: "balance_add",
+    label: "Balances & Month Closing",
+    description: "Post balance entries and close Store months.",
+  },
+  {
+    key: "stock_manage",
+    label: "Stock",
+    description: "Record stock restocks, deductions, and adjustments.",
+  },
+  {
+    key: "product_manage",
+    label: "Products",
+    description: "Create, edit, and archive Store products.",
+  },
+  {
+    key: "invoice_manage",
+    label: "Invoices",
+    description: "Reverse confirmed invoices when needed.",
+  },
+  {
+    key: "permissions_manage",
+    label: "Permissions",
+    description: "Manage Store access, roles, and admin permissions.",
+  },
+];
 
 interface StoreEmployeesClientProps {
   users: StoreUser[];
   currentUserId: string;
+  canManagePermissions: boolean;
 }
 
 export function StoreEmployeesClient({
   users: initialUsers,
   currentUserId,
+  canManagePermissions,
 }: StoreEmployeesClientProps) {
   const router = useRouter();
   const [users, setUsers] = useState(initialUsers ?? []);
@@ -74,28 +117,57 @@ export function StoreEmployeesClient({
   const [selectedUser, setSelectedUser] = useState<StoreUser | null>(null);
   const [loading, setLoading] = useState(false);
   const [editRole, setEditRole] = useState<StoreRole>("USER");
+  const [selectedPermissions, setSelectedPermissions] = useState<
+    StorePermission[]
+  >([]);
 
   useEffect(() => {
     setUsers(initialUsers ?? []);
   }, [initialUsers]);
 
+  const togglePermission = (permission: StorePermission, checked: boolean) => {
+    setSelectedPermissions((current) => {
+      if (checked) {
+        return current.includes(permission)
+          ? current
+          : [...current, permission];
+      }
+
+      return current.filter((item) => item !== permission);
+    });
+  };
+
   const handleEditUser = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser || !canManagePermissions) return;
 
     setLoading(true);
     try {
-      const result = await updateStoreUserRole({
+      const roleResult = await updateStoreUserRole({
         userId: selectedUser.id,
         newRole: editRole,
       });
 
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Store role updated successfully");
-        setIsEditDialogOpen(false);
-        router.refresh();
+      if (roleResult.error) {
+        toast.error(roleResult.error);
+        return;
       }
+
+      if (editRole === "ADMIN") {
+        const permissionResult = await updateStoreUserPermissions({
+          userId: selectedUser.id,
+          permissions: selectedPermissions,
+        });
+
+        if (permissionResult.error) {
+          toast.error(permissionResult.error);
+          return;
+        }
+      }
+
+      toast.success("Store access updated successfully");
+      setIsEditDialogOpen(false);
+      setSelectedUser(null);
+      router.refresh();
     } catch (error) {
       console.error("Unexpected error:", error);
       toast.error("An unexpected error occurred");
@@ -105,6 +177,11 @@ export function StoreEmployeesClient({
   };
 
   const handleDeleteUser = (user: StoreUser) => {
+    if (!canManagePermissions) {
+      toast.error("You do not have permission to manage Store access");
+      return;
+    }
+
     if (user.id === currentUserId) {
       toast.error("You cannot remove your own Store access");
       return;
@@ -138,12 +215,18 @@ export function StoreEmployeesClient({
   };
 
   const openEditDialog = (user: StoreUser) => {
+    if (!canManagePermissions || user.id === currentUserId) {
+      return;
+    }
+
     setSelectedUser(user);
     setEditRole(user.store_role);
+    setSelectedPermissions(user.permissions ?? []);
     setIsEditDialogOpen(true);
   };
 
-  const canEditUser = (user: StoreUser) => user.id !== currentUserId;
+  const canEditUser = (user: StoreUser) =>
+    canManagePermissions && user.id !== currentUserId;
 
   return (
     <div className="space-y-6">
@@ -151,13 +234,24 @@ export function StoreEmployeesClient({
         <div>
           <h1 className="text-3xl font-bold">Store Access Management</h1>
           <p className="text-muted-foreground">
-            Manage Store users and their Store roles independently from other
-            modules.
+            Manage Store users, roles, and fine-grained admin permissions.
           </p>
         </div>
         <div className="w-full md:w-auto">
-          <AddStoreUserDialog onUserAdded={() => router.refresh()} />
+          {canManagePermissions ? (
+            <AddStoreUserDialog onUserAdded={() => router.refresh()} />
+          ) : (
+            <div className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+              Read-only access
+            </div>
+          )}
         </div>
+      </div>
+
+      <div className="rounded-md border border-dashed bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+        {canManagePermissions
+          ? "Use the Manage role & permissions button on any admin row to update Store access and feature permissions."
+          : "You can review Store access here, but only admins with the permissions permission can change roles or assignments."}
       </div>
 
       <Card className="border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
@@ -172,6 +266,7 @@ export function StoreEmployeesClient({
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Store Role</TableHead>
+                  <TableHead>Permissions</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -180,7 +275,7 @@ export function StoreEmployeesClient({
                 {users.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="text-center text-muted-foreground"
                     >
                       No Store users found
@@ -196,34 +291,61 @@ export function StoreEmployeesClient({
                       <TableCell>
                         <Badge
                           variant={
-                            user.store_role === "ADMIN" ? "default" : "secondary"
+                            user.store_role === "ADMIN"
+                              ? "default"
+                              : "secondary"
                           }
                         >
                           {user.store_role}
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        {user.store_role !== "ADMIN" ? (
+                          <span className="text-sm text-muted-foreground">
+                            Employee access only
+                          </span>
+                        ) : user.permissions.length === 0 ? (
+                          <Badge variant="outline">Read-only admin</Badge>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {PERMISSION_OPTIONS.filter((option) =>
+                              user.permissions.includes(option.key),
+                            ).map((option) => (
+                              <Badge key={option.key} variant="outline">
+                                {option.label}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {formatStoreDateTime(user.created_at)}
                       </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(user)}
-                          disabled={loading || !canEditUser(user)}
-                          className={!canEditUser(user) ? "opacity-50" : ""}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteUser(user)}
-                          disabled={loading || !canEditUser(user)}
-                          className={!canEditUser(user) ? "opacity-50" : ""}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
+                      <TableCell className="text-right">
+                        {canEditUser(user) ? (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(user)}
+                              disabled={loading}
+                              title="Manage role and permissions"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user)}
+                              disabled={loading}
+                              title="Remove Store access"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge variant="secondary">Read only</Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -235,22 +357,25 @@ export function StoreEmployeesClient({
       </Card>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Store Role</DialogTitle>
-            <DialogDescription>Update user Store access role</DialogDescription>
+            <DialogTitle>Edit Store Access</DialogTitle>
+            <DialogDescription>
+              Update the Store role and assigned permissions for this user.
+            </DialogDescription>
           </DialogHeader>
           {selectedUser && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="space-y-2">
                 <Label>User</Label>
-                <div className="rounded border bg-muted p-2">
+                <div className="rounded border bg-muted p-3">
                   <div className="font-medium">{selectedUser.full_name}</div>
                   <div className="text-sm text-muted-foreground">
                     {selectedUser.email}
                   </div>
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="editStoreRole">Store Role</Label>
                 <Select
@@ -266,6 +391,44 @@ export function StoreEmployeesClient({
                   </SelectContent>
                 </Select>
               </div>
+
+              {editRole === "ADMIN" ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-base">Admin Permissions</Label>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {PERMISSION_OPTIONS.map((option) => (
+                      <label
+                        key={option.key}
+                        className="flex items-start gap-3 rounded-md border p-3"
+                      >
+                        <Checkbox
+                          checked={selectedPermissions.includes(option.key)}
+                          onCheckedChange={(checked) =>
+                            togglePermission(option.key, checked === true)
+                          }
+                        />
+                        <div className="space-y-1">
+                          <div className="font-medium">{option.label}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {option.description}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Admins with no selected permissions stay read-only.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+                  Standard Store users can view and use the employee-facing
+                  Store flow without admin controls.
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
@@ -277,7 +440,9 @@ export function StoreEmployeesClient({
               Cancel
             </Button>
             <Button onClick={handleEditUser} disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
               Save Changes
             </Button>
           </DialogFooter>
@@ -305,7 +470,9 @@ export function StoreEmployeesClient({
               disabled={loading}
               className="bg-red-600 hover:bg-red-700"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
               Remove from Store
             </AlertDialogAction>
           </AlertDialogFooter>

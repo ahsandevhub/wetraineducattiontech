@@ -11,8 +11,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatStoreDateTime } from "../../_lib/date-format";
+import Image from "next/image";
 import { useMemo, useState } from "react";
+import { formatStoreDateTime } from "../../_lib/date-format";
 
 type ReportsData = {
   monthOptions: string[];
@@ -43,6 +44,7 @@ type ReportsData = {
   products: Array<{
     id: string;
     name: string;
+    image_url: string | null;
     is_active: boolean;
     on_hand: number;
   }>;
@@ -88,6 +90,10 @@ export function StoreReportsClient({ data }: Props) {
   const userMap = useMemo(
     () => new Map(data.users.map((user) => [user.id, user])),
     [data.users],
+  );
+  const productMap = useMemo(
+    () => new Map(data.products.map((product) => [product.id, product])),
+    [data.products],
   );
 
   const filteredInvoices = useMemo(
@@ -155,16 +161,24 @@ export function StoreReportsClient({ data }: Props) {
   const purchasesByProduct = useMemo(() => {
     const totals = new Map<
       string,
-      { product_id: string; name: string; quantity: number; total: number }
+      {
+        product_id: string;
+        name: string;
+        image_url: string | null;
+        quantity: number;
+        total: number;
+      }
     >();
 
     for (const item of filteredItems) {
       const invoice = invoiceMap.get(item.invoice_id);
       if (!invoice || invoice.status !== "CONFIRMED") continue;
 
+      const product = productMap.get(item.product_id);
       const current = totals.get(item.product_id) ?? {
         product_id: item.product_id,
         name: data.productNames[item.product_id] ?? "Unknown product",
+        image_url: product?.image_url ?? null,
         quantity: 0,
         total: 0,
       };
@@ -177,7 +191,7 @@ export function StoreReportsClient({ data }: Props) {
     return Array.from(totals.values())
       .map((row) => ({ ...row, total: Number(row.total.toFixed(2)) }))
       .sort((a, b) => b.total - a.total);
-  }, [data.productNames, filteredItems, invoiceMap]);
+  }, [data.productNames, filteredItems, invoiceMap, productMap]);
 
   const ledgerByCategory = useMemo(() => {
     const totals = new Map<
@@ -435,8 +449,25 @@ export function StoreReportsClient({ data }: Props) {
                   ) : (
                     purchasesByProduct.map((row) => (
                       <TableRow key={row.product_id}>
-                        <TableCell className="font-medium">
-                          {row.name}
+                        <TableCell className="min-w-[220px]">
+                          <div className="flex items-center gap-3">
+                            <div className="relative h-10 w-10 overflow-hidden rounded-md border bg-muted">
+                              {row.image_url ? (
+                                <Image
+                                  src={row.image_url}
+                                  alt={row.name}
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                                  No image
+                                </div>
+                              )}
+                            </div>
+                            <div className="font-medium">{row.name}</div>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           {row.quantity}
@@ -470,10 +501,27 @@ export function StoreReportsClient({ data }: Props) {
                   key={product.id}
                   className="flex items-center justify-between rounded-md border p-3"
                 >
-                  <div>
-                    <div className="font-medium">{product.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {product.is_active ? "Active" : "Inactive"}
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-10 w-10 overflow-hidden rounded-md border bg-muted">
+                      {product.image_url ? (
+                        <Image
+                          src={product.image_url}
+                          alt={product.name}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {product.is_active ? "Active" : "Inactive"}
+                      </div>
                     </div>
                   </div>
                   <Badge

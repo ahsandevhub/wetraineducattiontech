@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,11 +21,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatStoreDateTime } from "../../_lib/date-format";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "react-hot-toast";
-import { createStoreOwnerPurchase } from "../../_actions/owner-purchases";
+import {
+  createStoreOwnerPurchase,
+  deleteStoreOwnerPurchase,
+  updateStoreOwnerPurchase,
+} from "../../_actions/owner-purchases";
+import { formatStoreDateTime } from "../../_lib/date-format";
 import StoreOwnerPurchaseDialog, {
   type StoreOwnerPurchaseFormValues,
 } from "../_components/StoreOwnerPurchaseDialog";
@@ -58,6 +73,7 @@ type Props = {
   salesByMonth: StoreOwnerMonthlySales[];
   stockValuation: number;
   monthClosures: StoreOwnerMonthClosure[];
+  canManageOwnerPurchases: boolean;
 };
 
 function formatAmount(amount: number) {
@@ -71,12 +87,19 @@ export function StoreOwnerPurchasesClient({
   salesByMonth,
   stockValuation,
   monthClosures,
+  canManageOwnerPurchases,
 }: Props) {
   const router = useRouter();
   const [monthFilter, setMonthFilter] = useState(currentMonthKey.slice(0, 7));
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<StoreOwnerPurchase | null>(
+    null,
+  );
+  const [deletingEntry, setDeletingEntry] = useState<StoreOwnerPurchase | null>(
+    null,
+  );
 
   const filteredEntries = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -101,8 +124,9 @@ export function StoreOwnerPurchasesClient({
 
   const selectedClosure = useMemo(
     () =>
-      monthClosures.find((closure) => closure.month_key.startsWith(monthFilter)) ??
-      null,
+      monthClosures.find((closure) =>
+        closure.month_key.startsWith(monthFilter),
+      ) ?? null,
     [monthClosures, monthFilter],
   );
 
@@ -132,14 +156,46 @@ export function StoreOwnerPurchasesClient({
   const handleSave = async (values: StoreOwnerPurchaseFormValues) => {
     setSaving(true);
     try {
-      const result = await createStoreOwnerPurchase(values);
+      const result = editingEntry
+        ? await updateStoreOwnerPurchase(editingEntry.id, values)
+        : await createStoreOwnerPurchase(values);
+
       if (result.error) {
         toast.error(result.error);
         return;
       }
 
-      toast.success("Owner purchase recorded successfully");
+      toast.success(
+        editingEntry
+          ? "Owner purchase updated successfully"
+          : "Owner purchase recorded successfully",
+      );
       setDialogOpen(false);
+      setEditingEntry(null);
+      router.refresh();
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (entry: StoreOwnerPurchase) => {
+    setSaving(true);
+    try {
+      const result = await deleteStoreOwnerPurchase(entry.id);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success("Owner purchase deleted successfully");
+      if (editingEntry?.id === entry.id) {
+        setDialogOpen(false);
+        setEditingEntry(null);
+      }
+      setDeletingEntry(null);
       router.refresh();
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -159,7 +215,21 @@ export function StoreOwnerPurchasesClient({
             invoices, stock, and balance ledgers.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>Add Owner Purchase</Button>
+        {canManageOwnerPurchases ? (
+          <Button
+            onClick={() => {
+              setEditingEntry(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add Owner Purchase
+          </Button>
+        ) : (
+          <div className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+            Read-only access
+          </div>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -180,9 +250,7 @@ export function StoreOwnerPurchasesClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Sales Amount
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Sales Amount</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -246,13 +314,14 @@ export function StoreOwnerPurchasesClient({
                     <TableHead>Note</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredEntries.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="py-8 text-center text-muted-foreground"
                       >
                         No owner purchases found for the current filter.
@@ -267,7 +336,9 @@ export function StoreOwnerPurchasesClient({
                             {formatStoreDateTime(entry.created_at)}
                           </div>
                         </TableCell>
-                        <TableCell className="font-medium">{entry.title}</TableCell>
+                        <TableCell className="font-medium">
+                          {entry.title}
+                        </TableCell>
                         <TableCell>{entry.vendor ?? "—"}</TableCell>
                         <TableCell className="max-w-[280px] truncate">
                           {entry.note ?? "—"}
@@ -275,6 +346,41 @@ export function StoreOwnerPurchasesClient({
                         <TableCell>{entry.actor_name}</TableCell>
                         <TableCell className="text-right font-medium">
                           {formatAmount(entry.amount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {canManageOwnerPurchases ? (
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingEntry(entry);
+                                  setDialogOpen(true);
+                                }}
+                                disabled={saving}
+                                title="Edit purchase"
+                                aria-label="Edit purchase"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="destructive"
+                                onClick={() => setDeletingEntry(entry)}
+                                disabled={saving}
+                                title="Delete purchase"
+                                aria-label="Delete purchase"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              Read only
+                            </span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
@@ -381,13 +487,67 @@ export function StoreOwnerPurchasesClient({
       </div>
 
       <StoreOwnerPurchaseDialog
-        key={monthFilter}
+        key={editingEntry?.id ?? monthFilter}
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        defaultMonth={monthFilter}
+        onOpenChange={(nextOpen) => {
+          setDialogOpen(nextOpen);
+          if (!nextOpen) {
+            setEditingEntry(null);
+          }
+        }}
+        defaultMonth={editingEntry?.month_key ?? monthFilter}
         isSaving={saving}
         onSave={handleSave}
+        initialValues={
+          editingEntry
+            ? {
+                purchaseDate: editingEntry.purchase_date,
+                monthKey: editingEntry.month_key.slice(0, 7),
+                title: editingEntry.title,
+                amount: String(editingEntry.amount),
+                vendor: editingEntry.vendor ?? "",
+                note: editingEntry.note ?? "",
+              }
+            : undefined
+        }
+        title={editingEntry ? "Edit Owner Purchase" : "Add Owner Purchase"}
+        description={
+          editingEntry
+            ? "Update this owner purchase record or adjust its month and amount."
+            : "Record owner-level store costs separately from employee invoices and account ledgers."
+        }
+        submitLabel={editingEntry ? "Update Purchase" : "Save Purchase"}
       />
+
+      <AlertDialog
+        open={Boolean(deletingEntry)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingEntry(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete owner purchase?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingEntry
+                ? `This will permanently remove \"${deletingEntry.title}\". This action cannot be undone.`
+                : "This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingEntry && handleDelete(deletingEntry)}
+              disabled={saving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

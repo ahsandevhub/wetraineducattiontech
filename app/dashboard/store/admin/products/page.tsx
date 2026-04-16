@@ -1,8 +1,13 @@
+import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import { getAllStoreProducts } from "../../_actions/products";
 import { StoreProductsClient } from "./products-client";
 
 export default async function StoreProductsPage() {
-  const { data, error } = await getAllStoreProducts();
+  const [result, roles] = await Promise.all([
+    getAllStoreProducts(),
+    getCurrentUserWithRoles(),
+  ]);
+  const { data, error } = result;
 
   if (error || !data) {
     return (
@@ -14,5 +19,10 @@ export default async function StoreProductsPage() {
     );
   }
 
-  return <StoreProductsClient products={data} />;
+  return (
+    <StoreProductsClient
+      products={data}
+      canManageProducts={Boolean(roles?.storeCapabilities.canManageProducts)}
+    />
+  );
 }

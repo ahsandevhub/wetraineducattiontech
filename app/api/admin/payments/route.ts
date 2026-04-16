@@ -83,7 +83,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             error:
-              "Database access denied. Please disable RLS on the payments table in Supabase or create proper policies. See FIX_RLS_POLICY.md for details.",
+              "Database access denied by the payments RLS policy. Keep RLS enabled and ensure admin and own-record policies are present.",
             code: error.code,
           },
           { status: 403 },

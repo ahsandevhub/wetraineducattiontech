@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Wallet } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export type StoreOwnerPurchaseFormValues = {
   purchaseDate: string;
@@ -30,10 +30,15 @@ type StoreOwnerPurchaseDialogProps = {
   defaultMonth: string;
   isSaving: boolean;
   onSave: (values: StoreOwnerPurchaseFormValues) => void;
+  initialValues?: StoreOwnerPurchaseFormValues;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
 };
 
 function buildInitialValues(
   defaultMonth: string,
+  initialValues?: StoreOwnerPurchaseFormValues,
 ): StoreOwnerPurchaseFormValues {
   const monthValue = defaultMonth.slice(0, 7);
   const today = new Date().toISOString().slice(0, 10);
@@ -42,12 +47,12 @@ function buildInitialValues(
     : `${monthValue}-01`;
 
   return {
-    purchaseDate,
-    monthKey: monthValue,
-    title: "",
-    amount: "",
-    vendor: "",
-    note: "",
+    purchaseDate: initialValues?.purchaseDate ?? purchaseDate,
+    monthKey: initialValues?.monthKey ?? monthValue,
+    title: initialValues?.title ?? "",
+    amount: initialValues?.amount ?? "",
+    vendor: initialValues?.vendor ?? "",
+    note: initialValues?.note ?? "",
   };
 }
 
@@ -57,12 +62,23 @@ export default function StoreOwnerPurchaseDialog({
   defaultMonth,
   isSaving,
   onSave,
+  initialValues,
+  title = "Add Owner Purchase",
+  description = "Record owner-level store costs separately from employee invoices and account ledgers.",
+  submitLabel = "Save Purchase",
 }: StoreOwnerPurchaseDialogProps) {
   const [values, setValues] = useState<StoreOwnerPurchaseFormValues>(
-    buildInitialValues(defaultMonth),
+    buildInitialValues(defaultMonth, initialValues),
   );
 
-  const reset = () => setValues(buildInitialValues(defaultMonth));
+  useEffect(() => {
+    if (open) {
+      setValues(buildInitialValues(defaultMonth, initialValues));
+    }
+  }, [open, defaultMonth, initialValues]);
+
+  const reset = () =>
+    setValues(buildInitialValues(defaultMonth, initialValues));
 
   return (
     <Dialog
@@ -76,11 +92,8 @@ export default function StoreOwnerPurchaseDialog({
     >
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add Owner Purchase</DialogTitle>
-          <DialogDescription>
-            Record owner-level store costs separately from employee invoices and
-            account ledgers.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <form
@@ -206,7 +219,7 @@ export default function StoreOwnerPurchaseDialog({
               ) : (
                 <>
                   <Wallet className="mr-2 h-4 w-4" />
-                  Save Purchase
+                  {submitLabel}
                 </>
               )}
             </Button>

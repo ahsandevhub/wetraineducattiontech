@@ -1,6 +1,8 @@
 "use client";
 
+import type { StorePermission } from "@/app/utils/auth/roles";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
   CommandEmpty,
@@ -10,6 +12,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -28,13 +31,50 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { Check, ChevronsUpDown, Plus, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "react-hot-toast";
 import { linkUserToStore } from "../../_actions/users";
 
 type User = { id: string; fullName: string; email: string };
 type StoreRole = "USER" | "ADMIN";
+
+const PERMISSION_OPTIONS: Array<{
+  key: StorePermission;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: "owner_purchase_manage",
+    label: "Owner Purchases",
+    description: "Add, edit, and delete owner purchase entries.",
+  },
+  {
+    key: "balance_add",
+    label: "Balances & Month Closing",
+    description: "Post balance entries and close Store months.",
+  },
+  {
+    key: "stock_manage",
+    label: "Stock",
+    description: "Record stock restocks, deductions, and adjustments.",
+  },
+  {
+    key: "product_manage",
+    label: "Products",
+    description: "Create, edit, and archive Store products.",
+  },
+  {
+    key: "invoice_manage",
+    label: "Invoices",
+    description: "Reverse confirmed invoices when needed.",
+  },
+  {
+    key: "permissions_manage",
+    label: "Permissions",
+    description: "Manage Store access, roles, and admin permissions.",
+  },
+];
 
 export default function AddStoreUserDialog({
   onUserAdded,
@@ -50,6 +90,7 @@ export default function AddStoreUserDialog({
   const [formData, setFormData] = useState({
     userId: "",
     role: "USER" as StoreRole,
+    permissions: [] as StorePermission[],
   });
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
@@ -83,6 +124,17 @@ export default function AddStoreUserDialog({
     }
   }, [userOpen]);
 
+  const togglePermission = (permission: StorePermission, checked: boolean) => {
+    setFormData((current) => ({
+      ...current,
+      permissions: checked
+        ? current.permissions.includes(permission)
+          ? current.permissions
+          : [...current.permissions, permission]
+        : current.permissions.filter((item) => item !== permission),
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -95,6 +147,7 @@ export default function AddStoreUserDialog({
       const result = await linkUserToStore({
         userId: formData.userId,
         role: formData.role,
+        permissions: formData.role === "ADMIN" ? formData.permissions : [],
       });
 
       if (result.error) {
@@ -102,7 +155,7 @@ export default function AddStoreUserDialog({
       } else {
         toast.success("User added to Store");
         setDialogOpen(false);
-        setFormData({ userId: "", role: "USER" });
+        setFormData({ userId: "", role: "USER", permissions: [] });
         setSelectedUser(null);
         onUserAdded();
       }
@@ -120,6 +173,9 @@ export default function AddStoreUserDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Add User to Store</DialogTitle>
+          <DialogDescription>
+            Choose a Store role, then assign feature permissions for admins.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -197,13 +253,17 @@ export default function AddStoreUserDialog({
             <Label>
               Store Role <span className="text-red-500">*</span>
             </Label>
+            <p className="text-xs text-muted-foreground">
+              Select Admin to reveal the permission checklist below.
+            </p>
             <Select
               value={formData.role}
               onValueChange={(value) =>
-                setFormData({
-                  ...formData,
+                setFormData((current) => ({
+                  ...current,
                   role: value as StoreRole,
-                })
+                  permissions: value === "ADMIN" ? current.permissions : [],
+                }))
               }
             >
               <SelectTrigger>
@@ -215,6 +275,39 @@ export default function AddStoreUserDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {formData.role === "ADMIN" ? (
+            <div className="space-y-3 rounded-md border p-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-base">Admin Permissions</Label>
+              </div>
+              <div className="grid gap-3">
+                {PERMISSION_OPTIONS.map((option) => (
+                  <label
+                    key={option.key}
+                    className="flex items-start gap-3 rounded-md border p-3"
+                  >
+                    <Checkbox
+                      checked={formData.permissions.includes(option.key)}
+                      onCheckedChange={(checked) =>
+                        togglePermission(option.key, checked === true)
+                      }
+                    />
+                    <div className="space-y-1">
+                      <div className="font-medium">{option.label}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {option.description}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Leave all options unchecked to create a read-only Store admin.
+              </p>
+            </div>
+          ) : null}
 
           <Button type="submit" disabled={isPending} className="w-full">
             {isPending ? "Adding..." : "Add User"}
