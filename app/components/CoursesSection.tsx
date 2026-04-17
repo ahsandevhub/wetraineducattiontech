@@ -1,11 +1,15 @@
 // components/CoursesSection.tsx
 "use client";
 
+import {
+  formatServiceCurrency,
+  getServicePricing,
+} from "@/app/utils/services/pricing";
 import { createClient } from "@/app/utils/supabase/client";
-import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
+import ServiceCard, {
+  ServiceCardSkeleton,
+} from "@/components/shared/ServiceCard";
 import { motion } from "framer-motion";
-import { BookOpen, Clock, Star, Users } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -14,29 +18,17 @@ interface Course {
   slug: string;
   title: string;
   description: string;
-  instructor: string;
-  duration: string;
-  students: string;
-  rating: number;
   price: string;
+  originalPrice: string | null;
+  priceNote: string;
   imageUrl?: string;
-  emoji?: string;
   features: string[];
 }
 
 export default function CoursesSection() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
-  const { handleImageError, hasError } = useImageError();
-
-  const formatPrice = (price: number | null, currency: string) => {
-    if (price === null) return "Custom Quote";
-    return new Intl.NumberFormat("en-BD", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -66,26 +58,39 @@ export default function CoursesSection() {
         .order("created_at", { ascending: false });
 
       if (data && data.length > 0) {
-        const mapped: Course[] = data.map((service) => ({
-          id: service.id as string,
-          slug: service.slug as string,
-          title: service.title ?? "",
-          description: service.details ?? "",
-          instructor: "WeTrain Team",
-          duration: "Flexible",
-          students: "—",
-          rating: 4.8,
-          price: formatPrice(
+        const mapped: Course[] = data.map((service) => {
+          const pricing = getServicePricing(
             service.price === null ? null : Number(service.price),
-            service.currency ?? "BDT",
-          ),
-          imageUrl: service.featured_image_url ?? undefined,
-          features: Array.isArray(service.key_features)
-            ? service.key_features
-            : [],
-        }));
+            service.discount === null ? null : Number(service.discount),
+          );
+
+          return {
+            id: service.id as string,
+            slug: service.slug as string,
+            title: service.title ?? "",
+            description: service.details ?? "",
+            price: formatServiceCurrency(
+              pricing.discountedPrice,
+              service.currency ?? "BDT",
+            ),
+            originalPrice: pricing.hasDiscount
+              ? formatServiceCurrency(
+                  pricing.originalPrice,
+                  service.currency ?? "BDT",
+                )
+              : null,
+            priceNote: pricing.hasDiscount
+              ? `Save ৳${pricing.savingsAmount} • ${pricing.savingsPercent}% off`
+              : "",
+            imageUrl: service.featured_image_url ?? undefined,
+            features: Array.isArray(service.key_features)
+              ? service.key_features
+              : [],
+          };
+        });
         setCourses(mapped);
       }
+      setLoading(false);
     };
 
     loadData();
@@ -129,7 +134,20 @@ export default function CoursesSection() {
         </motion.div>
 
         {/* Courses Grid */}
-        {courses.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <motion.div
+                key={`course-skeleton-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+              >
+                <ServiceCardSkeleton />
+              </motion.div>
+            ))}
+          </div>
+        ) : courses.length > 0 ? (
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {courses.slice(0, 3).map((course, index) => (
               <motion.div
@@ -138,101 +156,25 @@ export default function CoursesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true, margin: "-50px" }}
-                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all hover:border-yellow-300 hover:shadow-xl"
+                className="h-full"
               >
-                {/* Course Image/Icon */}
-                <div className="flex h-48 items-center justify-center bg-gradient-to-br from-yellow-100 to-yellow-50 text-6xl">
-                  {course.imageUrl && !hasError(course.id) ? (
-                    <div className="relative h-full w-full">
-                      <Image
-                        src={course.imageUrl}
-                        alt={course.title}
-                        fill
-                        className="object-cover"
-                        onError={() => handleImageError(course.id)}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      {course.imageUrl && hasError(course.id) ? (
-                        <Image
-                          src={getPlaceholderImage("service")}
-                          alt="Placeholder"
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <span>{course.emoji ?? "🎓"}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-1 flex-col p-6">
-                  {/* Rating & Stats */}
-                  <div className="mb-4 flex items-center justify-between text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">{course.rating}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span>{course.students}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{course.duration}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Title & Description */}
-                  <h3 className="mb-2 text-xl font-bold text-gray-900">
-                    {course.title}
-                  </h3>
-                  <p className="mb-4 text-gray-600">{course.description}</p>
-
-                  {/* Features */}
-                  <ul className="mb-6 space-y-2 text-sm">
-                    {course.features.slice(0, 3).map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <BookOpen className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-500" />
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* Instructor */}
-                  <p className="mb-4 text-sm text-gray-500">
-                    By {course.instructor}
-                  </p>
-
-                  {/* Price & CTA */}
-                  <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
-                    <div>
-                      <span className="text-2xl font-bold text-yellow-500">
-                        {course.price}
-                      </span>
-                    </div>
-                    {isAdmin ? (
-                      <button
-                        disabled
-                        className="rounded-lg bg-gray-300 px-6 py-2.5 font-bold text-gray-600 cursor-not-allowed"
-                        title="Admins cannot purchase"
-                      >
-                        Enroll Now
-                      </button>
-                    ) : (
-                      <Link
-                        href={`/courses/${course.slug}`}
-                        className="rounded-lg bg-yellow-500 px-6 py-2.5 font-bold text-white transition-all hover:bg-yellow-600 hover:shadow-lg"
-                      >
-                        Enroll Now
-                      </Link>
-                    )}
-                  </div>
-                </div>
+                <ServiceCard
+                  id={course.id}
+                  title={course.title}
+                  description={course.description}
+                  features={course.features}
+                  imageUrl={course.imageUrl}
+                  categoryLabel="Course"
+                  categoryClassName="bg-blue-100 text-blue-800 hover:bg-blue-100"
+                  detailHref={`/courses/${course.slug}`}
+                  ctaHref={isAdmin ? undefined : `/courses/${course.slug}`}
+                  ctaLabel="Enroll Now"
+                  ctaDisabled={isAdmin}
+                  ctaTitle={isAdmin ? "Admins cannot purchase" : undefined}
+                  priceLabel={course.price}
+                  originalPriceLabel={course.originalPrice}
+                  priceNote={course.priceNote}
+                />
               </motion.div>
             ))}
           </div>

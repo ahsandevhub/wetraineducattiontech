@@ -1,5 +1,6 @@
 "use client";
 
+import { getServicePricing } from "@/app/utils/services/pricing";
 import { createClient } from "@/app/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -76,10 +77,7 @@ export default function CourseDetailPage({
     notFound();
   }
 
-  const finalPrice =
-    service.discount && service.discount > 0
-      ? service.price! - service.discount
-      : service.price;
+  const pricing = getServicePricing(service.price, service.discount);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -135,7 +133,7 @@ export default function CourseDetailPage({
               {/* Hero Image */}
               <motion.div
                 variants={itemVariants}
-                className="relative h-96 bg-gradient-to-br from-yellow-200 to-yellow-100 rounded-2xl overflow-hidden shadow-lg mb-8"
+                className="relative w-full aspect-video bg-gradient-to-br from-yellow-200 to-yellow-100 rounded-2xl overflow-hidden shadow-lg mb-8"
               >
                 {service.featured_image_url ? (
                   <Image
@@ -228,24 +226,25 @@ export default function CourseDetailPage({
                       Investment
                     </p>
                     <div className="flex items-baseline gap-3">
-                      {service.discount && service.discount > 0 && (
+                      {pricing.hasDiscount && (
                         <span className="text-4xl font-bold text-gray-900">
-                          ৳{finalPrice!.toFixed(0)}
+                          ৳{pricing.discountedPrice!.toFixed(0)}
                         </span>
                       )}
                       <span
                         className={
-                          service.discount && service.discount > 0
+                          pricing.hasDiscount
                             ? "text-xl text-gray-500 line-through"
                             : "text-4xl font-bold text-gray-900"
                         }
                       >
-                        ৳{service.price.toFixed(0)}
+                        ৳{pricing.originalPrice!.toFixed(0)}
                       </span>
                     </div>
-                    {service.discount && service.discount > 0 && (
+                    {pricing.hasDiscount && (
                       <p className="text-sm text-green-600 font-bold mt-3">
-                        Save ৳{service.discount.toFixed(0)} • Limited Time
+                        Save ৳{pricing.savingsAmount!.toFixed(0)} •{" "}
+                        {pricing.savingsPercent}% off
                       </p>
                     )}
                   </div>

@@ -38,7 +38,7 @@ export default function HeroSection() {
               transition={{ delay: 0.2, duration: 0.6 }}
               className="mb-6 text-4xl font-bold leading-tight text-gray-900 md:text-5xl lg:text-6xl"
             >
-              Complete Digital Solutions for Your Business Success
+              Your Complete Digital Solutions for Your Business Success
             </motion.h1>
 
             <motion.p

@@ -3,18 +3,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
+import { getServicePricing } from "@/app/utils/services/pricing";
+import ServiceCard from "@/components/shared/ServiceCard";
 import {
   AlertCircle,
-  Check,
   CreditCard,
-  ShoppingCart,
-  Tag,
   Zap,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type {
   CustomerProfile,
   CustomerServiceRow,
@@ -61,11 +57,6 @@ const getCategoryColor = (category: string) => {
   }
 };
 
-const calculateFinalPrice = (price: number, discount: number | null) => {
-  if (!discount) return price;
-  return price - discount;
-};
-
 export default function CustomerDashboardClient({
   stats,
   profile,
@@ -73,13 +64,6 @@ export default function CustomerDashboardClient({
   availableServices,
   purchasedPackages,
 }: CustomerDashboardClientProps) {
-  const router = useRouter();
-  const { handleImageError, hasError } = useImageError();
-
-  const handleCheckout = (serviceId: string) => {
-    router.push(`/checkout?id=${serviceId}`);
-  };
-
   const isPurchased = (title: string) => {
     return purchasedPackages.includes(title);
   };
@@ -243,116 +227,49 @@ export default function CustomerDashboardClient({
                     </div>
                     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
                       {categoryServices.slice(0, 5).map((service) => {
-                        const finalPrice = calculateFinalPrice(
+                        const pricing = getServicePricing(
                           service.price,
                           service.discount,
                         );
                         const purchased = isPurchased(service.title);
 
                         return (
-                          <Card
+                          <ServiceCard
                             key={service.id}
-                            className={`pt-0 flex flex-col ${purchased ? "border-green-300 bg-green-50/30" : ""}  hover:shadow-md transition-shadow`}
-                          >
-                            <CardHeader className="p-0">
-                              <div className="relative w-full h-32 rounded-t-lg overflow-hidden">
-                                {service.featured_image_url &&
-                                !hasError(service.id) ? (
-                                  <Image
-                                    src={service.featured_image_url}
-                                    alt={service.title}
-                                    fill
-                                    className="object-cover"
-                                    onError={() => handleImageError(service.id)}
-                                  />
-                                ) : (
-                                  <Image
-                                    src={getPlaceholderImage("service")}
-                                    alt="Placeholder"
-                                    fill
-                                    className="object-cover"
-                                  />
-                                )}
-                                {purchased && (
-                                  <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
-                                    <Check className="w-3 h-3" />
-                                    Purchased
-                                  </div>
-                                )}
-                                {service.discount && service.discount > 0 && (
-                                  <div className="absolute top-2 left-2 bg-yellow-500 text-gray-900 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
-                                    <Tag className="w-3 h-3" />
-                                    Save ৳{service.discount}
-                                  </div>
-                                )}
-                              </div>
-                            </CardHeader>
-
-                            <CardContent className="flex-1 p-4 space-y-3">
-                              <div className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <Badge
-                                    className={getCategoryColor(
-                                      service.category,
-                                    )}
-                                  >
-                                    {service.category.charAt(0).toUpperCase() +
-                                      service.category.slice(1)}
-                                  </Badge>
+                            id={service.id}
+                            title={service.title}
+                            description={service.details}
+                            features={service.key_features}
+                            imageUrl={service.featured_image_url}
+                            categoryLabel={
+                              service.category.charAt(0).toUpperCase() +
+                              service.category.slice(1)
+                            }
+                            categoryClassName={getCategoryColor(service.category)}
+                            priceLabel={`৳${pricing.discountedPrice!.toLocaleString()}`}
+                            originalPriceLabel={
+                              pricing.hasDiscount
+                                ? `৳${pricing.originalPrice!.toLocaleString()}`
+                                : null
+                            }
+                            priceNote={
+                              pricing.hasDiscount
+                                ? `Save ৳${pricing.savingsAmount} • ${pricing.savingsPercent}% off`
+                                : null
+                            }
+                            ctaHref={purchased ? undefined : `/checkout?id=${service.id}`}
+                            ctaLabel={purchased ? "Purchased" : "Get Now"}
+                            ctaDisabled={purchased}
+                            ctaVariant={purchased ? "outline" : "default"}
+                            topRightBadge={
+                              purchased ? (
+                                <div className="rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white">
+                                  Purchased
                                 </div>
-                                <h3 className="font-semibold text-sm line-clamp-1">
-                                  {service.title}
-                                </h3>
-                                {service.details && (
-                                  <p className="text-xs text-gray-600 line-clamp-1">
-                                    {service.details}
-                                  </p>
-                                )}
-                              </div>
-
-                              {/* Pricing */}
-                              <div className="pt-2 border-t">
-                                {service.discount && service.discount > 0 ? (
-                                  <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-lg font-bold text-gray-900">
-                                        ৳{finalPrice.toLocaleString()}
-                                      </span>
-                                      <span className="text-sm text-gray-400 line-through">
-                                        ৳{service.price.toLocaleString()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <span className="text-lg font-bold text-gray-900">
-                                    ৳{service.price.toLocaleString()}
-                                  </span>
-                                )}
-                              </div>
-                            </CardContent>
-
-                            <div className="px-4">
-                              <Button
-                                onClick={() => handleCheckout(service.id)}
-                                disabled={purchased}
-                                className="w-full text-xs"
-                                variant={purchased ? "outline" : "default"}
-                                size="sm"
-                              >
-                                {purchased ? (
-                                  <>
-                                    <Check className="w-3 h-3 mr-1" />
-                                    Purchased
-                                  </>
-                                ) : (
-                                  <>
-                                    <ShoppingCart className="w-3 h-3 mr-1" />
-                                    Get Now
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </Card>
+                              ) : null
+                            }
+                            className={purchased ? "border-green-300 bg-green-50/30" : undefined}
+                          />
                         );
                       })}
                     </div>

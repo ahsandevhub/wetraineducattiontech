@@ -2,10 +2,9 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
-import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
+import { formatServiceCurrency, getServicePricing } from "@/app/utils/services/pricing";
+import ServiceCard, { ServiceCardSkeleton } from "@/components/shared/ServiceCard";
 import { motion } from "framer-motion";
-import { CheckCircle2 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -18,6 +17,7 @@ interface ITService {
   imageUrl?: string;
   features: string[];
   price: string;
+  originalPrice: string | null;
   priceNote: string;
   popular?: boolean;
 }
@@ -25,16 +25,7 @@ interface ITService {
 export default function ITServicesSection() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [services, setServices] = useState<ITService[]>([]);
-  const { handleImageError, hasError } = useImageError();
-
-  const formatPrice = (price: number | null, currency: string) => {
-    if (price === null) return "Custom Quote";
-    return new Intl.NumberFormat("en-BD", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -64,27 +55,39 @@ export default function ITServicesSection() {
         .order("created_at", { ascending: false });
 
       if (data && data.length > 0) {
-        const mapped: ITService[] = data.map((service) => ({
-          id: service.id as string,
-          slug: service.slug as string,
-          title: service.title ?? "",
-          description: service.details ?? "",
-          features: Array.isArray(service.key_features)
-            ? service.key_features
-            : [],
-          price: formatPrice(
+        const mapped: ITService[] = data.map((service) => {
+          const pricing = getServicePricing(
             service.price === null ? null : Number(service.price),
-            service.currency ?? "BDT",
-          ),
-          priceNote:
-            service.discount !== null && service.discount !== undefined
-              ? `Save ${service.discount}%`
+            service.discount === null ? null : Number(service.discount),
+          );
+          return {
+            id: service.id as string,
+            slug: service.slug as string,
+            title: service.title ?? "",
+            description: service.details ?? "",
+            features: Array.isArray(service.key_features)
+              ? service.key_features
+              : [],
+            price: formatServiceCurrency(
+              pricing.discountedPrice,
+              service.currency ?? "BDT",
+            ),
+            originalPrice: pricing.hasDiscount
+              ? formatServiceCurrency(
+                  pricing.originalPrice,
+                  service.currency ?? "BDT",
+                )
+              : null,
+            priceNote: pricing.hasDiscount
+              ? `Save ৳${pricing.savingsAmount} • ${pricing.savingsPercent}% off`
               : "",
-          imageUrl: service.featured_image_url ?? undefined,
-          popular: false,
-        }));
+            imageUrl: service.featured_image_url ?? undefined,
+            popular: false,
+          };
+        });
         setServices(mapped);
       }
+      setLoading(false);
     };
 
     loadData();
@@ -129,7 +132,20 @@ export default function ITServicesSection() {
         </motion.div>
 
         {/* Services Grid */}
-        {services.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <motion.div
+                key={`software-skeleton-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+              >
+                <ServiceCardSkeleton />
+              </motion.div>
+            ))}
+          </div>
+        ) : services.length > 0 ? (
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {services.slice(0, 3).map((service, index) => (
               <motion.div
@@ -138,133 +154,35 @@ export default function ITServicesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true, margin: "-50px" }}
-                className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-xl ${
-                  service.popular
-                    ? "border-yellow-400 ring-2 ring-yellow-400/20"
-                    : "border-gray-200 hover:border-yellow-300"
-                }`}
+                className="h-full"
               >
-                {/* Popular Badge */}
-                {service.popular && (
-                  <div className="absolute right-4 top-4 z-10 rounded-full bg-yellow-500 px-3 py-1 text-xs font-bold text-white">
-                    POPULAR
-                  </div>
-                )}
-
-                <div className="flex flex-1 flex-col">
-                  {/* Icon / Image (Video aspect) */}
-                  <div className="">
-                    {service.imageUrl && !hasError(service.id) ? (
-                      <div className="relative w-full overflow-hidden bg-gray-100">
-                        <div className="relative aspect-video w-full">
-                          {/* Blurred background layer (handles portrait images nicely) */}
-                          <Image
-                            src={service.imageUrl}
-                            alt=""
-                            fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="scale-110 object-cover blur-2xl"
-                            priority={false}
-                            onError={() => handleImageError(service.id)}
-                          />
-                          <div className="absolute inset-0 bg-black/10" />
-
-                          {/* Foreground image (keeps full image visible) */}
-                          <Image
-                            src={service.imageUrl}
-                            alt={service.title}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="object-contain"
-                            priority={false}
-                            onError={() => handleImageError(service.id)}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="relative w-full overflow-hidden bg-gray-100">
-                        <div className="relative aspect-video w-full">
-                          {service.imageUrl && hasError(service.id) ? (
-                            <Image
-                              src={getPlaceholderImage("service")}
-                              alt="Placeholder"
-                              fill
-                              sizes="(max-width: 768px) 100vw, 33vw"
-                              className="object-contain"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 text-white text-4xl">
-                              {service.icon}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col p-6 h-full">
-                    {/* Title & Description */}
-                    <h3 className="mb-3 text-xl font-bold text-gray-900">
-                      {service.title}
-                    </h3>
-                    <p className="mb-6 text-gray-600">{service.description}</p>
-
-                    {/* Features */}
-                    <div className="mb-6 flex-1">
-                      <p className="mb-3 text-sm font-semibold text-gray-700">
-                        Key Features:
-                      </p>
-                      <ul className="space-y-2">
-                        {service.features.map((feature, i) => (
-                          <li
-                            key={i}
-                            className="flex items-start gap-2 text-sm"
-                          >
-                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-500" />
-                            <span className="text-gray-700">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Price & CTA */}
-                    <div className="border-t border-gray-100 pt-4 mt-auto">
-                      <div className="mb-4">
-                        <span className="text-3xl font-bold text-yellow-600">
-                          {service.price}
-                        </span>
-                        {service.priceNote ? (
-                          <span className="ml-2 text-sm text-gray-500">
-                            {service.priceNote}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {service.id === "custom-software" ? (
-                        <Link
-                          href="/#proposal"
-                          className="block w-full rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 py-3 text-center font-bold text-white transition-all hover:from-yellow-600 hover:to-orange-600 hover:shadow-lg"
-                        >
-                          Request Quote
-                        </Link>
-                      ) : isAdmin ? (
-                        <button
-                          disabled
-                          className="block w-full cursor-not-allowed rounded-lg bg-gray-400 py-3 text-center font-bold text-gray-600"
-                          title="Admins cannot purchase"
-                        >
-                          Purchase Now
-                        </button>
-                      ) : (
-                        <Link
-                          href={`/software/${service.slug}`}
-                          className="block w-full rounded-lg bg-gradient-to-r from-yellow-500 to-orange-500 py-3 text-center font-bold text-white transition-all hover:from-yellow-600 hover:to-orange-600 hover:shadow-lg"
-                        >
-                          Purchase Now
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <ServiceCard
+                  id={service.id}
+                  title={service.title}
+                  description={service.description}
+                  features={service.features}
+                  imageUrl={service.imageUrl}
+                  categoryLabel="Software"
+                  categoryClassName="bg-purple-100 text-purple-800 hover:bg-purple-100"
+                  detailHref={`/software/${service.slug}`}
+                  ctaHref={
+                    isAdmin
+                      ? undefined
+                      : service.id === "custom-software"
+                        ? "/#proposal"
+                        : `/software/${service.slug}`
+                  }
+                  ctaLabel={
+                    service.id === "custom-software"
+                      ? "Request Quote"
+                      : "Purchase Now"
+                  }
+                  ctaDisabled={isAdmin}
+                  ctaTitle={isAdmin ? "Admins cannot purchase" : undefined}
+                  priceLabel={service.price}
+                  originalPriceLabel={service.originalPrice}
+                  priceNote={service.priceNote}
+                />
               </motion.div>
             ))}
           </div>

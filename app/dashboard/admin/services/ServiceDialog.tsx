@@ -185,7 +185,7 @@ export default function ServiceDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="discount">Discount</Label>
+              <Label htmlFor="discount">Discounted Price</Label>
               <Input
                 id="discount"
                 inputMode="decimal"
@@ -197,7 +197,7 @@ export default function ServiceDialog({
                   }))
                 }
                 disabled={isSaving}
-                placeholder="e.g. 10"
+                placeholder="Price after discount"
               />
             </div>
             <div className="space-y-2">
@@ -211,7 +211,7 @@ export default function ServiceDialog({
                     currency: event.target.value,
                   }))
                 }
-                disabled={isSaving}
+                disabled
               />
             </div>
           </div>

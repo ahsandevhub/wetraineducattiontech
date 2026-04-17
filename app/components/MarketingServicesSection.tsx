@@ -2,10 +2,9 @@
 "use client";
 
 import { createClient } from "@/app/utils/supabase/client";
-import { getPlaceholderImage, useImageError } from "@/hooks/useImageError";
+import { formatServiceCurrency, getServicePricing } from "@/app/utils/services/pricing";
+import ServiceCard, { ServiceCardSkeleton } from "@/components/shared/ServiceCard";
 import { motion } from "framer-motion";
-import { CheckCircle2, Sparkles } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -18,6 +17,7 @@ interface MarketingService {
   imageUrl?: string;
   features: string[];
   price: string;
+  originalPrice: string | null;
   priceNote: string;
   popular?: boolean;
 }
@@ -25,16 +25,7 @@ interface MarketingService {
 export default function MarketingServicesSection() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [services, setServices] = useState<MarketingService[]>([]);
-  const { handleImageError, hasError } = useImageError();
-
-  const formatPrice = (price: number | null, currency: string) => {
-    if (price === null) return "Custom Quote";
-    return new Intl.NumberFormat("en-BD", {
-      style: "currency",
-      currency,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -64,27 +55,39 @@ export default function MarketingServicesSection() {
         .order("created_at", { ascending: false });
 
       if (data && data.length > 0) {
-        const mapped: MarketingService[] = data.map((service) => ({
-          id: service.id as string,
-          slug: service.slug as string,
-          title: service.title ?? "",
-          description: service.details ?? "",
-          features: Array.isArray(service.key_features)
-            ? service.key_features
-            : [],
-          price: formatPrice(
+        const mapped: MarketingService[] = data.map((service) => {
+          const pricing = getServicePricing(
             service.price === null ? null : Number(service.price),
-            service.currency ?? "BDT",
-          ),
-          priceNote:
-            service.discount !== null && service.discount !== undefined
-              ? `Save ${service.discount}%`
+            service.discount === null ? null : Number(service.discount),
+          );
+          return {
+            id: service.id as string,
+            slug: service.slug as string,
+            title: service.title ?? "",
+            description: service.details ?? "",
+            features: Array.isArray(service.key_features)
+              ? service.key_features
+              : [],
+            price: formatServiceCurrency(
+              pricing.discountedPrice,
+              service.currency ?? "BDT",
+            ),
+            originalPrice: pricing.hasDiscount
+              ? formatServiceCurrency(
+                  pricing.originalPrice,
+                  service.currency ?? "BDT",
+                )
+              : null,
+            priceNote: pricing.hasDiscount
+              ? `Save ৳${pricing.savingsAmount} • ${pricing.savingsPercent}% off`
               : "",
-          imageUrl: service.featured_image_url ?? undefined,
-          popular: false,
-        }));
+            imageUrl: service.featured_image_url ?? undefined,
+            popular: false,
+          };
+        });
         setServices(mapped);
       }
+      setLoading(false);
     };
 
     loadData();
@@ -130,7 +133,20 @@ export default function MarketingServicesSection() {
         </motion.div>
 
         {/* Services Grid */}
-        {services.length > 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <motion.div
+                key={`marketing-skeleton-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
+              >
+                <ServiceCardSkeleton />
+              </motion.div>
+            ))}
+          </div>
+        ) : services.length > 0 ? (
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {services.slice(0, 3).map((service, index) => (
               <motion.div
@@ -139,133 +155,35 @@ export default function MarketingServicesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true, margin: "-50px" }}
-                className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-xl ${
-                  service.popular
-                    ? "border-orange-400 ring-2 ring-orange-400/20"
-                    : "border-gray-200 hover:border-orange-300"
-                }`}
+                className="h-full"
               >
-                {/* Popular Badge */}
-                {service.popular && (
-                  <div className="absolute right-4 top-4 z-10 flex items-center gap-1 rounded-full bg-orange-500 px-3 py-1 text-xs font-bold text-white">
-                    <Sparkles className="h-3 w-3" />
-                    POPULAR
-                  </div>
-                )}
-
-                <div className="flex flex-1 flex-col">
-                  {/* Icon / Image (Video aspect) */}
-                  <div className="">
-                    {service.imageUrl && !hasError(service.id) ? (
-                      <div className="relative w-full overflow-hidden bg-gray-100">
-                        <div className="relative aspect-video w-full">
-                          {/* Blurred background layer (portrait-safe) */}
-                          <Image
-                            src={service.imageUrl}
-                            alt=""
-                            fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="scale-110 object-cover blur-2xl"
-                            priority={false}
-                            onError={() => handleImageError(service.id)}
-                          />
-                          <div className="absolute inset-0 bg-black/10" />
-
-                          {/* Foreground image (always fully visible) */}
-                          <Image
-                            src={service.imageUrl}
-                            alt={service.title}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="object-contain"
-                            priority={false}
-                            onError={() => handleImageError(service.id)}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="relative w-full overflow-hidden bg-gray-100">
-                        <div className="relative aspect-video w-full">
-                          {service.imageUrl && hasError(service.id) ? (
-                            <Image
-                              src={getPlaceholderImage("service")}
-                              alt="Placeholder"
-                              fill
-                              sizes="(max-width: 768px) 100vw, 33vw"
-                              className="object-contain"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-yellow-500 text-white text-4xl">
-                              {service.icon}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-6 flex flex-col h-full">
-                    {/* Title & Description */}
-                    <h3 className="mb-3 text-xl font-bold text-gray-900">
-                      {service.title}
-                    </h3>
-                    <p className="mb-6 text-gray-600">{service.description}</p>
-
-                    {/* Features */}
-                    <div className="mb-6 flex-1">
-                      <p className="mb-3 text-sm font-semibold text-gray-700">
-                        What&apos;s Included:
-                      </p>
-                      <ul className="space-y-2">
-                        {service.features.map((feature, i) => (
-                          <li
-                            key={i}
-                            className="flex items-start gap-2 text-sm"
-                          >
-                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-orange-500" />
-                            <span className="text-gray-700">{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Price & CTA */}
-                    <div className="border-t border-gray-100 pt-4 mt-auto">
-                      <div className="mb-4">
-                        <span className="text-3xl font-bold text-orange-600">
-                          {service.price}
-                        </span>
-                        {service.priceNote ? (
-                          <span className="ml-2 text-sm text-gray-500">
-                            {service.priceNote}
-                          </span>
-                        ) : null}
-                      </div>
-                      {service.id === "influencer-marketing" ? (
-                        <Link
-                          href="/#proposal"
-                          className="block w-full rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 py-3 text-center font-bold text-white transition-all hover:from-orange-600 hover:to-yellow-600 hover:shadow-lg"
-                        >
-                          Get Quote
-                        </Link>
-                      ) : isAdmin ? (
-                        <button
-                          disabled
-                          className="block w-full rounded-lg bg-gray-400 py-3 text-center font-bold text-gray-600 cursor-not-allowed"
-                          title="Admins cannot purchase"
-                        >
-                          Get Started
-                        </button>
-                      ) : (
-                        <Link
-                          href={`/marketing/${service.slug}`}
-                          className="block w-full rounded-lg bg-gradient-to-r from-orange-500 to-yellow-500 py-3 text-center font-bold text-white transition-all hover:from-orange-600 hover:to-yellow-600 hover:shadow-lg"
-                        >
-                          Get Started
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <ServiceCard
+                  id={service.id}
+                  title={service.title}
+                  description={service.description}
+                  features={service.features}
+                  imageUrl={service.imageUrl}
+                  categoryLabel="Marketing"
+                  categoryClassName="bg-green-100 text-green-800 hover:bg-green-100"
+                  detailHref={`/marketing/${service.slug}`}
+                  ctaHref={
+                    isAdmin
+                      ? undefined
+                      : service.id === "influencer-marketing"
+                        ? "/#proposal"
+                        : `/marketing/${service.slug}`
+                  }
+                  ctaLabel={
+                    service.id === "influencer-marketing"
+                      ? "Get Quote"
+                      : "Get Started"
+                  }
+                  ctaDisabled={isAdmin}
+                  ctaTitle={isAdmin ? "Admins cannot purchase" : undefined}
+                  priceLabel={service.price}
+                  originalPriceLabel={service.originalPrice}
+                  priceNote={service.priceNote}
+                />
               </motion.div>
             ))}
           </div>

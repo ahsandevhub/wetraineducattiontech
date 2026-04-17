@@ -142,7 +142,21 @@ export default function ServicesClient({ services }: ServicesClientProps) {
     }
 
     if (values.discount.trim() && Number.isNaN(parsedDiscount)) {
-      toast.error("Discount must be a valid number");
+      toast.error("Discounted price must be a valid number");
+      return;
+    }
+
+    if (parsedDiscount !== null && parsedPrice === null) {
+      toast.error("Add the original price before setting a discounted price");
+      return;
+    }
+
+    if (
+      parsedPrice !== null &&
+      parsedDiscount !== null &&
+      parsedDiscount >= parsedPrice
+    ) {
+      toast.error("Discounted price must be lower than the original price");
       return;
     }
 
@@ -285,7 +299,7 @@ export default function ServicesClient({ services }: ServicesClientProps) {
                     Price
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900">
-                    Discount
+                    Discounted Price
                   </TableHead>
                   <TableHead className="font-semibold text-gray-900">
                     Updated
@@ -319,7 +333,11 @@ export default function ServicesClient({ services }: ServicesClientProps) {
                           : `${service.currency} ${service.price.toLocaleString()}`}
                     </TableCell>
                     <TableCell>
-                      {service.discount === null ? "—" : `${service.discount}`}
+                      {service.discount === null
+                        ? "—"
+                        : service.currency === "BDT"
+                          ? formatCurrency(service.discount)
+                          : `${service.currency} ${service.discount.toLocaleString()}`}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       {service.updatedAt

@@ -1,4 +1,5 @@
 "use client";
+import { getServicePricing } from "@/app/utils/services/pricing";
 import { createClient } from "@/app/utils/supabase/client";
 import { motion } from "framer-motion";
 import { Building2, CreditCard, Smartphone } from "lucide-react";
@@ -87,6 +88,10 @@ function CheckoutPageContent() {
   const pkg = packages.find((p) => p.name === name);
 
   const isServicePurchase = Boolean(id);
+  const pricing = getServicePricing(
+    serviceData?.price ?? null,
+    serviceData?.discount ?? null,
+  );
 
   // Fetch service details from database if service ID is provided
   useEffect(() => {
@@ -203,10 +208,8 @@ function CheckoutPageContent() {
         body: JSON.stringify({
           name: serviceData?.title || name,
           price:
-            serviceData && serviceData.price !== null
-              ? serviceData.discount && serviceData.discount > 0
-                ? serviceData.price - serviceData.discount
-                : serviceData.price
+            serviceData && pricing.discountedPrice !== null
+              ? pricing.discountedPrice
               : price,
           email: userEmail,
           service: serviceData?.category || "",
@@ -346,10 +349,10 @@ function CheckoutPageContent() {
                   </div>
                 )}
                 <span className="text-3xl font-bold text-[var(--primary-yellow)]">
-                  {serviceData && serviceData.price !== null
-                    ? serviceData.discount && serviceData.discount > 0
-                      ? `৳${(serviceData.price - serviceData.discount).toFixed(0)}`
-                      : `৳${serviceData.price.toFixed(0)}`
+                  {serviceData
+                    ? pricing.discountedPrice !== null
+                      ? `৳${pricing.discountedPrice.toFixed(0)}`
+                      : price
                     : price}
                 </span>
                 {pkg?.priceNote && (
@@ -373,8 +376,10 @@ function CheckoutPageContent() {
                 <span className="font-bold">{serviceData?.title || name}</span>{" "}
                 for{" "}
                 <span className="text-[var(--primary-yellow)] font-bold">
-                  {serviceData && serviceData.price !== null
-                    ? `৳${(serviceData.discount && serviceData.discount > 0 ? serviceData.price - serviceData.discount : serviceData.price).toFixed(0)}`
+                  {serviceData
+                    ? pricing.discountedPrice !== null
+                      ? `৳${pricing.discountedPrice.toFixed(0)}`
+                      : price
                     : price}
                 </span>
                 .
