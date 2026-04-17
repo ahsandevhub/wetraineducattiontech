@@ -1,12 +1,10 @@
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import { requireStorePermission } from "@/app/utils/auth/require";
 import { getAllStoreProducts } from "../../_actions/products";
 import { StoreProductsClient } from "./products-client";
 
 export default async function StoreProductsPage() {
-  const [result, roles] = await Promise.all([
-    getAllStoreProducts(),
-    getCurrentUserWithRoles(),
-  ]);
+  await requireStorePermission("product_manage");
+  const result = await getAllStoreProducts();
   const { data, error } = result;
 
   if (error || !data) {
@@ -20,9 +18,6 @@ export default async function StoreProductsPage() {
   }
 
   return (
-    <StoreProductsClient
-      products={data}
-      canManageProducts={Boolean(roles?.storeCapabilities.canManageProducts)}
-    />
+    <StoreProductsClient products={data} canManageProducts />
   );
 }

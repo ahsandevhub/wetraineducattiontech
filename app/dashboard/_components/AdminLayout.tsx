@@ -1,6 +1,11 @@
 "use client";
 
-import type { CrmRole, HrmRole, StoreRole } from "@/app/utils/auth/roles";
+import type {
+  CrmRole,
+  HrmRole,
+  StoreCapabilities,
+  StoreRole,
+} from "@/app/utils/auth/roles";
 import { NotificationBell } from "@/components/hrm/NotificationBell";
 import {
   Breadcrumb,
@@ -54,6 +59,7 @@ import { usePathname } from "next/navigation";
 import type { ComponentType, ReactNode } from "react";
 import { ApplicationSwitcher } from "./ApplicationSwitcher";
 import { ProfileMenu } from "./ProfileMenu";
+import { SidebarNavLink } from "./SidebarNavLink";
 
 export type Role = "customer" | "admin";
 
@@ -87,6 +93,7 @@ type AdminLayoutProps = {
   canActAsCrmMarketer: boolean;
   hrmRole: HrmRole | null;
   storeRole: StoreRole | null;
+  storeCapabilities: StoreCapabilities;
   hasEducationAccess?: boolean;
 };
 
@@ -98,6 +105,7 @@ export default function AdminLayout({
   canActAsCrmMarketer,
   hrmRole,
   storeRole,
+  storeCapabilities,
   hasEducationAccess = true,
 }: AdminLayoutProps) {
   const pathname = usePathname();
@@ -249,36 +257,60 @@ export default function AdminLayout({
                       icon: Settings,
                       href: "/dashboard/store/admin",
                     },
-                    {
-                      label: "Employees",
-                      icon: Users,
-                      href: "/dashboard/store/admin/employees",
-                    },
-                    {
-                      label: "Invoices",
-                      icon: Receipt,
-                      href: "/dashboard/store/admin/invoices",
-                    },
-                    {
-                      label: "Products",
-                      icon: ShoppingCart,
-                      href: "/dashboard/store/admin/products",
-                    },
-                    {
-                      label: "Stocks",
-                      icon: Database,
-                      href: "/dashboard/store/admin/stocks",
-                    },
-                    {
-                      label: "Accounts",
-                      icon: Wallet,
-                      href: "/dashboard/store/admin/accounts",
-                    },
-                    {
-                      label: "Owner Purchases",
-                      icon: ShoppingCart,
-                      href: "/dashboard/store/admin/owner-purchases",
-                    },
+                    ...(storeCapabilities.canManagePermissions
+                      ? [
+                          {
+                            label: "Employees",
+                            icon: Users,
+                            href: "/dashboard/store/admin/employees",
+                          },
+                        ]
+                      : []),
+                    ...(storeCapabilities.canManageInvoices
+                      ? [
+                          {
+                            label: "Invoices",
+                            icon: Receipt,
+                            href: "/dashboard/store/admin/invoices",
+                          },
+                        ]
+                      : []),
+                    ...(storeCapabilities.canManageProducts
+                      ? [
+                          {
+                            label: "Products",
+                            icon: ShoppingCart,
+                            href: "/dashboard/store/admin/products",
+                          },
+                        ]
+                      : []),
+                    ...(storeCapabilities.canManageStock
+                      ? [
+                          {
+                            label: "Stocks",
+                            icon: Database,
+                            href: "/dashboard/store/admin/stocks",
+                          },
+                        ]
+                      : []),
+                    ...(storeCapabilities.canAddBalance
+                      ? [
+                          {
+                            label: "Accounts",
+                            icon: Wallet,
+                            href: "/dashboard/store/admin/accounts",
+                          },
+                        ]
+                      : []),
+                    ...(storeCapabilities.canManageOwnerPurchases
+                      ? [
+                          {
+                            label: "Owner Purchases",
+                            icon: ShoppingCart,
+                            href: "/dashboard/store/admin/owner-purchases",
+                          },
+                        ]
+                      : []),
                     {
                       label: "Reports",
                       icon: FileBarChart,
@@ -613,8 +645,9 @@ export default function AdminLayout({
                 <SidebarMenu>
                   {group.items.map((item) => {
                     const isActive = item.href === activeItemHref;
-
-                    const Icon = item.icon;
+                    const showPendingIndicator =
+                      item.href === "/dashboard/store/admin/stocks" ||
+                      item.href === "/dashboard/store/admin/accounts";
                     return (
                       <SidebarMenuItem key={item.label}>
                         <SidebarMenuButton
@@ -623,8 +656,11 @@ export default function AdminLayout({
                           className="text-gray-700 hover:bg-yellow-100 hover:text-gray-900 transition-colors data-[active=true]:!bg-[var(--primary-yellow)] data-[active=true]:border data-[active=true]:!text-gray-900 data-[active=true]:hover:!text-gray-900 hover:border hover:border-amber-300 border border-transparent"
                         >
                           <Link href={item.href}>
-                            <Icon className="h-4 w-4" />
-                            {item.label}
+                            <SidebarNavLink
+                              label={item.label}
+                              icon={item.icon}
+                              showPendingIndicator={showPendingIndicator}
+                            />
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>

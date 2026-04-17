@@ -1,4 +1,4 @@
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import { requireStorePermission } from "@/app/utils/auth/require";
 import { getStoreStockOverview } from "../../_actions/stocks";
 import { StoreStocksClient } from "./stocks-client";
 
@@ -7,11 +7,9 @@ export default async function StoreStocksPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  await requireStorePermission("stock_manage");
   const params = await searchParams;
-  const [result, roles] = await Promise.all([
-    getStoreStockOverview(params),
-    getCurrentUserWithRoles(),
-  ]);
+  const result = await getStoreStockOverview(params);
   const { data, error } = result;
 
   if (error || !data) {
@@ -30,7 +28,7 @@ export default async function StoreStocksPage({
       movementPage={data.movementPage}
       movementFilters={data.movementFilters}
       movementActors={data.movementActors}
-      canManageStock={Boolean(roles?.storeCapabilities.canManageStock)}
+      canManageStock
     />
   );
 }

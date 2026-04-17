@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -21,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Minus, PencilLine, Plus } from "lucide-react";
+import { LoaderCircle, Minus, PencilLine, Plus } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -136,6 +137,9 @@ export function StoreStocksClient({
   const [inventoryRowsPerPage, setInventoryRowsPerPage] = useState(50);
   const [movementSearch, setMovementSearch] = useState(movementFilters.q);
   const [loading, setLoading] = useState(false);
+  const [pendingTab, setPendingTab] = useState<"inventory" | "movements" | null>(
+    null,
+  );
   const [dialogState, setDialogState] = useState<DialogState>({
     open: false,
     initialProductId: null,
@@ -181,6 +185,12 @@ export function StoreStocksClient({
   useEffect(() => {
     setMovementSearch(movementFilters.q);
   }, [movementFilters.q]);
+
+  useEffect(() => {
+    if (pendingTab === activeTab) {
+      setPendingTab(null);
+    }
+  }, [activeTab, pendingTab]);
 
   const updateQueryParams = useCallback(
     (updates: Record<string, string | number | null>) => {
@@ -255,6 +265,10 @@ export function StoreStocksClient({
     }
   };
 
+  const visibleTab = pendingTab ?? activeTab;
+  const isInventoryPending = isNavigating && pendingTab === "inventory";
+  const isMovementsPending = isNavigating && pendingTab === "movements";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -325,20 +339,56 @@ export function StoreStocksClient({
       </div>
 
       <Tabs
-        value={activeTab}
-        onValueChange={(value) =>
+        value={visibleTab}
+        onValueChange={(value) => {
+          const nextTab = value === "movements" ? "movements" : "inventory";
+          setPendingTab(nextTab);
           updateQueryParams({
-            tab: value === "movements" ? "movements" : null,
-          })
-        }
+            tab: nextTab === "movements" ? "movements" : null,
+          });
+        }}
         className="space-y-4"
       >
         <TabsList className="grid w-full grid-cols-2 sm:w-fit">
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-          <TabsTrigger value="movements">Stock Movements</TabsTrigger>
+          <TabsTrigger value="inventory" disabled={isNavigating}>
+            <span>Inventory</span>
+            {isInventoryPending ? (
+              <LoaderCircle className="ml-2 h-3.5 w-3.5 animate-spin" />
+            ) : null}
+          </TabsTrigger>
+          <TabsTrigger value="movements" disabled={isNavigating}>
+            <span>Stock Movements</span>
+            {isMovementsPending ? (
+              <LoaderCircle className="ml-2 h-3.5 w-3.5 animate-spin" />
+            ) : null}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="inventory">
+          {isInventoryPending ? (
+            <Card className="border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+              <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-28" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+                <Skeleton className="h-10 w-full md:max-w-sm" />
+              </CardHeader>
+              <CardContent className="space-y-4 px-0 pb-0 sm:px-6 sm:pb-6">
+                <div className="overflow-hidden rounded-md border">
+                  <div className="space-y-3 p-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Loading inventory...
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
           <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
             <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
               <CardTitle>Inventory</CardTitle>
@@ -495,9 +545,38 @@ export function StoreStocksClient({
               />
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="movements">
+          {isMovementsPending ? (
+            <Card className="border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+              <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-36" />
+                  <Skeleton className="h-4 w-56" />
+                </div>
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <Skeleton className="h-10 w-full md:w-80" />
+                  <Skeleton className="h-10 w-full md:w-48" />
+                  <Skeleton className="h-10 w-full md:w-56" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 px-0 pb-0 sm:px-6 sm:pb-6">
+                <div className="overflow-hidden rounded-md border">
+                  <div className="space-y-3 p-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Loading stock movements...
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
           <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
             <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
               <CardTitle>Stock Movements</CardTitle>
@@ -643,6 +722,7 @@ export function StoreStocksClient({
               ) : null}
             </CardContent>
           </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

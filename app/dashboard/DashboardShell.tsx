@@ -1,6 +1,11 @@
 "use client";
 
-import type { CrmRole, HrmRole, StoreRole } from "@/app/utils/auth/roles";
+import type {
+  CrmRole,
+  HrmRole,
+  StoreCapabilities,
+  StoreRole,
+} from "@/app/utils/auth/roles";
 import { ReactNode } from "react";
 import AdminLayout, { type Role } from "./_components/AdminLayout";
 import { DashboardScrollManager } from "./_components/DashboardScrollManager";
@@ -15,6 +20,7 @@ type DashboardShellProps = {
   canActAsCrmMarketer: boolean;
   hrmRole: HrmRole | null;
   storeRole: StoreRole | null;
+  storeCapabilities: StoreCapabilities;
   userId: string; // Keep for future use
   hasEducationAccess?: boolean;
 };
@@ -27,6 +33,7 @@ export default function DashboardShell({
   canActAsCrmMarketer,
   hrmRole,
   storeRole,
+  storeCapabilities,
   hasEducationAccess,
 }: DashboardShellProps) {
   return (
@@ -39,6 +46,7 @@ export default function DashboardShell({
         canActAsCrmMarketer={canActAsCrmMarketer}
         hrmRole={hrmRole}
         storeRole={storeRole}
+        storeCapabilities={storeCapabilities}
         hasEducationAccess={hasEducationAccess}
       >
         {children}

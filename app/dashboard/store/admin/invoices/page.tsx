@@ -1,12 +1,10 @@
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import { requireStorePermission } from "@/app/utils/auth/require";
 import { getStoreAdminInvoiceHistory } from "../../_actions/invoices";
 import { StoreAdminInvoicesClient } from "./store-admin-invoices-client";
 
 export default async function StoreAdminInvoicesPage() {
-  const [result, roles] = await Promise.all([
-    getStoreAdminInvoiceHistory(),
-    getCurrentUserWithRoles(),
-  ]);
+  await requireStorePermission("invoice_manage");
+  const result = await getStoreAdminInvoiceHistory();
   const { data, error } = result;
 
   if (error || !data) {
@@ -20,9 +18,6 @@ export default async function StoreAdminInvoicesPage() {
   }
 
   return (
-    <StoreAdminInvoicesClient
-      invoices={data}
-      canManageInvoices={Boolean(roles?.storeCapabilities.canManageInvoices)}
-    />
+    <StoreAdminInvoicesClient invoices={data} canManageInvoices />
   );
 }

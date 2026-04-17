@@ -1,7 +1,9 @@
+import { requireStorePermission } from "@/app/utils/auth/require";
 import { getAllStoreUsers } from "../../_actions/users";
 import { StoreEmployeesClient } from "./employees-client";
 
 export default async function StoreEmployeesPage() {
+  await requireStorePermission("permissions_manage");
   const { data, error } = await getAllStoreUsers();
 
   if (error || !data) {

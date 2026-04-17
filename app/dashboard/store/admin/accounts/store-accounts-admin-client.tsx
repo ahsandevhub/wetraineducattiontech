@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -21,8 +22,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "react-hot-toast";
 import { createStoreAccountEntry } from "../../_actions/accounts";
 import { closeStoreMonth } from "../../_actions/month-closures";
@@ -129,6 +131,11 @@ export function StoreAccountsAdminClient({
   const [balancesRowsPerPage, setBalancesRowsPerPage] = useState(50);
   const [ledgerPage, setLedgerPage] = useState(1);
   const [ledgerRowsPerPage, setLedgerRowsPerPage] = useState(50);
+  const [activeTab, setActiveTab] = useState<"balances" | "ledger">("balances");
+  const [pendingTab, setPendingTab] = useState<"balances" | "ledger" | null>(
+    null,
+  );
+  const [isTabPending, startTabTransition] = useTransition();
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   const filteredEntries = useMemo(() => {
@@ -174,6 +181,12 @@ export function StoreAccountsAdminClient({
     safeLedgerPage * ledgerRowsPerPage,
   );
 
+  useEffect(() => {
+    if (pendingTab === activeTab) {
+      setPendingTab(null);
+    }
+  }, [activeTab, pendingTab]);
+
   const handleSave = async (values: StoreAccountEntryFormValues) => {
     setLoading(true);
     try {
@@ -213,6 +226,8 @@ export function StoreAccountsAdminClient({
       setMonthCloseLoading(false);
     }
   };
+
+  const visibleTab = pendingTab ?? activeTab;
 
   return (
     <div className="space-y-6">
@@ -360,13 +375,56 @@ export function StoreAccountsAdminClient({
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="balances" className="space-y-4">
+      <Tabs
+        value={visibleTab}
+        onValueChange={(value) =>
+          {
+            const nextTab = value === "ledger" ? "ledger" : "balances";
+            setPendingTab(nextTab);
+            startTabTransition(() => setActiveTab(nextTab));
+          }
+        }
+        className="space-y-4"
+      >
         <TabsList className="grid w-full grid-cols-2 sm:w-fit">
-          <TabsTrigger value="balances">Employee Balances</TabsTrigger>
-          <TabsTrigger value="ledger">Ledger Entries</TabsTrigger>
+          <TabsTrigger value="balances" disabled={isTabPending}>
+            <span>Employee Balances</span>
+            {isTabPending && pendingTab === "balances" ? (
+              <LoaderCircle className="ml-2 h-3.5 w-3.5 animate-spin" />
+            ) : null}
+          </TabsTrigger>
+          <TabsTrigger value="ledger" disabled={isTabPending}>
+            <span>Ledger Entries</span>
+            {isTabPending && pendingTab === "ledger" ? (
+              <LoaderCircle className="ml-2 h-3.5 w-3.5 animate-spin" />
+            ) : null}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="balances">
+          {isTabPending && pendingTab === "balances" ? (
+            <Card className="border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+              <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-36" />
+                  <Skeleton className="h-4 w-52" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 px-0 pb-0 sm:px-6 sm:pb-6">
+                <div className="overflow-hidden rounded-md border">
+                  <div className="space-y-3 p-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Loading employee balances...
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
           <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
             <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
               <CardTitle>Employee Balances</CardTitle>
@@ -443,9 +501,38 @@ export function StoreAccountsAdminClient({
               />
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="ledger">
+          {isTabPending && pendingTab === "ledger" ? (
+            <Card className="border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+              <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
+                <div className="space-y-2">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-56" />
+                </div>
+                <div className="flex flex-col gap-3 md:flex-row">
+                  <Skeleton className="h-10 w-full md:w-72" />
+                  <Skeleton className="h-10 w-full md:w-56" />
+                  <Skeleton className="h-10 w-full md:w-56" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 px-0 pb-0 sm:px-6 sm:pb-6">
+                <div className="overflow-hidden rounded-md border">
+                  <div className="space-y-3 p-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Loading ledger entries...
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
           <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
             <CardHeader className="gap-4 px-0 pt-0 md:flex-row md:items-center md:justify-between sm:px-6 sm:pt-6">
               <CardTitle>Ledger Entries</CardTitle>
@@ -582,6 +669,7 @@ export function StoreAccountsAdminClient({
               />
             </CardContent>
           </Card>
+          )}
         </TabsContent>
       </Tabs>
 

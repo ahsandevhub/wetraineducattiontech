@@ -1,5 +1,8 @@
 import DashboardShell from "@/app/dashboard/DashboardShell";
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import {
+  getCurrentUserWithRoles,
+  type StoreCapabilities,
+} from "@/app/utils/auth/roles";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -37,6 +40,7 @@ export default async function DashboardLayout({
       canActAsCrmMarketer={roles.canActAsCrmMarketer}
       hrmRole={roles.hrmRole}
       storeRole={roles.storeRole}
+      storeCapabilities={roles.storeCapabilities as StoreCapabilities}
       userId={roles.userId}
       hasEducationAccess={roles.hasEducationAccess}
     >

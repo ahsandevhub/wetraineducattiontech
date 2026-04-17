@@ -1,12 +1,10 @@
-import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
+import { requireStorePermission } from "@/app/utils/auth/require";
 import { getStoreOwnerPurchasesOverview } from "../../_actions/owner-purchases";
 import { StoreOwnerPurchasesClient } from "./store-owner-purchases-client";
 
 export default async function StoreOwnerPurchasesPage() {
-  const [result, roles] = await Promise.all([
-    getStoreOwnerPurchasesOverview(),
-    getCurrentUserWithRoles(),
-  ]);
+  await requireStorePermission("owner_purchase_manage");
+  const result = await getStoreOwnerPurchasesOverview();
   const { data, error } = result;
 
   if (error || !data) {
@@ -27,9 +25,7 @@ export default async function StoreOwnerPurchasesPage() {
       salesByMonth={data.salesByMonth}
       stockValuation={data.stockValuation}
       monthClosures={data.monthClosures}
-      canManageOwnerPurchases={Boolean(
-        roles?.storeCapabilities.canManageOwnerPurchases,
-      )}
+      canManageOwnerPurchases
     />
   );
 }

@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentUserWithRoles } from "@/app/utils/auth/roles";
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,7 +19,10 @@ function formatAmount(amount: number) {
 }
 
 export default async function StoreAdminPage() {
-  const { data, error } = await getStoreAdminDashboardData();
+  const [roles, { data, error }] = await Promise.all([
+    getCurrentUserWithRoles(),
+    getStoreAdminDashboardData(),
+  ]);
 
   if (error || !data) {
     return (
@@ -30,33 +34,42 @@ export default async function StoreAdminPage() {
     );
   }
 
+  const storeCapabilities = roles?.storeCapabilities;
   const quickLinks = [
     {
       href: "/dashboard/store/admin/products",
       label: "Products",
       description: "Manage prices and active catalog items",
+      visible: Boolean(storeCapabilities?.canManageProducts),
     },
     {
       href: "/dashboard/store/admin/stocks",
       label: "Stocks",
       description: "Review inventory and record stock changes",
+      visible: Boolean(storeCapabilities?.canManageStock),
     },
     {
       href: "/dashboard/store/admin/accounts",
       label: "Accounts",
       description: "Adjust balances and close months",
+      visible: Boolean(storeCapabilities?.canAddBalance),
     },
     {
       href: "/dashboard/store/admin/owner-purchases",
       label: "Owner Purchases",
       description: "Track owner-level monthly store costs",
+      visible: Boolean(storeCapabilities?.canManageOwnerPurchases),
     },
     {
       href: "/dashboard/store/admin/reports",
       label: "Reports",
       description: "Open the reporting area",
+      visible: true,
     },
-  ];
+  ].filter((link) => link.visible);
+
+  const canManageStock = Boolean(storeCapabilities?.canManageStock);
+  const canAddBalance = Boolean(storeCapabilities?.canAddBalance);
 
   return (
     <div className="space-y-4">
@@ -184,145 +197,156 @@ export default async function StoreAdminPage() {
             </Badge>
           </CardHeader>
           <CardContent className="grid gap-3 px-0 pb-0 md:grid-cols-2 sm:px-6 sm:pb-6">
-            {quickLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="rounded-lg border p-4 transition-colors hover:bg-muted/40"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-medium">{link.label}</div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      {link.description}
-                    </div>
-                  </div>
-                  <ArrowRight className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                </div>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
-          <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
-            <CardTitle className="min-w-0">Low Stock Watchlist</CardTitle>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/dashboard/store/admin/stocks">Open Stocks</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
-            {data.lowStockItems.length === 0 ? (
-              <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                No low-stock items right now.
+            {quickLinks.length === 0 ? (
+              <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground md:col-span-2">
+                No Store admin sections are assigned to your current permission
+                set.
               </div>
             ) : (
-              data.lowStockItems.map((item) => (
-                <div
-                  key={item.product_id}
-                  className="flex items-center justify-between rounded-md border p-3"
+              quickLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-lg border p-4 transition-colors hover:bg-muted/40"
                 >
-                  <div>
-                    <div className="font-medium">{item.product_name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Product needs inventory review
-                    </div>
-                  </div>
-                  <Badge
-                    variant={item.on_hand <= 0 ? "destructive" : "secondary"}
-                  >
-                    {item.on_hand} left
-                  </Badge>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
-          <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
-            <CardTitle className="min-w-0">Employee Balances</CardTitle>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/dashboard/store/admin/accounts">Open Accounts</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
-            {data.employeeBalances.length === 0 ? (
-              <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                No Store users found yet.
-              </div>
-            ) : (
-              data.employeeBalances.map((user) => (
-                <div
-                  key={user.user_id}
-                  className="flex items-center justify-between rounded-md border p-3"
-                >
-                  <div>
-                    <div className="font-medium">{user.user_name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {user.user_email}
-                    </div>
-                  </div>
-                  <div
-                    className={`text-right text-sm font-medium ${
-                      user.balance < 0
-                        ? "text-red-600"
-                        : user.balance > 0
-                          ? "text-emerald-600"
-                          : "text-foreground"
-                    }`}
-                  >
-                    {formatAmount(user.balance)}
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
-          <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
-            <CardTitle className="min-w-0">Recent Ledger Actions</CardTitle>
-            <Button asChild size="sm" variant="outline">
-              <Link href="/dashboard/store/admin/accounts">View Ledger</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
-            {data.recentLedgerActions.length === 0 ? (
-              <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                No ledger activity recorded yet.
-              </div>
-            ) : (
-              data.recentLedgerActions.map((entry) => (
-                <div key={entry.id} className="rounded-md border p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="font-medium">{entry.user_name}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {entry.category.replace(/_/g, " ")} by{" "}
-                        {entry.actor_name}
+                      <div className="font-medium">{link.label}</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {link.description}
                       </div>
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        {entry.reason}
+                    </div>
+                    <ArrowRight className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </Link>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {canManageStock ? (
+          <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+            <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
+              <CardTitle className="min-w-0">Low Stock Watchlist</CardTitle>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/dashboard/store/admin/stocks">Open Stocks</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
+              {data.lowStockItems.length === 0 ? (
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  No low-stock items right now.
+                </div>
+              ) : (
+                data.lowStockItems.map((item) => (
+                  <div
+                    key={item.product_id}
+                    className="flex items-center justify-between rounded-md border p-3"
+                  >
+                    <div>
+                      <div className="font-medium">{item.product_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Product needs inventory review
+                      </div>
+                    </div>
+                    <Badge
+                      variant={item.on_hand <= 0 ? "destructive" : "secondary"}
+                    >
+                      {item.on_hand} left
+                    </Badge>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+      </div>
+
+      {canAddBalance ? (
+        <div className="grid gap-6 xl:grid-cols-2">
+          <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+            <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
+              <CardTitle className="min-w-0">Employee Balances</CardTitle>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/dashboard/store/admin/accounts">Open Accounts</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
+              {data.employeeBalances.length === 0 ? (
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  No Store users found yet.
+                </div>
+              ) : (
+                data.employeeBalances.map((user) => (
+                  <div
+                    key={user.user_id}
+                    className="flex items-center justify-between rounded-md border p-3"
+                  >
+                    <div>
+                      <div className="font-medium">{user.user_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {user.user_email}
                       </div>
                     </div>
                     <div
-                      className={`text-sm font-medium ${
-                        entry.amount < 0 ? "text-red-600" : "text-emerald-600"
+                      className={`text-right text-sm font-medium ${
+                        user.balance < 0
+                          ? "text-red-600"
+                          : user.balance > 0
+                            ? "text-emerald-600"
+                            : "text-foreground"
                       }`}
                     >
-                      {entry.amount > 0 ? "+" : ""}
-                      {formatAmount(entry.amount)}
+                      {formatAmount(user.balance)}
                     </div>
                   </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+            <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
+              <CardTitle className="min-w-0">Recent Ledger Actions</CardTitle>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/dashboard/store/admin/accounts">View Ledger</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
+              {data.recentLedgerActions.length === 0 ? (
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  No ledger activity recorded yet.
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              ) : (
+                data.recentLedgerActions.map((entry) => (
+                  <div key={entry.id} className="rounded-md border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-medium">{entry.user_name}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {entry.category.replace(/_/g, " ")} by{" "}
+                          {entry.actor_name}
+                        </div>
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          {entry.reason}
+                        </div>
+                      </div>
+                      <div
+                        className={`text-sm font-medium ${
+                          entry.amount < 0 ? "text-red-600" : "text-emerald-600"
+                        }`}
+                      >
+                        {entry.amount > 0 ? "+" : ""}
+                        {formatAmount(entry.amount)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }
