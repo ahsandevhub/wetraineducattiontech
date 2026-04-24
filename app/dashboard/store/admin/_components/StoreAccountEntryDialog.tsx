@@ -112,14 +112,15 @@ export default function StoreAccountEntryDialog({
       <DialogTrigger asChild>
         <Button>
           <WalletCards className="mr-2 h-4 w-4" />
-          Add Balance Entry
+          Add Deposit/Withdrawal
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add Account Entry</DialogTitle>
+          <DialogTitle>Add Deposit/Withdrawal</DialogTitle>
           <DialogDescription>
-            Add or deduct employee balance with a category and optional notes.
+            Deposit or withdraw employee balance with a category and optional
+            notes.
           </DialogDescription>
         </DialogHeader>
 
@@ -159,7 +160,7 @@ export default function StoreAccountEntryDialog({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="account-direction">Direction</Label>
+              <Label htmlFor="account-direction">Entry Type</Label>
               <Select
                 value={values.direction}
                 onValueChange={(value) =>
@@ -174,8 +175,8 @@ export default function StoreAccountEntryDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CREDIT">Credit</SelectItem>
-                  <SelectItem value="DEBIT">Debit</SelectItem>
+                  <SelectItem value="CREDIT">Deposit</SelectItem>
+                  <SelectItem value="DEBIT">Withdraw</SelectItem>
                 </SelectContent>
               </Select>
             </div>

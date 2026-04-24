@@ -196,21 +196,21 @@ export function StoreReportsClient({ data }: Props) {
   const ledgerByCategory = useMemo(() => {
     const totals = new Map<
       string,
-      { category: string; credits: number; debits: number; net: number }
+      { category: string; deposits: number; withdrawals: number; net: number }
     >();
 
     for (const entry of filteredAccountEntries) {
       const current = totals.get(entry.category) ?? {
         category: entry.category,
-        credits: 0,
-        debits: 0,
+        deposits: 0,
+        withdrawals: 0,
         net: 0,
       };
 
       if (entry.amount > 0) {
-        current.credits += entry.amount;
+        current.deposits += entry.amount;
       } else {
-        current.debits += Math.abs(entry.amount);
+        current.withdrawals += Math.abs(entry.amount);
       }
       current.net += entry.amount;
       totals.set(entry.category, current);
@@ -219,8 +219,8 @@ export function StoreReportsClient({ data }: Props) {
     return Array.from(totals.values())
       .map((row) => ({
         ...row,
-        credits: Number(row.credits.toFixed(2)),
-        debits: Number(row.debits.toFixed(2)),
+        deposits: Number(row.deposits.toFixed(2)),
+        withdrawals: Number(row.withdrawals.toFixed(2)),
         net: Number(row.net.toFixed(2)),
       }))
       .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
@@ -589,8 +589,8 @@ export function StoreReportsClient({ data }: Props) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Credits</TableHead>
-                  <TableHead className="text-right">Debits</TableHead>
+                  <TableHead className="text-right">Deposits</TableHead>
+                  <TableHead className="text-right">Withdrawals</TableHead>
                   <TableHead className="text-right">Net</TableHead>
                 </TableRow>
               </TableHeader>
@@ -611,10 +611,10 @@ export function StoreReportsClient({ data }: Props) {
                         {formatCategory(row.category)}
                       </TableCell>
                       <TableCell className="text-right text-emerald-600">
-                        {formatAmount(row.credits)}
+                        {formatAmount(row.deposits)}
                       </TableCell>
                       <TableCell className="text-right text-red-600">
-                        {formatAmount(row.debits)}
+                        {formatAmount(row.withdrawals)}
                       </TableCell>
                       <TableCell
                         className={`text-right font-medium ${

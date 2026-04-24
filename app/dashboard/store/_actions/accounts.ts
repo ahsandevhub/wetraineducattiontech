@@ -58,6 +58,14 @@ type StoreAccountEntryRow = {
   actor_name: string;
 };
 
+type AdminDepositSummaryRow = {
+  admin_id: string;
+  admin_name: string;
+  admin_email: string;
+  total_deposited: number;
+  entry_count: number;
+};
+
 async function ensureStoreAdminAccess() {
   await requireStoreAdmin();
   const roles = await getCurrentUserWithRoles();
@@ -109,9 +117,22 @@ export async function getStoreAccountsOverview() {
     }
 
     const userIds = (storeUsers ?? []).map((user) => user.id);
+    const allAccountRows = userIds.length
+      ? await supabaseAdmin
+          .from("store_account_entries")
+          .select(
+            "user_id, amount, category, reversed_from_entry_id, created_by",
+          )
+          .in("user_id", userIds)
+      : { data: [], error: null };
+
+    if (allAccountRows.error) {
+      return { data: null, error: allAccountRows.error.message };
+    }
+
     const actorIds = Array.from(
       new Set(
-        (entries ?? [])
+        [...(entries ?? []), ...(allAccountRows.data ?? [])]
           .map((entry) => entry.created_by)
           .filter((value): value is string => Boolean(value)),
       ),
@@ -130,28 +151,54 @@ export async function getStoreAccountsOverview() {
       return { data: null, error: profilesError.message };
     }
 
-    const allBalanceRows = userIds.length
-      ? await supabaseAdmin
-          .from("store_account_entries")
-          .select("user_id, amount")
-          .in("user_id", userIds)
-      : { data: [], error: null };
-
-    if (allBalanceRows.error) {
-      return { data: null, error: allBalanceRows.error.message };
-    }
-
     const profileMap = new Map(
       (profiles ?? []).map((profile) => [profile.id, profile]),
     );
 
     const balanceMap = new Map<string, number>();
-    for (const row of allBalanceRows.data ?? []) {
+    const adminDepositMap = new Map<
+      string,
+      { total_deposited: number; entry_count: number }
+    >();
+
+    for (const row of allAccountRows.data ?? []) {
       balanceMap.set(
         row.user_id,
         (balanceMap.get(row.user_id) ?? 0) + Number(row.amount ?? 0),
       );
+
+      const amount = Number(row.amount ?? 0);
+      if (
+        amount > 0 &&
+        row.created_by &&
+        row.category !== "REFUND" &&
+        row.category !== "REVERSAL" &&
+        !row.reversed_from_entry_id
+      ) {
+        const current = adminDepositMap.get(row.created_by) ?? {
+          total_deposited: 0,
+          entry_count: 0,
+        };
+        current.total_deposited += amount;
+        current.entry_count += 1;
+        adminDepositMap.set(row.created_by, current);
+      }
     }
+
+    const adminDepositSummary: AdminDepositSummaryRow[] = Array.from(
+      adminDepositMap.entries(),
+    )
+      .map(([adminId, summary]) => {
+        const profile = profileMap.get(adminId);
+        return {
+          admin_id: adminId,
+          admin_name: profile?.full_name || profile?.email || "Unknown",
+          admin_email: profile?.email || "Unknown",
+          total_deposited: Number(summary.total_deposited.toFixed(2)),
+          entry_count: summary.entry_count,
+        };
+      })
+      .sort((a, b) => b.total_deposited - a.total_deposited);
 
     const users: StoreUserRow[] = (storeUsers ?? []).map((user) => {
       const profile = profileMap.get(user.id);
@@ -202,6 +249,7 @@ export async function getStoreAccountsOverview() {
           totalBalance: Number(totalBalance.toFixed(2)),
           positiveBalanceCount,
           negativeBalanceCount,
+          adminDepositSummary,
         },
         monthClosures: monthClosures ?? [],
       },

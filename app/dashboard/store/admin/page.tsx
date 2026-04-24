@@ -345,6 +345,40 @@ export default async function StoreAdminPage() {
               )}
             </CardContent>
           </Card>
+
+          <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+            <CardHeader className="flex flex-col gap-3 px-0 pt-0 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:pt-6">
+              <CardTitle className="min-w-0">Admin Deposit Summary</CardTitle>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/dashboard/store/admin/accounts">Open Accounts</Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3 px-0 pb-0 sm:px-6 sm:pb-6">
+              {data.adminDepositSummary.length === 0 ? (
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  No admin deposits recorded yet.
+                </div>
+              ) : (
+                data.adminDepositSummary.map((admin) => (
+                  <div
+                    key={admin.admin_id}
+                    className="flex items-center justify-between rounded-md border p-3"
+                  >
+                    <div>
+                      <div className="font-medium">{admin.admin_name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {admin.entry_count} deposit
+                        {admin.entry_count === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <div className="text-right text-sm font-medium text-emerald-600">
+                      {formatAmount(admin.total_deposited)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </div>
       ) : null}
     </div>

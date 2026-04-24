@@ -24,6 +24,7 @@ export type StoreProductFormValues = {
   barcode: string;
   imageUrl: string;
   unitPrice: string;
+  initialQuantity: string;
   isActive: boolean;
   tracksStock: boolean;
 };
@@ -70,6 +71,7 @@ export default function StoreProductDialog({
         product?.unit_price === undefined || product.unit_price === null
           ? ""
           : String(product.unit_price),
+      initialQuantity: "",
       isActive: product?.is_active ?? true,
       tracksStock: product?.tracks_stock ?? true,
     }),
@@ -193,6 +195,33 @@ export default function StoreProductDialog({
             />
           </div>
 
+          {!isEdit ? (
+            <div className="space-y-2">
+              <Label htmlFor="product-initial-quantity">
+                Initial Quantity
+              </Label>
+              <Input
+                id="product-initial-quantity"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                value={values.initialQuantity}
+                onChange={(event) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    initialQuantity: event.target.value,
+                  }))
+                }
+                placeholder="0"
+                disabled={isSaving || !values.tracksStock}
+              />
+              <p className="text-xs text-muted-foreground">
+                Creates the first stock entry for stock-tracked products.
+              </p>
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <ImageUpload
               label="Product Image"
@@ -239,6 +268,8 @@ export default function StoreProductDialog({
                   setValues((prev) => ({
                     ...prev,
                     tracksStock: checked === true,
+                    initialQuantity:
+                      checked === true ? prev.initialQuantity : "",
                   }))
                 }
                 disabled={isSaving}

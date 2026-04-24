@@ -22,6 +22,7 @@ export type ProductFormData = {
   barcode?: string;
   imageUrl?: string;
   unitPrice: string;
+  initialQuantity?: string;
   isActive: boolean;
   tracksStock: boolean;
 };

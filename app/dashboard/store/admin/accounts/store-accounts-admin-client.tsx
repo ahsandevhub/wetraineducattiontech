@@ -77,6 +77,13 @@ type Summary = {
   totalBalance: number;
   positiveBalanceCount: number;
   negativeBalanceCount: number;
+  adminDepositSummary: Array<{
+    admin_id: string;
+    admin_name: string;
+    admin_email: string;
+    total_deposited: number;
+    entry_count: number;
+  }>;
 };
 
 type StoreMonthClosure = {
@@ -235,7 +242,8 @@ export function StoreAccountsAdminClient({
         <div>
           <h1 className="text-3xl font-bold">Store Accounts</h1>
           <p className="text-muted-foreground">
-            Add manual credits or debits and review employee balance history.
+            Add manual deposits or withdrawals and review employee balance
+            history.
           </p>
         </div>
         {canAddBalance ? (
@@ -253,6 +261,57 @@ export function StoreAccountsAdminClient({
           </div>
         )}
       </div>
+
+      <Card className="space-y-4 border-0 bg-transparent py-0 shadow-none sm:border sm:bg-card sm:shadow-sm">
+        <CardHeader className="px-0 pt-0 sm:px-6 sm:pt-6">
+          <CardTitle>Admin Deposit Summary</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Positive admin-created deposits, excluding refund and reversal
+            entries.
+          </p>
+        </CardHeader>
+        <CardContent className="px-0 pb-0 sm:px-6 sm:pb-6">
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Admin</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-right">Entries</TableHead>
+                  <TableHead className="text-right">Total Deposited</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {summary.adminDepositSummary.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No admin deposits found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  summary.adminDepositSummary.map((admin) => (
+                    <TableRow key={admin.admin_id}>
+                      <TableCell className="font-medium">
+                        {admin.admin_name}
+                      </TableCell>
+                      <TableCell>{admin.admin_email}</TableCell>
+                      <TableCell className="text-right">
+                        {admin.entry_count}
+                      </TableCell>
+                      <TableCell className="text-right font-medium text-emerald-600">
+                        {admin.total_deposited.toFixed(2)} BDT
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>

@@ -98,10 +98,10 @@ export function StoreAccountsClient({
     safeCurrentPage * rowsPerPage,
   );
 
-  const totalCredits = filteredEntries
+  const totalDeposits = filteredEntries
     .filter((entry) => entry.amount > 0)
     .reduce((sum, entry) => sum + entry.amount, 0);
-  const totalDebits = filteredEntries
+  const totalWithdrawals = filteredEntries
     .filter((entry) => entry.amount < 0)
     .reduce((sum, entry) => sum + Math.abs(entry.amount), 0);
 
@@ -138,21 +138,21 @@ export function StoreAccountsClient({
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Credits</CardTitle>
+            <CardTitle className="text-sm font-medium">Deposits</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-emerald-600">
-              {totalCredits.toFixed(2)} BDT
+              {totalDeposits.toFixed(2)} BDT
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Debits</CardTitle>
+            <CardTitle className="text-sm font-medium">Withdrawals</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {totalDebits.toFixed(2)} BDT
+              {totalWithdrawals.toFixed(2)} BDT
             </div>
           </CardContent>
         </Card>

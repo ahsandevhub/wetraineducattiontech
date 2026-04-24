@@ -9,8 +9,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import {
   buildProductPayload,
+  normalizeOptionalText,
+  parseNonNegativeInteger,
   type ProductFormData,
 } from "../_lib/store-domain";
+import { ensureStoreMonthOpen } from "./month-closures";
 
 type StoreProductRow = {
   id: string;
@@ -122,6 +125,22 @@ export async function createStoreProduct(data: ProductFormData) {
     return { error: built.error ?? "Invalid product data" };
   }
 
+  const parsedInitialQuantity = data.initialQuantity?.trim()
+    ? parseNonNegativeInteger(data.initialQuantity)
+    : { value: 0, error: null };
+  if (
+    parsedInitialQuantity.error ||
+    parsedInitialQuantity.value === null
+  ) {
+    return {
+      error: parsedInitialQuantity.error ?? "Invalid initial stock quantity",
+    };
+  }
+
+  if (parsedInitialQuantity.value > 0 && !data.tracksStock) {
+    return { error: "Initial quantity can only be set for stock-tracked products" };
+  }
+
   const uniqueness = await ensureUniqueFields(null, {
     sku: built.payload.sku,
     barcode: built.payload.barcode,
@@ -132,16 +151,66 @@ export async function createStoreProduct(data: ProductFormData) {
 
   try {
     const supabaseAdmin = createAdminClient();
-    const { error } = await supabaseAdmin
+    if (parsedInitialQuantity.value > 0) {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const monthStatus = await ensureStoreMonthOpen(currentMonth);
+      if (monthStatus.error) {
+        return { error: monthStatus.error };
+      }
+    }
+
+    const { data: insertedProduct, error } = await supabaseAdmin
       .from("store_products")
-      .insert(built.payload);
+      .insert(built.payload)
+      .select("id, name")
+      .single();
 
     if (error) {
       return { error: error.message };
     }
 
+    if (parsedInitialQuantity.value > 0) {
+      const { data: insertedEntry, error: entryError } = await supabaseAdmin
+        .from("store_stock_entries")
+        .insert({
+          product_id: insertedProduct.id,
+          quantity: parsedInitialQuantity.value,
+          unit_cost: null,
+          note: normalizeOptionalText(
+            `Initial stock for ${insertedProduct.name}`,
+          ),
+          reference_type: "INITIAL_STOCK",
+          reference_number: null,
+          entered_by: auth.roles.userId,
+        })
+        .select("id")
+        .single();
+
+      if (entryError) {
+        return { error: entryError.message };
+      }
+
+      const { error: movementError } = await supabaseAdmin
+        .from("store_stock_movements")
+        .insert({
+          product_id: insertedProduct.id,
+          stock_entry_id: insertedEntry.id,
+          movement_type: "RESTOCK",
+          quantity_delta: parsedInitialQuantity.value,
+          reason: normalizeOptionalText(
+            `Initial stock for ${insertedProduct.name}`,
+          ),
+          actor_user_id: auth.roles.userId,
+        });
+
+      if (movementError) {
+        return { error: movementError.message };
+      }
+    }
+
     revalidatePath("/dashboard/store/admin");
     revalidatePath("/dashboard/store/admin/products");
+    revalidatePath("/dashboard/store/admin/stocks");
     return { error: null };
   } catch (error) {
     return {

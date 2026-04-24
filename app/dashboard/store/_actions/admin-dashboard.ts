@@ -27,6 +27,14 @@ type DashboardLedgerAction = {
   actor_name: string;
 };
 
+type DashboardAdminDepositSummary = {
+  admin_id: string;
+  admin_name: string;
+  admin_email: string;
+  total_deposited: number;
+  entry_count: number;
+};
+
 async function ensureStoreAdminAccess() {
   await requireStoreAdmin();
   const roles = await getCurrentUserWithRoles();
@@ -58,6 +66,7 @@ export async function getStoreAdminDashboardData() {
       { data: monthInvoices, error: monthInvoicesError },
       { data: storeUsers, error: storeUsersError },
       { data: accountEntries, error: accountEntriesError },
+      { data: allAccountEntries, error: allAccountEntriesError },
     ] = await Promise.all([
       supabaseAdmin
         .from("store_products")
@@ -83,6 +92,9 @@ export async function getStoreAdminDashboardData() {
         )
         .order("created_at", { ascending: false })
         .limit(10),
+      supabaseAdmin
+        .from("store_account_entries")
+        .select("user_id, amount, category, reversed_from_entry_id, created_by"),
     ]);
 
     if (productsError) {
@@ -105,38 +117,29 @@ export async function getStoreAdminDashboardData() {
       return { data: null, error: accountEntriesError.message };
     }
 
+    if (allAccountEntriesError) {
+      return { data: null, error: allAccountEntriesError.message };
+    }
+
     const userIds = (storeUsers ?? []).map((user) => user.id);
     const actorIds = Array.from(
       new Set(
-        (accountEntries ?? [])
+        [...(accountEntries ?? []), ...(allAccountEntries ?? [])]
           .map((entry) => entry.created_by)
           .filter((value): value is string => Boolean(value)),
       ),
     );
     const allProfileIds = Array.from(new Set([...userIds, ...actorIds]));
 
-    const [{ data: profiles, error: profilesError }, { data: allBalances, error: balancesError }] =
-      await Promise.all([
-        allProfileIds.length
-          ? supabaseAdmin
-              .from("profiles")
-              .select("id, full_name, email")
-              .in("id", allProfileIds)
-          : Promise.resolve({ data: [], error: null }),
-        userIds.length
-          ? supabaseAdmin
-              .from("store_account_entries")
-              .select("user_id, amount")
-              .in("user_id", userIds)
-          : Promise.resolve({ data: [], error: null }),
-      ]);
+    const { data: profiles, error: profilesError } = allProfileIds.length
+      ? await supabaseAdmin
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", allProfileIds)
+      : { data: [], error: null };
 
     if (profilesError) {
       return { data: null, error: profilesError.message };
-    }
-
-    if (balancesError) {
-      return { data: null, error: balancesError.message };
     }
 
     const profileMap = new Map(
@@ -163,12 +166,50 @@ export async function getStoreAdminDashboardData() {
       .slice(0, 6);
 
     const balanceMap = new Map<string, number>();
-    for (const row of allBalances ?? []) {
+    const adminDepositMap = new Map<
+      string,
+      { total_deposited: number; entry_count: number }
+    >();
+
+    for (const row of allAccountEntries ?? []) {
       balanceMap.set(
         row.user_id,
         (balanceMap.get(row.user_id) ?? 0) + Number(row.amount ?? 0),
       );
+
+      const amount = Number(row.amount ?? 0);
+      if (
+        amount > 0 &&
+        row.created_by &&
+        row.category !== "REFUND" &&
+        row.category !== "REVERSAL" &&
+        !row.reversed_from_entry_id
+      ) {
+        const current = adminDepositMap.get(row.created_by) ?? {
+          total_deposited: 0,
+          entry_count: 0,
+        };
+        current.total_deposited += amount;
+        current.entry_count += 1;
+        adminDepositMap.set(row.created_by, current);
+      }
     }
+
+    const adminDepositSummary: DashboardAdminDepositSummary[] = Array.from(
+      adminDepositMap.entries(),
+    )
+      .map(([adminId, summary]) => {
+        const profile = profileMap.get(adminId);
+        return {
+          admin_id: adminId,
+          admin_name: profile?.full_name || profile?.email || "Unknown",
+          admin_email: profile?.email || "Unknown",
+          total_deposited: Number(summary.total_deposited.toFixed(2)),
+          entry_count: summary.entry_count,
+        };
+      })
+      .sort((a, b) => b.total_deposited - a.total_deposited)
+      .slice(0, 6);
 
     const allEmployeeBalances: DashboardEmployeeBalanceUser[] = (storeUsers ?? [])
       .map((user) => {
@@ -220,6 +261,7 @@ export async function getStoreAdminDashboardData() {
         },
         lowStockItems,
         employeeBalances: allEmployeeBalances,
+        adminDepositSummary,
         recentLedgerActions,
       },
       error: null,

@@ -121,9 +121,9 @@ The Store module provides an internal cafeteria and office store system for empl
 
 ## Accounting Rules
 
-- There is no automatic monthly 600 BDT credit
+- There is no automatic monthly 600 BDT deposit
 - Balance is an append-only ledger, not a manually trusted balance field
-- Each manual credit or debit requires:
+- Each manual deposit or withdrawal requires:
   - amount
   - direction
   - category
